@@ -7,15 +7,16 @@ return {
 	ZOMBIE_TOUCH_DAMAGE    = 10,
 	ZOMBIE_DAMAGE_COOLDOWN = 1,    -- seconds between touch hits
 	ZOMBIE_CHASE_INTERVAL  = 0.1,  -- how often MoveTo refreshes
-	ZOMBIE_SPAWN_RADIUS    = 40,   -- max studs from map centre
+	ZOMBIE_SPAWN_DISTANCE  = 100,  -- exact studs from map centre
 	ZOMBIE_SPAWN_HEIGHT    = 3,    -- studs above ground
 
 	-- Laser gun
-	LASER_DAMAGE        = 25,
+	LASER_DAMAGE        = 75,
 	LASER_RANGE         = 500,
 	LASER_FIRE_COOLDOWN = 0.3,
 
 	-- Wave progression
+	STARTING_WAVE       = 2,
 	WAVE_START_DELAY    = 3,
 	WAVE_BETWEEN_DELAY  = 5,
 	WAVE_SPAWN_INTERVAL = 1,
@@ -24,4 +25,8 @@ return {
 	PLAYER_WALK_SPEED   = 16,
 	PLAYER_SPRINT_SPEED = 30,
 	PLAYER_JUMP_POWER   = 70,
+
+	-- Map and Lobby
+	LOBBY_NAME = "Lobby_Football",
+	MAP_NAME   = "Map_FastFood",
 }

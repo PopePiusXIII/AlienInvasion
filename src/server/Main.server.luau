@@ -21,11 +21,30 @@ shootEvent.OnServerEvent:Connect(function(player, zombieModel)
 end)
 
 -- Start the wave loop each time a player's character loads
-Players.PlayerAdded:Connect(function(player)
-	player.CharacterAdded:Connect(function()
-		task.wait(Config.WAVE_START_DELAY)
-		task.spawn(function()
-			WaveManager.startForPlayer(player, waveEvent)
-		end)
+local function onPlayerAdded(player)
+	print("[Server] Initializing game for player: " .. player.Name)
+	
+	player.CharacterAdded:Connect(function(character)
+		-- Spawn character at Lobby center immediately on load
+		local lobby = workspace:FindFirstChild(Config.LOBBY_NAME)
+		if lobby then
+			local lobbyCenter = lobby:FindFirstChild("Spawn_In", true)
+			if lobbyCenter and lobbyCenter:IsA("BasePart") then
+				character:PivotTo(lobbyCenter.CFrame * CFrame.new(0, 5, 0))
+			else
+				character:PivotTo(lobby:GetPivot() * CFrame.new(0, 5, 0))
+			end
+			print("[Server] Teleported " .. player.Name .. " to Lobby center (Spawn_In)")
+		end
 	end)
-end)
+	
+	-- Start the single persistent wave loop for this player
+	task.spawn(function()
+		WaveManager.startForPlayer(player, waveEvent)
+	end)
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayerAdded, player)
+end

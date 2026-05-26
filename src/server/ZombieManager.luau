@@ -10,7 +10,10 @@ local zombieTemplate = ServerStorage:WaitForChild("Zombie")
 
 -- Spawns one zombie that chases `target` (a Player).
 -- Calls `onDied()` once when the zombie's health reaches zero.
-function ZombieManager.spawn(target, onDied)
+-- `centerPos` is optional; defaults to world origin.
+function ZombieManager.spawn(target, onDied, centerPos)
+	centerPos = centerPos or Vector3.new(0, 0, 0)
+	print("[ZombieManager] Spawning zombie for target: " .. target.Name)
 	local zombie = zombieTemplate:Clone()
 	zombie.Name = "Zombie"
 
@@ -21,28 +24,25 @@ function ZombieManager.spawn(target, onDied)
 		return
 	end
 
-	humanoid.MaxHealth = Config.ZOMBIE_MAX_HEALTH
-	humanoid.Health    = Config.ZOMBIE_MAX_HEALTH
-	humanoid.WalkSpeed = Config.ZOMBIE_WALK_SPEED
+	humanoid.MaxHealth       = Config.ZOMBIE_MAX_HEALTH
+	humanoid.Health          = Config.ZOMBIE_MAX_HEALTH
+	humanoid.WalkSpeed       = Config.ZOMBIE_WALK_SPEED
+	humanoid.AutoJumpEnabled = true
+	humanoid.MaxSlopeAngle   = 90
 
 	zombie.Parent = workspace
 
-	local spawnX = math.random(-Config.ZOMBIE_SPAWN_RADIUS, Config.ZOMBIE_SPAWN_RADIUS)
-	local spawnZ = math.random(-Config.ZOMBIE_SPAWN_RADIUS, Config.ZOMBIE_SPAWN_RADIUS)
-	zombie:PivotTo(CFrame.new(spawnX, Config.ZOMBIE_SPAWN_HEIGHT, spawnZ))
+	-- Spawn at fixed distance from center pos
+	local angle  = math.rad(math.random(0, 360))
+	local spawnX = math.cos(angle) * Config.ZOMBIE_SPAWN_DISTANCE
+	local spawnZ = math.sin(angle) * Config.ZOMBIE_SPAWN_DISTANCE
+	zombie:PivotTo(CFrame.new(centerPos) * CFrame.new(spawnX, Config.ZOMBIE_SPAWN_HEIGHT, spawnZ))
 
-	-- Store models are often anchored; unanchor so the Humanoid can move them.
-	for _, part in ipairs(zombie:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Anchored = false
-		end
-	end
-
-	-- Damage any player character that touches the zombie.
-	-- Ignore self-collisions and zombie-on-zombie contact.
+	-- Unanchor all parts and wire up touch damage in a single pass.
 	local damageCooldown = false
 	for _, part in ipairs(zombie:GetDescendants()) do
 		if part:IsA("BasePart") then
+			part.Anchored = false
 			part.Touched:Connect(function(hit)
 				if damageCooldown then return end
 				local hitModel = hit.Parent
@@ -66,14 +66,33 @@ function ZombieManager.spawn(target, onDied)
 		onDied()
 	end)
 
-	-- Continuously chase the target; refresh MoveTo before its 8-second timeout.
+	-- Direct chase loop: move toward the player every ZOMBIE_CHASE_INTERVAL seconds.
 	task.spawn(function()
 		while zombie.Parent and humanoid.Health > 0 do
 			local character = target.Character
-			if character then
-				local root = character:FindFirstChild("HumanoidRootPart")
-				if root then
-					humanoid:MoveTo(root.Position)
+			local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
+			local zombieRoot = zombie:FindFirstChild("HumanoidRootPart")
+
+			if targetRoot and zombieRoot then
+				humanoid:MoveTo(targetRoot.Position)
+
+				-- Spider Logic: If stuck against a wall, float up it
+				local forwardParams = RaycastParams.new()
+				forwardParams.FilterDescendantsInstances = {zombie}
+				forwardParams.FilterType = Enum.RaycastFilterType.Exclude
+				
+				-- Look ahead and slightly up
+				local rayOrigin = zombieRoot.Position + Vector3.new(0, 1, 0)
+				local rayDir    = (zombieRoot.CFrame.LookVector + Vector3.new(0, 0.4, 0)).Unit * 5
+				local rayResult = workspace:Raycast(rayOrigin, rayDir, forwardParams)
+				
+				if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
+					-- Apply vertical lift
+					zombieRoot.AssemblyLinearVelocity = Vector3.new(
+						zombieRoot.AssemblyLinearVelocity.X,
+						Config.ZOMBIE_WALK_SPEED + 25,
+						zombieRoot.AssemblyLinearVelocity.Z
+					)
 				end
 			end
 			task.wait(Config.ZOMBIE_CHASE_INTERVAL)

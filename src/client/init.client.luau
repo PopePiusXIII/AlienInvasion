@@ -2,6 +2,7 @@
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris            = game:GetService("Debris")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
@@ -34,21 +35,32 @@ waveEvent.OnClientEvent:Connect(function(waveNumber)
 end)
 
 -- Character setup
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid  = character:WaitForChild("Humanoid")
-local rootPart  = character:WaitForChild("HumanoidRootPart")
+local character, humanoid, rootPart
 
-humanoid.JumpPower = Config.PLAYER_JUMP_POWER
+local function onCharacterAdded(newChar)
+	character = newChar
+	humanoid  = character:WaitForChild("Humanoid")
+	rootPart  = character:WaitForChild("HumanoidRootPart")
+	
+	humanoid.JumpPower = Config.PLAYER_JUMP_POWER
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+if player.Character then
+	onCharacterAdded(player.Character)
+end
 
 -- Sprint
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
+	if not humanoid then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift then
 		humanoid.WalkSpeed = Config.PLAYER_SPRINT_SPEED
 	end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
+	if not humanoid then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift then
 		humanoid.WalkSpeed = Config.PLAYER_WALK_SPEED
 	end
@@ -58,31 +70,35 @@ end)
 local fireCooldown = false
 
 mouse.Button1Down:Connect(function()
-	if fireCooldown then return end
+	if fireCooldown or not rootPart or not character then return end
 	fireCooldown = true
 
-	local hitPosition = mouse.Hit.Position
+	local origin    = rootPart.Position
+	local direction = (mouse.Hit.Position - origin).Unit * Config.LASER_RANGE
 
-	-- Draw a visible laser beam
-	local beam = Instance.new("Part")
-	beam.Name       = "LaserBeam"
-	beam.BrickColor = BrickColor.new("Bright red")
-	beam.Material   = Enum.Material.Neon
-	beam.Anchored   = true
-	beam.CanCollide = false
-	beam.Size       = Vector3.new(0.1, 0.1, (rootPart.Position - hitPosition).Magnitude)
-	beam.CFrame     = CFrame.lookAt(rootPart.Position, hitPosition)
-	                  * CFrame.new(0, 0, -beam.Size.Z / 2)
-	beam.Parent     = workspace
-
-	-- Raycast to find what the laser actually hits
+	-- Raycast first so the beam draws to the actual impact point
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterDescendantsInstances = {character}
 	raycastParams.FilterType                 = Enum.RaycastFilterType.Exclude
 
-	local rayDirection = (hitPosition - rootPart.Position).Unit * Config.LASER_RANGE
-	local result       = workspace:Raycast(rootPart.Position, rayDirection, raycastParams)
+	local result   = workspace:Raycast(origin, direction, raycastParams)
+	local endpoint = result and result.Position or (origin + direction)
 
+	-- Draw beam from gun barrel to impact point
+	local beamLength = (endpoint - origin).Magnitude
+	local beam = Instance.new("Part")
+	beam.Name        = "LaserBeam"
+	beam.BrickColor  = BrickColor.new("Bright red")
+	beam.Material    = Enum.Material.Neon
+	beam.Anchored    = true
+	beam.CanCollide  = false
+	beam.CastShadow  = false
+	beam.Size        = Vector3.new(0.1, 0.1, beamLength)
+	beam.CFrame      = CFrame.lookAt(origin, endpoint) * CFrame.new(0, 0, -beamLength / 2)
+	beam.Parent      = workspace
+	Debris:AddItem(beam, 0.1)
+
+	-- Tell the server which zombie was hit (server re-validates before applying damage)
 	local zombieModel = nil
 	if result and result.Instance then
 		local hitModel = result.Instance.Parent
@@ -90,13 +106,7 @@ mouse.Button1Down:Connect(function()
 			zombieModel = hitModel
 		end
 	end
-
-	-- Ask the server to apply damage (server validates before dealing damage)
 	shootEvent:FireServer(zombieModel)
-
-	task.delay(0.1, function()
-		beam:Destroy()
-	end)
 
 	task.delay(Config.LASER_FIRE_COOLDOWN, function()
 		fireCooldown = false
