@@ -65,6 +65,17 @@ function WaveManager.startForPlayer(player, waveEvent)
 		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
 		print("[WaveManager] Teleported " .. player.Name .. " to map.")
 
+		-- Give the gun; it lives in ServerStorage so the lobby stays weapon-free
+		local gunTemplate = ServerStorage:FindFirstChild(Config.GUN_NAME)
+		if gunTemplate then
+			if not player.Backpack:FindFirstChild(Config.GUN_NAME) then
+				gunTemplate:Clone().Parent = player.Backpack
+				print("[WaveManager] Gave " .. Config.GUN_NAME .. " to " .. player.Name)
+			end
+		else
+			warn("[WaveManager] Gun '" .. Config.GUN_NAME .. "' not found in ServerStorage.")
+		end
+
 		local waveNumber = Config.STARTING_WAVE
 		while player.Parent and humanoid.Health > 0 do
 			local zombiesRemaining = waveNumber

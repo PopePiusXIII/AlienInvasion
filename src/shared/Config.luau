@@ -10,10 +10,14 @@ return {
 	ZOMBIE_SPAWN_DISTANCE  = 100,  -- exact studs from map centre
 	ZOMBIE_SPAWN_HEIGHT    = 3,    -- studs above ground
 
-	-- Laser gun
-	LASER_DAMAGE        = 75,
-	LASER_RANGE         = 500,
-	LASER_FIRE_COOLDOWN = 0.3,
+	-- Gun (Deagle)
+	GUN_NAME          = "Deagle",
+	GUN_DAMAGE        = 34,
+	GUN_RANGE         = 1000,
+	GUN_FIRE_COOLDOWN = 0.15,
+	GUN_MAG_SIZE      = 7,      -- Desert Eagle holds 7 rounds
+	GUN_RELOAD_TIME   = 2.0,    -- seconds to reload
+	GUN_MUZZLE_DELAY  = 0.05,   -- how long the flash stays visible
 
 	-- Wave progression
 	STARTING_WAVE       = 2,

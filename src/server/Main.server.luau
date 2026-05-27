@@ -8,16 +8,16 @@ local WaveManager   = require(script.Parent.WaveManager)
 
 -- RemoteEvents live in ReplicatedStorage so the client can reach them
 local shootEvent = Instance.new("RemoteEvent")
-shootEvent.Name   = "ShootLaser"
+shootEvent.Name   = "ShootGun"
 shootEvent.Parent = ReplicatedStorage
 
 local waveEvent = Instance.new("RemoteEvent")
 waveEvent.Name   = "WaveAnnounce"
 waveEvent.Parent = ReplicatedStorage
 
--- Server validates and applies laser damage reported by the client
+-- Server validates and applies gun damage reported by the client
 shootEvent.OnServerEvent:Connect(function(player, zombieModel)
-	ZombieManager.damageZombie(zombieModel, Config.LASER_DAMAGE)
+	ZombieManager.damageZombie(zombieModel, Config.GUN_DAMAGE)
 end)
 
 -- Start the wave loop each time a player's character loads
