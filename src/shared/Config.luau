@@ -31,6 +31,7 @@ return {
 	PLAYER_JUMP_POWER   = 70,
 
 	-- Map and Lobby
-	LOBBY_NAME = "Lobby_Football",
-	MAP_NAME   = "Map_FastFood",
+	LOBBY_NAME     = "Lobby_Football",
+	MAP_NAME       = "Map_FastFood",
+	LOBBY_PAD_NAME = "GoToGame",
 }

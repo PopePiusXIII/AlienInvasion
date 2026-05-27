@@ -8,8 +8,9 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local player = Players.LocalPlayer
 local mouse  = player:GetMouse()
 
-local shootEvent = ReplicatedStorage:WaitForChild("ShootGun")
-local waveEvent  = ReplicatedStorage:WaitForChild("WaveAnnounce")
+local shootEvent       = ReplicatedStorage:WaitForChild("ShootGun")
+local waveEvent        = ReplicatedStorage:WaitForChild("WaveAnnounce")
+local requestPlayEvent = ReplicatedStorage:WaitForChild("RequestPlay")
 
 -- HUD -----------------------------------------------------------------------
 local screenGui = Instance.new("ScreenGui")
@@ -37,6 +38,44 @@ ammoLabel.TextScaled             = true
 ammoLabel.Font                   = Enum.Font.GothamBold
 ammoLabel.Text                   = ""
 ammoLabel.Parent                 = screenGui
+
+-- Play Game prompt (shown when standing on GoToGame pad) --------------------
+local playFrame = Instance.new("Frame")
+playFrame.Size                   = UDim2.new(0.32, 0, 0.22, 0)
+playFrame.Position               = UDim2.new(0.34, 0, 0.38, 0)
+playFrame.BackgroundColor3       = Color3.fromRGB(15, 15, 15)
+playFrame.BackgroundTransparency = 0.25
+playFrame.BorderSizePixel        = 0
+playFrame.Visible                = false
+playFrame.Parent                 = screenGui
+Instance.new("UICorner", playFrame).CornerRadius = UDim.new(0, 14)
+
+local playTitle = Instance.new("TextLabel")
+playTitle.Size                   = UDim2.new(1, 0, 0.42, 0)
+playTitle.Position               = UDim2.new(0, 0, 0.04, 0)
+playTitle.BackgroundTransparency = 1
+playTitle.TextColor3             = Color3.new(1, 1, 1)
+playTitle.TextScaled             = true
+playTitle.Font                   = Enum.Font.GothamBold
+playTitle.Text                   = "ALIEN INVASION"
+playTitle.Parent                 = playFrame
+
+local playButton = Instance.new("TextButton")
+playButton.Size                  = UDim2.new(0.68, 0, 0.36, 0)
+playButton.Position              = UDim2.new(0.16, 0, 0.54, 0)
+playButton.BackgroundColor3      = Color3.fromRGB(30, 180, 70)
+playButton.BorderSizePixel       = 0
+playButton.TextColor3            = Color3.new(1, 1, 1)
+playButton.TextScaled            = true
+playButton.Font                  = Enum.Font.GothamBold
+playButton.Text                  = "PLAY GAME"
+playButton.Parent                = playFrame
+Instance.new("UICorner", playButton).CornerRadius = UDim.new(0, 8)
+
+playButton.MouseButton1Click:Connect(function()
+	playFrame.Visible = false
+	requestPlayEvent:FireServer()
+end)
 
 waveEvent.OnClientEvent:Connect(function(waveNumber)
 	waveLabel.Text = "WAVE " .. waveNumber
@@ -200,5 +239,41 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.R then
 		task.spawn(reload)
 	end
+end)
+
+-- GoToGame pad: show play prompt when standing on it ----------------------
+task.spawn(function()
+	-- Wait for the pad to exist (it's inside the lobby model)
+	local pad
+	repeat
+		task.wait(1)
+		pad = workspace:FindFirstChild(Config.LOBBY_PAD_NAME, true)
+	until pad
+
+	local touchCount = 0
+
+	pad.Touched:Connect(function(hit)
+		if not character then return end
+		if not hit:IsDescendantOf(character) then return end
+		touchCount += 1
+		if touchCount == 1 then
+			playFrame.Visible = true
+		end
+	end)
+
+	pad.TouchEnded:Connect(function(hit)
+		if not character then return end
+		if not hit:IsDescendantOf(character) then return end
+		touchCount = math.max(0, touchCount - 1)
+		if touchCount == 0 then
+			playFrame.Visible = false
+		end
+	end)
+
+	-- Reset when the character respawns (e.g. after dying)
+	player.CharacterAdded:Connect(function()
+		touchCount = 0
+		playFrame.Visible = false
+	end)
 end)
 
