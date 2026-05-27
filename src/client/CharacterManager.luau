@@ -35,25 +35,29 @@ local function getHumanoid(): Humanoid?
 	return char and char:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
 end
 
-local function applyScale(humanoid: Humanoid)
-	local names = { "BodyDepthScale", "BodyHeightScale", "BodyWidthScale", "HeadScale" }
-	for _, name in names do
-		local v = humanoid:FindFirstChild(name)
-		if v and v:IsA("NumberValue") then
-			(v :: NumberValue).Value = stats.scale
-		end
+local function applyScale()
+	local character = localPlayer.Character
+	if character then
+		(character :: Model):ScaleTo(stats.scale)
 	end
 end
 
 local function applyStats(humanoid: Humanoid)
 	humanoid.WalkSpeed = isSprinting and stats.sprintSpeed or stats.walkSpeed
 	humanoid.JumpPower = stats.jumpPower
-	applyScale(humanoid)
+	applyScale()
 end
 
 local function onCharacterAdded(character: Model)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	isSprinting    = false
+	stats = {
+		walkSpeed   = Config.PLAYER_WALK_SPEED,
+		sprintSpeed = Config.PLAYER_SPRINT_SPEED,
+		jumpPower   = Config.PLAYER_JUMP_POWER,
+		meleePower  = Config.PLAYER_MELEE_POWER,
+		scale       = Config.PLAYER_SCALE,
+	}
 	applyStats(humanoid)
 end
 

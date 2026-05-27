@@ -41,7 +41,12 @@ end
 local function teleportToMap(player: Player, map: Model)
 	local character = player.Character
 	if character then
-		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
+		local spawnPart = map:FindFirstChild("Spawn_In", true)
+		if spawnPart and spawnPart:IsA("BasePart") then
+			character:PivotTo((spawnPart :: BasePart).CFrame * CFrame.new(0, 5, 0))
+		else
+			character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
+		end
 	end
 end
 
@@ -84,7 +89,7 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, wa
 	end
 end
 
-function WaveManager.startBattle(player: Player, waveEvent: RemoteEvent): number
+function WaveManager.startBattle(player: Player, waveEvent: RemoteEvent, waveClearEvent: RemoteEvent): number
 	local map = cloneMap(player)
 	if not map then return 0 end
 
@@ -112,6 +117,7 @@ function WaveManager.startBattle(player: Player, waveEvent: RemoteEvent): number
 		end
 
 		print(string.format("[WaveManager] Wave %d cleared! Next in %ds.", waveNumber, Config.WAVE_BETWEEN_DELAY))
+		waveClearEvent:FireClient(player)
 		task.wait(Config.WAVE_BETWEEN_DELAY)
 		waveNumber += 1
 	end

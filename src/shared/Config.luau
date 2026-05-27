@@ -21,10 +21,12 @@ return {
 	GUN_MUZZLE_DELAY  = 0.05,   -- how long the flash stays visible
 
 	-- Wave progression
-	STARTING_WAVE       = 2,
-	WAVE_START_DELAY    = 3,
-	WAVE_BETWEEN_DELAY  = 5,
-	WAVE_SPAWN_INTERVAL = 1,
+	STARTING_WAVE            = 2,
+	WAVE_START_DELAY         = 3,
+	WAVE_BETWEEN_DELAY       = 5,
+	WAVE_SPAWN_INTERVAL      = 1,
+	WAVE_CLEAR_SPEED_BOOST   = 10,   -- added to walk/sprint speed per cleared wave
+	WAVE_CLEAR_SCALE_BOOST   = 0.5, -- added to character scale per cleared wave
 
 	-- Player movement
 	PLAYER_WALK_SPEED   = 16,

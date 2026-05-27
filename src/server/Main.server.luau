@@ -37,6 +37,7 @@ registerCollisionGroups()
 
 local shootEvent       = createRemoteEvent("ShootGun")
 local waveEvent        = createRemoteEvent("WaveAnnounce")
+local waveClearEvent   = createRemoteEvent("WaveClear")
 local requestPlayEvent = createRemoteEvent("RequestPlay")
 
 local activePlayers: { [Player]: boolean } = {}
@@ -56,7 +57,7 @@ requestPlayEvent.OnServerEvent:Connect(function(player: Player)
 	if not isEligibleToPlay(player) then return end
 	activePlayers[player] = true
 	task.spawn(function()
-		WaveManager.startBattle(player, waveEvent)
+		WaveManager.startBattle(player, waveEvent, waveClearEvent)
 		activePlayers[player] = nil
 	end)
 end)
