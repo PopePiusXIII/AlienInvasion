@@ -78,8 +78,11 @@ AlienInvasion/
 5. When the player dies or disconnects:
    - All zombies tagged with their name are destroyed.
    - Their map clone is destroyed.
-   - The gun is removed.
+   - The gun is removed from the Backpack (Roblox clears it on character reset).
 6. `WaveManager.startBattle` returns the wave number reached. `GameManager` (in production) saves this to DataStore and, once all players are done, teleports everyone back to the Lobby.
+7. The player's character respawns in the lobby. They can walk onto the GoToGame pad and click **PLAY GAME** to start a completely new battle.
+
+> **Note on death detection:** `startBattle` captures the battle character's `Humanoid` at the start of the session and checks that specific reference throughout the wave loop. This ensures that even if Roblox respawns the player before cleanup finishes, the battle correctly detects the death (the old humanoid's `Health` stays `0` after death) and exits cleanly.
 
 ### Wave System
 
