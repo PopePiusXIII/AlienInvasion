@@ -11,7 +11,6 @@
 --------------------------------------------------------------------------------
 
 local Players        = game:GetService("Players")
-local TweenService   = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework             = require(ReplicatedStorage.Shared.Framework)
@@ -19,6 +18,7 @@ local Logger                = require(ReplicatedStorage.Shared.Logger)
 local Config                = require(ReplicatedStorage.Shared.Config)
 local RemoteNames           = require(ReplicatedStorage.Shared.RemoteNames)
 local CharacterController   = require(script.Parent.CharacterController)
+local HudUpgradeEchoModule  = require(script.Parent.modules.hud.HudUpgradeEchoModule)
 
 local TAG = "HudController"
 
@@ -98,26 +98,11 @@ function HudController:Start()
 		Logger.info(TAG, "Stats upgraded — Walk: %.0f  Sprint: %.0f  Scale: %.2f",
 			stats.walkSpeed, stats.sprintSpeed, stats.scale)
 
-		-- Floating upgrade echo that fades up and out.
-		local echo                  = Instance.new("TextLabel")
-		echo.Name                   = "UpgradeEcho"
-		echo.Size                   = UDim2.new(0.4, 0, 0.08, 0)
-		echo.Position               = UDim2.new(0.3, 0, 0.42, 0)
-		echo.BackgroundTransparency = 1
-		echo.TextColor3             = Color3.fromRGB(255, 210, 50)
-		echo.TextStrokeTransparency = 0.4
-		echo.TextScaled             = true
-		echo.Font                   = Enum.Font.GothamBold
-		echo.Text                   = string.format("+%d SPD  •  +%d%% SIZE",
+		HudUpgradeEchoModule.show(
+			_screenGui,
 			Config.WAVE_CLEAR_SPEED_BOOST,
-			math.round(Config.WAVE_CLEAR_SCALE_BOOST * 100))
-		echo.Parent = _screenGui
-
-		local tween = TweenService:Create(echo,
-			TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ Position = UDim2.new(0.3, 0, 0.28, 0), TextTransparency = 1, TextStrokeTransparency = 1 })
-		tween:Play()
-		tween.Completed:Connect(function() echo:Destroy() end)
+			Config.WAVE_CLEAR_SCALE_BOOST
+		)
 	end)
 
 	Logger.info(TAG, "Wave event listeners connected.")

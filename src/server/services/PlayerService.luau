@@ -21,6 +21,8 @@ local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 -- ServerRuntime requires PlayerService (dependency order: Zombie→Wave→Data→Player).
 local WaveService  = require(script.Parent.WaveService)
 local DataService  = require(script.Parent.DataService)
+local PlayerSpawnModule = require(script.Parent.modules.player.PlayerSpawnModule)
+local PlayerEntryGateModule = require(script.Parent.modules.player.PlayerEntryGateModule)
 
 local TAG = "PlayerService"
 
@@ -45,7 +47,7 @@ end
 function PlayerService:Start()
 	Players.PlayerAdded:Connect(function(player: Player)
 		player.CharacterAdded:Connect(function(character: Model)
-			PlayerService._spawnAtLobby(character)
+			PlayerSpawnModule.spawnAtLobby(character, Config.LOBBY_NAME)
 		end)
 	end)
 
@@ -57,10 +59,10 @@ function PlayerService:Start()
 	-- Handle players who joined before this service started (Studio edge-case).
 	for _, player in ipairs(Players:GetPlayers()) do
 		player.CharacterAdded:Connect(function(character: Model)
-			PlayerService._spawnAtLobby(character)
+			PlayerSpawnModule.spawnAtLobby(character, Config.LOBBY_NAME)
 		end)
 		if player.Character then
-			PlayerService._spawnAtLobby(player.Character)
+			PlayerSpawnModule.spawnAtLobby(player.Character, Config.LOBBY_NAME)
 		end
 	end
 
@@ -69,34 +71,11 @@ end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
-function PlayerService._spawnAtLobby(character: Model)
-	-- Wait for HumanoidRootPart: CharacterAdded fires before all parts are ready.
-	local hrp = character:WaitForChild("HumanoidRootPart", 5)
-	if not hrp then return end
-	-- Yield one frame so Roblox's SpawnLocation teleport runs first; then we override.
-	task.wait()
-	local lobby = workspace:FindFirstChild(Config.LOBBY_NAME)
-	if not lobby or not lobby:IsA("Model") then return end
-	local spawnPart = lobby:FindFirstChild("Spawn_In", true)
-	if spawnPart and spawnPart:IsA("BasePart") then
-		character:PivotTo((spawnPart :: BasePart).CFrame * CFrame.new(0, 5, 0))
-	else
-		character:PivotTo((lobby :: Model):GetPivot() * CFrame.new(0, 5, 0))
-	end
-end
-
-local function isEligibleToPlay(player: Player): boolean
-	if _activePlayers[player] then return false end
-	local character = player.Character
-	local humanoid  = character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
-	return humanoid ~= nil and (humanoid :: Humanoid).Health > 0
-end
-
 function PlayerService._onRequestPlay(player: Player)
 	Logger.verbose(TAG, "RequestPlay from %s — currently active: %s",
 		player.Name, tostring(_activePlayers[player] ~= nil))
 
-	if not isEligibleToPlay(player) then
+	if not PlayerEntryGateModule.isEligibleToPlay(_activePlayers, player) then
 		Logger.info(TAG, "RequestPlay rejected for %s (already active or dead).", player.Name)
 		return
 	end

@@ -14,6 +14,18 @@ You must ruthlessly eliminate structural chaos (scattered scripts) and replace i
     *   `Start()`: Run core game loops, connect to event listeners, and begin heavy asynchronous execution. **Yielding allowed.**
 *   **Programmatic Networking:** Do not manually instantiate `RemoteEvents` or `RemoteFunctions` in the Explorer tree. Services must declare their network endpoints programmatically within their code. The underlying framework pipeline must automatically generate and manage the replication bridges.
 
+### 1.1 Service Size Guardrails (Anti-Mega-Script)
+
+When a Service starts handling multiple domains, extract behavior into focused modules immediately.
+
+*   A Service may orchestrate flow, but it must not own detailed interaction logic for unrelated entities.
+*   World interaction logic (interactive entities, prompts, terminals, gateways, etc.) must live in dedicated modules and be called by the owning Service.
+*   If a function manipulates map instances, UI prompts, and gameplay state in one place, split it into separate modules by responsibility.
+*   Prefer this pattern:
+    *   Service: lifecycle + orchestration
+    *   Feature Module: interaction implementation (find object, bind prompt, validate player, execute callback)
+*   Keep modules small, explicit, and replaceable; do not let orchestration files become god scripts.
+
 ---
 
 ## 2. "Clean Code" Philosophy (Adapted for Luau)

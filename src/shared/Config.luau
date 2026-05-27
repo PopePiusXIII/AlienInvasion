@@ -11,14 +11,33 @@ return {
 	ZOMBIE_SPAWN_DISTANCE  = 100,  -- unused; zombies now spawn at the Spawn_Mob part in the map
 	ZOMBIE_SPAWN_HEIGHT    = 3,    -- studs above ground
 
-	-- Gun (Deagle)
-	GUN_NAME          = "Deagle",
+	-- Gun
+	-- Active wave gun granted by WaveService; set to M82 as the strong default.
+	GUN_NAME = "M82",
+	-- Backward-compatible baseline values (used as fallback profile).
 	GUN_DAMAGE        = 34,
 	GUN_RANGE         = 1000,
 	GUN_FIRE_COOLDOWN = 0.15,
-	GUN_MAG_SIZE      = 7,      -- Desert Eagle holds 7 rounds
-	GUN_RELOAD_TIME   = 2.0,    -- seconds to reload
-	GUN_MUZZLE_DELAY  = 0.05,   -- how long the flash stays visible
+	GUN_MAG_SIZE      = 7,
+	GUN_RELOAD_TIME   = 2.0,
+	GUN_MUZZLE_DELAY  = 0.05,
+	-- Per-weapon runtime stats used by GunController and CombatService.
+	GUN_STATS = {
+		Deagle = {
+			damage = 34,
+			range = 1000,
+			fireCooldown = 0.15,
+			magSize = 7,
+			reloadTime = 2.0,
+		},
+		M82 = {
+			damage = 250,
+			range = 2500,
+			fireCooldown = 0.25,
+			magSize = 5,
+			reloadTime = 2.8,
+		},
+	},
 
 	-- Wave progression
 	STARTING_WAVE            = 2,

@@ -18,6 +18,9 @@ local Logger        = require(ReplicatedStorage.Shared.Logger)
 local Config        = require(ReplicatedStorage.Shared.Config)
 local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
 local HudController = require(script.Parent.HudController)
+local GunCatalogModule = require(script.Parent.modules.gun.GunCatalogModule)
+local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
+local GunHitScanModule = require(script.Parent.modules.gun.GunHitScanModule)
 
 local TAG = "GunController"
 
@@ -28,15 +31,48 @@ local _mouse        = _localPlayer:GetMouse()
 local _shootRemote: RemoteEvent
 
 -- Gun state — all mutable locals are module-private.
-local _ammo:             number               = Config.GUN_MAG_SIZE
 local _isReloading:      boolean              = false
 local _isOnFireCooldown: boolean              = false
 local _equippedGun:      Tool?                = nil
 local _activatedConn:    RBXScriptConnection? = nil
+local _ammoByGun:        { [string]: number } = {}
+
+type GunStats = {
+	damage: number,
+	range: number,
+	fireCooldown: number,
+	magSize: number,
+	reloadTime: number,
+}
+
+local function getGunStats(gunName: string?): GunStats
+	return GunCatalogModule.getGunStats(Config, gunName) :: GunStats
+end
+
+local function isSupportedGunName(name: string): boolean
+	return GunCatalogModule.isSupportedGunName(Config, name)
+end
+
+local function getCurrentAmmo(): number
+	if not _equippedGun then return 0 end
+	local gunName = _equippedGun.Name
+	local stats = getGunStats(gunName)
+	if _ammoByGun[gunName] == nil then
+		_ammoByGun[gunName] = stats.magSize
+	end
+	return _ammoByGun[gunName]
+end
+
+local function setCurrentAmmo(value: number)
+	if not _equippedGun then return end
+	_ammoByGun[_equippedGun.Name] = value
+end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
 local function refreshAmmoDisplay()
+	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
+	local ammo = getCurrentAmmo()
 	if not _equippedGun then
 		HudController.setAmmoText("", Color3.new(1, 1, 1))
 		return
@@ -45,68 +81,46 @@ local function refreshAmmoDisplay()
 		HudController.setAmmoText("RELOADING...", Color3.new(1, 0.6, 0))
 		return
 	end
-	local color = _ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
-	HudController.setAmmoText(string.format("%d / %d", _ammo, Config.GUN_MAG_SIZE), color)
+	local color = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
+	HudController.setAmmoText(string.format("%d / %d", ammo, stats.magSize), color)
 end
 
 local function reload()
-	if _isReloading or not _equippedGun or _ammo == Config.GUN_MAG_SIZE then return end
+	if not _equippedGun then return end
+	local reloadingGun = _equippedGun
+	local stats = getGunStats(reloadingGun.Name)
+	if _isReloading or getCurrentAmmo() == stats.magSize then return end
 	_isReloading = true
 	refreshAmmoDisplay()
-	task.wait(Config.GUN_RELOAD_TIME)
-	if _equippedGun then
-		_ammo = Config.GUN_MAG_SIZE
+	task.wait(stats.reloadTime)
+	if _equippedGun and _equippedGun == reloadingGun then
+		setCurrentAmmo(stats.magSize)
 	end
 	_isReloading = false
 	refreshAmmoDisplay()
 end
 
-local function flashMuzzle(gun: Tool)
-	local muzzle = gun:FindFirstChild("Muzzle", true)
-	if not muzzle then return end
-	local flash = muzzle:FindFirstChild("FlashLight")
-	if flash and flash:IsA("PointLight") then
-		(flash :: PointLight).Enabled = true
-		task.delay(Config.GUN_MUZZLE_DELAY, function()
-			(flash :: PointLight).Enabled = false
-		end)
-	end
-	local particles = muzzle:FindFirstChildWhichIsA("ParticleEmitter")
-	if particles then
-		(particles :: ParticleEmitter):Emit(8)
-	end
-end
-
 local function findHitZombie(origin: Vector3): Model?
-	local character = _localPlayer.Character
-	local direction = (_mouse.Hit.Position - origin).Unit * Config.GUN_RANGE
-	local params    = RaycastParams.new()
-	if character then
-		params.FilterDescendantsInstances = { character }
-	end
-	params.FilterType = Enum.RaycastFilterType.Exclude
-
-	local result = workspace:Raycast(origin, direction, params)
-	if not result then return nil end
-
-	local ancestor = result.Instance:FindFirstAncestorOfClass("Model")
-	return (ancestor and ancestor.Name == "Zombie") and ancestor :: Model or nil
+	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
+	return GunHitScanModule.findHitZombie(_mouse, _localPlayer.Character, origin, stats.range)
 end
 
 local function fire()
+	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
 	local character = _localPlayer.Character
 	if _isOnFireCooldown or _isReloading or not _equippedGun or not character then return end
 
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 	if not hrp or not hrp:IsA("BasePart") then return end
 
-	if _ammo <= 0 then
+	local ammo = getCurrentAmmo()
+	if ammo <= 0 then
 		task.spawn(reload)
 		return
 	end
 
 	_isOnFireCooldown = true
-	_ammo -= 1
+	setCurrentAmmo(ammo - 1)
 	refreshAmmoDisplay()
 
 	local muzzle = _equippedGun:FindFirstChild("Muzzle", true)
@@ -114,18 +128,21 @@ local function fire()
 		and (muzzle :: BasePart).WorldPosition
 		or  (hrp :: BasePart).Position
 
-	flashMuzzle(_equippedGun)
+	GunFxModule.flashMuzzle(_equippedGun, Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
-	Logger.fireServer(_shootRemote, findHitZombie(origin))
+	Logger.fireServer(_shootRemote, findHitZombie(origin), _equippedGun.Name)
 
-	task.wait(Config.GUN_FIRE_COOLDOWN)
+	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false
 end
 
 local function onGunEquipped(gun: Tool)
 	_equippedGun      = gun
-	_ammo             = Config.GUN_MAG_SIZE
+	local stats = getGunStats(gun.Name)
+	if _ammoByGun[gun.Name] == nil then
+		_ammoByGun[gun.Name] = stats.magSize
+	end
 	_isReloading      = false
 	_isOnFireCooldown = false
 	_activatedConn    = gun.Activated:Connect(fire)
@@ -147,19 +164,19 @@ end
 local function watchCharacter(character: Model)
 	-- Check if gun is already equipped (e.g. character respawned mid-session).
 	for _, child in ipairs(character:GetChildren()) do
-		if child:IsA("Tool") and child.Name == Config.GUN_NAME then
+		if child:IsA("Tool") and isSupportedGunName(child.Name) then
 			onGunEquipped(child :: Tool)
 		end
 	end
 
 	character.ChildAdded:Connect(function(child: Instance)
-		if child:IsA("Tool") and child.Name == Config.GUN_NAME then
+		if child:IsA("Tool") and isSupportedGunName(child.Name) then
 			onGunEquipped(child :: Tool)
 		end
 	end)
 
 	character.ChildRemoved:Connect(function(child: Instance)
-		if child:IsA("Tool") and child.Name == Config.GUN_NAME then
+		if child:IsA("Tool") and isSupportedGunName(child.Name) then
 			onGunUnequipped()
 		end
 	end)

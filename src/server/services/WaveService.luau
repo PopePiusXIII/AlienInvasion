@@ -18,6 +18,8 @@ local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 local ZombieService = require(script.Parent.ZombieService)
+local ClerkInteractionModule = require(script.Parent.modules.wave.ClerkInteractionModule)
+local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
 local TAG = "WaveService"
 
@@ -65,15 +67,11 @@ local function teleportToMap(player: Player, map: Model)
 	end
 end
 
-local function giveGun(player: Player)
-	local template = ServerStorage:FindFirstChild(Config.GUN_NAME)
-	if not template then
-		Logger.warn(TAG, "Gun '%s' not found in ServerStorage.", Config.GUN_NAME)
-		return
-	end
-	if not player.Backpack:FindFirstChild(Config.GUN_NAME) then
-		template:Clone().Parent = player.Backpack
-	end
+local function giveGuns(player: Player)
+	local desiredGunNames: { string } = { "M82", "Deagle" }
+	LoadoutGrantModule.grant(player, desiredGunNames, function(message: string, ...: any)
+		Logger.warn(TAG, message, ...)
+	end)
 end
 
 local function findZombieSpawnPosition(map: Model): Vector3
@@ -128,7 +126,12 @@ function WaveService.startBattle(player: Player): number
 	end
 
 	teleportToMap(player, map)
-	giveGun(player)
+	local attached = ClerkInteractionModule.attach(map, player, function()
+		giveGuns(player)
+	end)
+	if not attached then
+		Logger.warn(TAG, "shopClerk part not found in map '%s'.", map.Name)
+	end
 
 	local spawnPos   = findZombieSpawnPosition(map)
 	local waveNumber = Config.STARTING_WAVE

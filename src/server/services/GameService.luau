@@ -22,6 +22,8 @@ local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local WaveService  = require(script.Parent.WaveService)
 local DataService  = require(script.Parent.DataService)
+local MatchAutoStartModule = require(script.Parent.modules.game.MatchAutoStartModule)
+local MatchReturnModule = require(script.Parent.modules.game.MatchReturnModule)
 
 local TAG = "GameService"
 
@@ -46,12 +48,12 @@ function GameService:Start()
 	end
 
 	task.spawn(function()
-		-- Poll until MATCH_SIZE players join or MATCH_WAIT_TIMEOUT elapses.
-		local deadline = os.clock() + Config.MATCH_WAIT_TIMEOUT
-		while os.clock() < deadline do
-			if #Players:GetPlayers() >= Config.MATCH_SIZE then break end
-			task.wait(1)
-		end
+		local shouldStart = MatchAutoStartModule.waitForMatchStart(
+			Players,
+			Config.MATCH_SIZE,
+			Config.MATCH_WAIT_TIMEOUT
+		)
+		if not shouldStart then return end
 
 		if _matchState ~= "WAITING" then
 			-- The GoToGame pad already started the match; do nothing.
@@ -111,14 +113,9 @@ end
 
 --- Teleport all connected players back to the Lobby place.
 function GameService._returnAllToLobby()
-	local players = Players:GetPlayers()
-	if #players == 0 then return end
-	local ok, err = pcall(function()
-		TeleportService:TeleportAsync(Config.LOBBY_PLACE_ID, players)
+	MatchReturnModule.returnAllToLobby(TeleportService, Config.LOBBY_PLACE_ID, Players, function(message: string, ...: any)
+		Logger.warn(TAG, message, ...)
 	end)
-	if not ok then
-		Logger.warn(TAG, "TeleportAsync to lobby failed: %s", tostring(err))
-	end
 end
 
 return GameService
