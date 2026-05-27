@@ -49,4 +49,13 @@ return {
 	MATCH_WAIT_TIMEOUT = 15,         -- seconds to wait for players before auto-starting
 	MEMORY_STORE_NAME  = "MatchQueue",
 	DATA_STORE_NAME    = "PlayerStats",
+
+	-- ── Observability ──────────────────────────────────────────────────────────
+	-- Flip DEBUG_NETWORKING to true to trace every RemoteEvent payload through
+	-- the Logger middleware (direction, remote name, serialized args).
+	-- Can also be hot-toggled at runtime in the Studio console:
+	--   require(game.ReplicatedStorage.Shared.Logger).DEBUG_NETWORKING = true
+	DEBUG_NETWORKING = true,
+	-- Flip DEBUG_VERBOSE to true for high-frequency logs (AI loops, per-frame data).
+	DEBUG_VERBOSE    = true,
 }

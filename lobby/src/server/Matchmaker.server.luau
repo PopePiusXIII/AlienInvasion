@@ -1,10 +1,8 @@
 --!strict
--- Matchmaker.server.luau  (Lobby Place — ServerScriptService)
--- Exposes JoinQueue / LeaveQueue / MatchFound RemoteEvents and runs the
--- polling loop that forms matches and teleports groups to reserved servers.
-
-local Players           = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- ⚠️  DEPRECATED — logic moved to LobbyServerRuntime.server.luau + lobby/src/server/services/
+-- This script is intentionally inert. Delete it after verifying LobbyServerRuntime works.
+-- See: LobbyServerRuntime.server.luau, MatchmakingService, MatchQueueService, TeleportHelperService
+return
 
 local Config            = require(ReplicatedStorage.Shared.Config)
 local MatchmakerService = require(script.Parent.MatchmakerService)

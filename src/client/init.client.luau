@@ -1,97 +1,37 @@
 --!strict
+--------------------------------------------------------------------------------
+-- ClientRuntime  (src/client/init.client.luau → StarterPlayerScripts.Client)
+-- THE single client entry point for the Match Place.
+--
+-- Rule: NO game logic lives here. This file only requires controllers and boots
+-- the framework. All logic belongs in the appropriate Controller module.
+--
+-- Controller require order (deps first):
+--   CharacterController — no deps on other controllers
+--   HudController       — requires CharacterController
+--   GunController       — requires HudController
+--   LobbyController     — requires HudController
+--------------------------------------------------------------------------------
 
-local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UIAnimator      = game:GetService("TweenService")
 
-local Config            = require(ReplicatedStorage.Shared.Config)
-local GunManager        = require(script.GunManager)
-local CharacterManager  = require(script.CharacterManager)
-local LobbyManager      = require(script.LobbyManager)
+local Framework = require(ReplicatedStorage.Shared.Framework)
+local Logger    = require(ReplicatedStorage.Shared.Logger)
 
-local localPlayer = Players.LocalPlayer
+-- ── Controller registration (require triggers Framework.CreateController) ─────
 
-local shootEvent       = ReplicatedStorage:WaitForChild("ShootGun") :: RemoteEvent
-local waveEvent        = ReplicatedStorage:WaitForChild("WaveAnnounce") :: RemoteEvent
-local waveClearEvent   = ReplicatedStorage:WaitForChild("WaveClear") :: RemoteEvent
-local requestPlayEvent = ReplicatedStorage:WaitForChild("RequestPlay") :: RemoteEvent
+-- Because init.client.luau IS the "Client" LocalScript in the DataModel,
+-- `script` refers to it directly and `script.controllers` is its child folder.
+local controllers = script.controllers
 
-local screenGui        = Instance.new("ScreenGui")
-screenGui.ResetOnSpawn = false
-screenGui.Parent       = localPlayer.PlayerGui
+require(controllers.CharacterController)  -- no deps
+require(controllers.HudController)        -- requires CharacterController
+require(controllers.GunController)        -- requires HudController
+require(controllers.LobbyController)      -- requires HudController
 
-local function buildWaveLabel(): TextLabel
-	local label                  = Instance.new("TextLabel")
-	label.Size                   = UDim2.new(0.4, 0, 0.1, 0)
-	label.Position               = UDim2.new(0.3, 0, 0.1, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3             = Color3.new(1, 0.2, 0.2)
-	label.TextScaled             = true
-	label.Font                   = Enum.Font.GothamBold
-	label.Text                   = ""
-	label.Parent                 = screenGui
-	return label
-end
+-- ── Boot ─────────────────────────────────────────────────────────────────────
 
-local function buildAmmoLabel(): TextLabel
-	local label                  = Instance.new("TextLabel")
-	label.Size                   = UDim2.new(0.18, 0, 0.07, 0)
-	label.Position               = UDim2.new(0.80, 0, 0.88, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3             = Color3.new(1, 1, 1)
-	label.TextScaled             = true
-	label.Font                   = Enum.Font.GothamBold
-	label.Text                   = ""
-	label.Parent                 = screenGui
-	return label
-end
-
-local waveLabel  = buildWaveLabel()
-local ammoLabel  = buildAmmoLabel()
-
-local function showUpgradeEcho(text: string)
-	local label                  = Instance.new("TextLabel")
-	label.Size                   = UDim2.new(0.4, 0, 0.08, 0)
-	label.Position               = UDim2.new(0.3, 0, 0.42, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3             = Color3.fromRGB(255, 210, 50)
-	label.TextStrokeTransparency = 0.4
-	label.TextScaled             = true
-	label.Font                   = Enum.Font.GothamBold
-	label.Text                   = text
-	label.Parent                 = screenGui
-
-	local fadeOut = UIAnimator:Create(label, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Position         = UDim2.new(0.3, 0, 0.28, 0),
-		TextTransparency = 1,
-		TextStrokeTransparency = 1,
-	})
-	fadeOut:Play()
-	fadeOut.Completed:Connect(function()
-		label:Destroy()
-	end)
-end
-
-waveEvent.OnClientEvent:Connect(function(waveNumber: number)
-	waveLabel.Text = "WAVE " .. waveNumber
-	task.delay(3, function()
-		waveLabel.Text = ""
-	end)
-end)
-
-waveClearEvent.OnClientEvent:Connect(function()
-	CharacterManager.boostStat("walkSpeed",   Config.WAVE_CLEAR_SPEED_BOOST)
-	CharacterManager.boostStat("sprintSpeed", Config.WAVE_CLEAR_SPEED_BOOST)
-	CharacterManager.boostStat("scale",       Config.WAVE_CLEAR_SCALE_BOOST)
-	local stats = CharacterManager.getStats()
-	print(string.format("[Client] Stats upgraded — WalkSpeed: %.0f  SprintSpeed: %.0f  Scale: %.2f",
-		stats.walkSpeed, stats.sprintSpeed, stats.scale))
-	showUpgradeEcho(string.format("+%d SPD  •  +%d%% SIZE",
-		Config.WAVE_CLEAR_SPEED_BOOST,
-		math.round(Config.WAVE_CLEAR_SCALE_BOOST * 100)))
-end)
-
-CharacterManager.init()
-GunManager.init(ammoLabel, shootEvent)
-LobbyManager.init(screenGui, requestPlayEvent)
+Logger.info("ClientRuntime", "Booting — 4 controllers registered.")
+Framework.Start()
+Logger.info("ClientRuntime", "Framework started. All controllers live.")
 
