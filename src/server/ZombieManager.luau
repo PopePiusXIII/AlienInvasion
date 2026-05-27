@@ -16,6 +16,7 @@ function ZombieManager.spawn(target, onDied, centerPos)
 	print("[ZombieManager] Spawning zombie for target: " .. target.Name)
 	local zombie = zombieTemplate:Clone()
 	zombie.Name = "Zombie"
+	zombie:SetAttribute("Owner", target.Name)
 
 	local humanoid = zombie:FindFirstChildWhichIsA("Humanoid", true)
 	if not humanoid then
@@ -32,17 +33,21 @@ function ZombieManager.spawn(target, onDied, centerPos)
 
 	zombie.Parent = workspace
 
-	-- Spawn at fixed distance from center pos
+	-- Spawn at Spawn_Mob with a small random spread so zombies don't stack on top of each other
 	local angle  = math.rad(math.random(0, 360))
-	local spawnX = math.cos(angle) * Config.ZOMBIE_SPAWN_DISTANCE
-	local spawnZ = math.sin(angle) * Config.ZOMBIE_SPAWN_DISTANCE
-	zombie:PivotTo(CFrame.new(centerPos) * CFrame.new(spawnX, Config.ZOMBIE_SPAWN_HEIGHT, spawnZ))
+	local spread = math.random(0, 3)
+	zombie:PivotTo(CFrame.new(centerPos + Vector3.new(
+		math.cos(angle) * spread,
+		Config.ZOMBIE_SPAWN_HEIGHT,
+		math.sin(angle) * spread
+	)))
 
-	-- Unanchor all parts and wire up touch damage in a single pass.
+	-- Unanchor all parts, assign collision group, and wire up touch damage in a single pass.
 	local damageCooldown = false
 	for _, part in ipairs(zombie:GetDescendants()) do
 		if part:IsA("BasePart") then
 			part.Anchored = false
+			part.CollisionGroup = "Zombies"
 			part.Touched:Connect(function(hit)
 				if damageCooldown then return end
 				local hitModel = hit.Parent

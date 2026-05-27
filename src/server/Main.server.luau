@@ -1,10 +1,20 @@
 -- Entry point: creates shared RemoteEvents and starts the game per player.
 local Players           = game:GetService("Players")
+local PhysicsService    = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config        = require(ReplicatedStorage.Shared.Config)
 local ZombieManager = require(script.Parent.ZombieManager)
 local WaveManager   = require(script.Parent.WaveManager)
+
+-- Collision groups:
+--   "Zombies"          → assigned to all zombie parts (see ZombieManager)
+--   "ZombiePassthrough"→ assign this in Studio to any part zombies should walk through
+--   Zombies ↔ ZombiePassthrough = false  (zombies phase through those parts)
+--   Everything else (floors, walls, players) collides with zombies normally.
+pcall(function() PhysicsService:RegisterCollisionGroup("Zombies") end)
+pcall(function() PhysicsService:RegisterCollisionGroup("ZombiePassthrough") end)
+PhysicsService:CollisionGroupSetCollidable("Zombies", "ZombiePassthrough", false)
 
 -- RemoteEvents live in ReplicatedStorage so the client can reach them
 local shootEvent = Instance.new("RemoteEvent")
