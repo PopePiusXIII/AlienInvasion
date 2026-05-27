@@ -123,6 +123,7 @@ function WaveManager.startBattle(player: Player, waveEvent: RemoteEvent, waveCle
 	end
 
 	map:Destroy()
+	print("[WaveManager] DEBUG: map destroyed for " .. player.Name)
 	return waveNumber
 end
 

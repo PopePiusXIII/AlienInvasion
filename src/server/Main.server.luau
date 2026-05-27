@@ -54,11 +54,19 @@ shootEvent.OnServerEvent:Connect(function(_player: Player, zombieModel: Instance
 end)
 
 requestPlayEvent.OnServerEvent:Connect(function(player: Player)
+	local char = player.Character
+	local hum  = char and char:FindFirstChildWhichIsA("Humanoid")
+	print(string.format("[Main] DEBUG requestPlay from %s — active=%s health=%s",
+		player.Name,
+		tostring(activePlayers[player]),
+		hum and tostring((hum :: Humanoid).Health) or "NO_HUMANOID"))
 	if not isEligibleToPlay(player) then return end
 	activePlayers[player] = true
 	task.spawn(function()
 		WaveManager.startBattle(player, waveEvent, waveClearEvent)
+		print("[Main] DEBUG: startBattle returned for " .. player.Name)
 		activePlayers[player] = nil
+		print("[Main] DEBUG: activePlayers cleared for " .. player.Name)
 	end)
 end)
 

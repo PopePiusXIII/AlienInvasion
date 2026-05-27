@@ -55,7 +55,6 @@ local function buildPlayPrompt(screenGui: ScreenGui, requestPlayEvent: RemoteEve
 	Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
 
 	button.MouseButton1Click:Connect(function()
-		frame.Visible = false
 		requestPlayEvent:FireServer()
 	end)
 
@@ -63,28 +62,35 @@ local function buildPlayPrompt(screenGui: ScreenGui, requestPlayEvent: RemoteEve
 end
 
 local function watchGamePad(playPrompt: Frame)
+	local RunService = game:GetService("RunService")
 	local pad        = waitForGamePad()
-	local touchCount = 0
+	local THRESHOLD  = 12  -- studs from pad centre to show the prompt
+	local playing    = false
 
-	local function isLocalCharacterPart(hit: BasePart): boolean
-		return character ~= nil and hit:IsDescendantOf(character :: Model)
+	-- Suppress prompt while a game is in progress; reset on respawn
+	localPlayer.CharacterAdded:Connect(function()
+		playing = false
+	end)
+
+	-- Set the flag when the player commits to playing
+	local button = playPrompt:FindFirstChildWhichIsA("TextButton")
+	if button then
+		button.MouseButton1Click:Connect(function()
+			playing = true
+		end)
 	end
 
-	pad.Touched:Connect(function(hit: BasePart)
-		if not isLocalCharacterPart(hit) then return end
-		touchCount += 1
-		playPrompt.Visible = touchCount > 0
-	end)
-
-	pad.TouchEnded:Connect(function(hit: BasePart)
-		if not isLocalCharacterPart(hit) then return end
-		touchCount = math.max(0, touchCount - 1)
-		playPrompt.Visible = touchCount > 0
-	end)
-
-	localPlayer.CharacterAdded:Connect(function()
-		touchCount = 0
-		playPrompt.Visible = false
+	-- Drive visibility purely from proximity every frame
+	RunService.Heartbeat:Connect(function()
+		if playing then
+			playPrompt.Visible = false
+			return
+		end
+		local char = character
+		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		playPrompt.Visible = root ~= nil
+			and (root :: BasePart).Position.X ~= math.huge  -- guard destroyed parts
+			and ((root :: BasePart).Position - pad.Position).Magnitude <= THRESHOLD
 	end)
 end
 
