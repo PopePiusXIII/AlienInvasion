@@ -1,207 +1,233 @@
--- Handles gun shooting, sprinting, jumping, and the HUD.
+--!strict
+
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
-local player = Players.LocalPlayer
-local mouse  = player:GetMouse()
+local localPlayer = Players.LocalPlayer
+local mouse       = localPlayer:GetMouse()
 
-local shootEvent       = ReplicatedStorage:WaitForChild("ShootGun")
-local waveEvent        = ReplicatedStorage:WaitForChild("WaveAnnounce")
-local requestPlayEvent = ReplicatedStorage:WaitForChild("RequestPlay")
+local shootEvent       = ReplicatedStorage:WaitForChild("ShootGun") :: RemoteEvent
+local waveEvent        = ReplicatedStorage:WaitForChild("WaveAnnounce") :: RemoteEvent
+local requestPlayEvent = ReplicatedStorage:WaitForChild("RequestPlay") :: RemoteEvent
 
--- HUD -----------------------------------------------------------------------
-local screenGui = Instance.new("ScreenGui")
+-- ── HUD ───────────────────────────────────────────────────────────────────────
+
+local screenGui        = Instance.new("ScreenGui")
 screenGui.ResetOnSpawn = false
-screenGui.Parent = player.PlayerGui
+screenGui.Parent       = localPlayer.PlayerGui
 
--- Wave announcement
-local waveLabel = Instance.new("TextLabel")
-waveLabel.Size                   = UDim2.new(0.4, 0, 0.1, 0)
-waveLabel.Position               = UDim2.new(0.3, 0, 0.1, 0)
-waveLabel.BackgroundTransparency = 1
-waveLabel.TextColor3             = Color3.new(1, 0.2, 0.2)
-waveLabel.TextScaled             = true
-waveLabel.Font                   = Enum.Font.GothamBold
-waveLabel.Text                   = ""
-waveLabel.Parent                 = screenGui
+local function buildWaveLabel(): TextLabel
+	local label                  = Instance.new("TextLabel")
+	label.Size                   = UDim2.new(0.4, 0, 0.1, 0)
+	label.Position               = UDim2.new(0.3, 0, 0.1, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3             = Color3.new(1, 0.2, 0.2)
+	label.TextScaled             = true
+	label.Font                   = Enum.Font.GothamBold
+	label.Text                   = ""
+	label.Parent                 = screenGui
+	return label
+end
 
--- Ammo counter (bottom-right)
-local ammoLabel = Instance.new("TextLabel")
-ammoLabel.Size                   = UDim2.new(0.18, 0, 0.07, 0)
-ammoLabel.Position               = UDim2.new(0.80, 0, 0.88, 0)
-ammoLabel.BackgroundTransparency = 1
-ammoLabel.TextColor3             = Color3.new(1, 1, 1)
-ammoLabel.TextScaled             = true
-ammoLabel.Font                   = Enum.Font.GothamBold
-ammoLabel.Text                   = ""
-ammoLabel.Parent                 = screenGui
+local function buildAmmoLabel(): TextLabel
+	local label                  = Instance.new("TextLabel")
+	label.Size                   = UDim2.new(0.18, 0, 0.07, 0)
+	label.Position               = UDim2.new(0.80, 0, 0.88, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3             = Color3.new(1, 1, 1)
+	label.TextScaled             = true
+	label.Font                   = Enum.Font.GothamBold
+	label.Text                   = ""
+	label.Parent                 = screenGui
+	return label
+end
 
--- Play Game prompt (shown when standing on GoToGame pad) --------------------
-local playFrame = Instance.new("Frame")
-playFrame.Size                   = UDim2.new(0.32, 0, 0.22, 0)
-playFrame.Position               = UDim2.new(0.34, 0, 0.38, 0)
-playFrame.BackgroundColor3       = Color3.fromRGB(15, 15, 15)
-playFrame.BackgroundTransparency = 0.25
-playFrame.BorderSizePixel        = 0
-playFrame.Visible                = false
-playFrame.Parent                 = screenGui
-Instance.new("UICorner", playFrame).CornerRadius = UDim.new(0, 14)
+local function buildPlayPrompt(): Frame
+	local frame                  = Instance.new("Frame")
+	frame.Size                   = UDim2.new(0.32, 0, 0.22, 0)
+	frame.Position               = UDim2.new(0.34, 0, 0.38, 0)
+	frame.BackgroundColor3       = Color3.fromRGB(15, 15, 15)
+	frame.BackgroundTransparency = 0.25
+	frame.BorderSizePixel        = 0
+	frame.Visible                = false
+	frame.Parent                 = screenGui
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
-local playTitle = Instance.new("TextLabel")
-playTitle.Size                   = UDim2.new(1, 0, 0.42, 0)
-playTitle.Position               = UDim2.new(0, 0, 0.04, 0)
-playTitle.BackgroundTransparency = 1
-playTitle.TextColor3             = Color3.new(1, 1, 1)
-playTitle.TextScaled             = true
-playTitle.Font                   = Enum.Font.GothamBold
-playTitle.Text                   = "ALIEN INVASION"
-playTitle.Parent                 = playFrame
+	local title                  = Instance.new("TextLabel")
+	title.Size                   = UDim2.new(1, 0, 0.42, 0)
+	title.Position               = UDim2.new(0, 0, 0.04, 0)
+	title.BackgroundTransparency = 1
+	title.TextColor3             = Color3.new(1, 1, 1)
+	title.TextScaled             = true
+	title.Font                   = Enum.Font.GothamBold
+	title.Text                   = "ALIEN INVASION"
+	title.Parent                 = frame
 
-local playButton = Instance.new("TextButton")
-playButton.Size                  = UDim2.new(0.68, 0, 0.36, 0)
-playButton.Position              = UDim2.new(0.16, 0, 0.54, 0)
-playButton.BackgroundColor3      = Color3.fromRGB(30, 180, 70)
-playButton.BorderSizePixel       = 0
-playButton.TextColor3            = Color3.new(1, 1, 1)
-playButton.TextScaled            = true
-playButton.Font                  = Enum.Font.GothamBold
-playButton.Text                  = "PLAY GAME"
-playButton.Parent                = playFrame
-Instance.new("UICorner", playButton).CornerRadius = UDim.new(0, 8)
+	local button                 = Instance.new("TextButton")
+	button.Size                  = UDim2.new(0.68, 0, 0.36, 0)
+	button.Position              = UDim2.new(0.16, 0, 0.54, 0)
+	button.BackgroundColor3      = Color3.fromRGB(30, 180, 70)
+	button.BorderSizePixel       = 0
+	button.TextColor3            = Color3.new(1, 1, 1)
+	button.TextScaled            = true
+	button.Font                  = Enum.Font.GothamBold
+	button.Text                  = "PLAY GAME"
+	button.Parent                = frame
+	Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
 
-playButton.MouseButton1Click:Connect(function()
-	playFrame.Visible = false
-	requestPlayEvent:FireServer()
-end)
+	button.MouseButton1Click:Connect(function()
+		frame.Visible = false
+		requestPlayEvent:FireServer()
+	end)
 
-waveEvent.OnClientEvent:Connect(function(waveNumber)
+	return frame
+end
+
+local waveLabel  = buildWaveLabel()
+local ammoLabel  = buildAmmoLabel()
+local playPrompt = buildPlayPrompt()
+
+-- ── Wave announcements ────────────────────────────────────────────────────────
+
+waveEvent.OnClientEvent:Connect(function(waveNumber: number)
 	waveLabel.Text = "WAVE " .. waveNumber
 	task.delay(3, function()
 		waveLabel.Text = ""
 	end)
 end)
 
--- Character setup -----------------------------------------------------------
-local character, humanoid, rootPart
+-- ── Character ─────────────────────────────────────────────────────────────────
 
-local function onCharacterAdded(newChar)
-	character = newChar
-	humanoid  = character:WaitForChild("Humanoid")
-	rootPart  = character:WaitForChild("HumanoidRootPart")
+local character: Model?   = nil
+local humanoid: Humanoid? = nil
+local rootPart: BasePart? = nil
 
+local function onCharacterAdded(newCharacter: Model)
+	character = newCharacter
+	humanoid  = newCharacter:WaitForChild("Humanoid") :: Humanoid
+	rootPart  = newCharacter:WaitForChild("HumanoidRootPart") :: BasePart
 	humanoid.JumpPower = Config.PLAYER_JUMP_POWER
 end
 
-player.CharacterAdded:Connect(onCharacterAdded)
-if player.Character then
-	onCharacterAdded(player.Character)
+localPlayer.CharacterAdded:Connect(onCharacterAdded)
+if localPlayer.Character then
+	onCharacterAdded(localPlayer.Character)
 end
 
--- Sprint --------------------------------------------------------------------
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if not humanoid then return end
+-- ── Sprint ────────────────────────────────────────────────────────────────────
+
+UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
+	if gameProcessed or not humanoid then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift then
 		humanoid.WalkSpeed = Config.PLAYER_SPRINT_SPEED
 	end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
+UserInputService.InputEnded:Connect(function(input: InputObject)
 	if not humanoid then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift then
 		humanoid.WalkSpeed = Config.PLAYER_WALK_SPEED
 	end
 end)
 
--- Gun system ----------------------------------------------------------------
-local ammo          = Config.GUN_MAG_SIZE
-local reloading     = false
-local fireCooldown  = false
-local equippedGun   = nil
-local activatedConn = nil
+-- ── Gun system ────────────────────────────────────────────────────────────────
 
-local function updateAmmoUI()
+local ammo: number                       = Config.GUN_MAG_SIZE
+local isReloading: boolean               = false
+local isOnFireCooldown: boolean          = false
+local equippedGun: Tool?                 = nil
+local activatedConn: RBXScriptConnection? = nil
+
+local function refreshAmmoDisplay()
 	if not equippedGun then
 		ammoLabel.Text = ""
 		return
 	end
-	if reloading then
+	if isReloading then
 		ammoLabel.Text       = "RELOADING..."
 		ammoLabel.TextColor3 = Color3.new(1, 0.6, 0)
-	else
-		ammoLabel.Text       = ammo .. " / " .. Config.GUN_MAG_SIZE
-		ammoLabel.TextColor3 = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
+		return
 	end
+	ammoLabel.Text       = ammo .. " / " .. Config.GUN_MAG_SIZE
+	ammoLabel.TextColor3 = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
 end
 
 local function reload()
-	if reloading or not equippedGun or ammo == Config.GUN_MAG_SIZE then return end
-	reloading = true
-	updateAmmoUI()
+	if isReloading or not equippedGun or ammo == Config.GUN_MAG_SIZE then return end
+	isReloading = true
+	refreshAmmoDisplay()
 	task.wait(Config.GUN_RELOAD_TIME)
-	if equippedGun then  -- still holding the gun after the wait
+	if equippedGun then
 		ammo = Config.GUN_MAG_SIZE
 	end
-	reloading = false
-	updateAmmoUI()
+	isReloading = false
+	refreshAmmoDisplay()
+end
+
+local function flashMuzzle(gun: Tool)
+	local muzzle = gun:FindFirstChild("Muzzle", true)
+	if not muzzle then return end
+	local flash = muzzle:FindFirstChild("FlashLight")
+	if flash and flash:IsA("PointLight") then
+		(flash :: PointLight).Enabled = true
+		task.delay(Config.GUN_MUZZLE_DELAY, function()
+			(flash :: PointLight).Enabled = false
+		end)
+	end
+	local particles = muzzle:FindFirstChildWhichIsA("ParticleEmitter")
+	if particles then
+		(particles :: ParticleEmitter):Emit(8)
+	end
+end
+
+local function findHitZombie(origin: Vector3): Model?
+	local direction = (mouse.Hit.Position - origin).Unit * Config.GUN_RANGE
+	local params    = RaycastParams.new()
+	if character then
+		params.FilterDescendantsInstances = { character }
+	end
+	params.FilterType = Enum.RaycastFilterType.Exclude
+
+	local result = workspace:Raycast(origin, direction, params)
+	if not result then return nil end
+
+	local ancestor = result.Instance:FindFirstAncestorOfClass("Model")
+	return (ancestor and ancestor.Name == "Zombie") and ancestor :: Model or nil
 end
 
 local function fire()
-	if fireCooldown or reloading or not equippedGun or not character then return end
+	if isOnFireCooldown or isReloading or not equippedGun or not character or not rootPart then return end
 	if ammo <= 0 then
 		task.spawn(reload)
 		return
 	end
 
-	fireCooldown = true
+	isOnFireCooldown = true
 	ammo -= 1
-	updateAmmoUI()
+	refreshAmmoDisplay()
 
-	-- Muzzle flash
-	local muzzle = equippedGun:FindFirstChild("Muzzle", true)
-	local origin  = muzzle and muzzle.WorldPosition or rootPart.Position
+	local muzzle  = equippedGun:FindFirstChild("Muzzle", true)
+	local origin: Vector3 = (muzzle and muzzle:IsA("BasePart"))
+		and (muzzle :: BasePart).WorldPosition
+		or  (rootPart :: BasePart).Position
 
-	if muzzle then
-		local flash = muzzle:FindFirstChild("FlashLight")
-		if flash then
-			flash.Enabled = true
-			task.delay(Config.GUN_MUZZLE_DELAY, function() flash.Enabled = false end)
-		end
-		local particle = muzzle:FindFirstChildWhichIsA("ParticleEmitter")
-		if particle then particle:Emit(8) end
-	end
-
-	-- Raycast from muzzle toward the mouse cursor
-	local direction = (mouse.Hit.Position - origin).Unit * Config.GUN_RANGE
-	local params    = RaycastParams.new()
-	params.FilterDescendantsInstances = {character}
-	params.FilterType                 = Enum.RaycastFilterType.Exclude
-
-	local result = workspace:Raycast(origin, direction, params)
-
-	local hitZombie = nil
-	if result and result.Instance then
-		local model = result.Instance:FindFirstAncestorOfClass("Model")
-		if model and model.Name == "Zombie" then
-			hitZombie = model
-		end
-	end
-	shootEvent:FireServer(hitZombie)
+	flashMuzzle(equippedGun)
+	shootEvent:FireServer(findHitZombie(origin))
 
 	task.wait(Config.GUN_FIRE_COOLDOWN)
-	fireCooldown = false
+	isOnFireCooldown = false
 end
 
-local function onGunEquipped(tool)
-	equippedGun  = tool
-	ammo         = Config.GUN_MAG_SIZE
-	reloading    = false
-	fireCooldown = false
-	updateAmmoUI()
-	activatedConn = tool.Activated:Connect(fire)
+local function onGunEquipped(gun: Tool)
+	equippedGun      = gun
+	ammo             = Config.GUN_MAG_SIZE
+	isReloading      = false
+	isOnFireCooldown = false
+	activatedConn    = gun.Activated:Connect(fire)
+	refreshAmmoDisplay()
 end
 
 local function onGunUnequipped()
@@ -209,71 +235,74 @@ local function onGunUnequipped()
 		activatedConn:Disconnect()
 		activatedConn = nil
 	end
-	equippedGun  = nil
-	reloading    = false
-	fireCooldown = false
-	ammoLabel.Text = ""
+	equippedGun      = nil
+	isReloading      = false
+	isOnFireCooldown = false
+	ammoLabel.Text   = ""
 end
 
-local function watchCharacterForGun(char)
-	char.ChildAdded:Connect(function(child)
+local function watchForGun(char: Model)
+	char.ChildAdded:Connect(function(child: Instance)
 		if child:IsA("Tool") and child.Name == Config.GUN_NAME then
-			onGunEquipped(child)
+			onGunEquipped(child :: Tool)
 		end
 	end)
-	char.ChildRemoved:Connect(function(child)
+	char.ChildRemoved:Connect(function(child: Instance)
 		if child:IsA("Tool") and child.Name == Config.GUN_NAME then
 			onGunUnequipped()
 		end
 	end)
 end
 
-player.CharacterAdded:Connect(watchCharacterForGun)
-if player.Character then
-	watchCharacterForGun(player.Character)
+localPlayer.CharacterAdded:Connect(watchForGun)
+if localPlayer.Character then
+	watchForGun(localPlayer.Character)
 end
 
--- Reload on R
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
+UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
 	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.R then
 		task.spawn(reload)
 	end
 end)
 
--- GoToGame pad: show play prompt when standing on it ----------------------
-task.spawn(function()
-	-- Wait for the pad to exist (it's inside the lobby model)
-	local pad
-	repeat
-		task.wait(1)
-		pad = workspace:FindFirstChild(Config.LOBBY_PAD_NAME, true)
-	until pad
+-- ── GoToGame pad ──────────────────────────────────────────────────────────────
 
+local function waitForGamePad(): BasePart
+	while true do
+		local found = workspace:FindFirstChild(Config.LOBBY_PAD_NAME, true)
+		if found and found:IsA("BasePart") then
+			return found :: BasePart
+		end
+		task.wait(1)
+	end
+end
+
+local function watchGamePad()
+	local pad        = waitForGamePad()
 	local touchCount = 0
 
-	pad.Touched:Connect(function(hit)
-		if not character then return end
-		if not hit:IsDescendantOf(character) then return end
+	local function isLocalCharacterPart(hit: BasePart): boolean
+		return character ~= nil and hit:IsDescendantOf(character :: Model)
+	end
+
+	pad.Touched:Connect(function(hit: BasePart)
+		if not isLocalCharacterPart(hit) then return end
 		touchCount += 1
-		if touchCount == 1 then
-			playFrame.Visible = true
-		end
+		playPrompt.Visible = touchCount > 0
 	end)
 
-	pad.TouchEnded:Connect(function(hit)
-		if not character then return end
-		if not hit:IsDescendantOf(character) then return end
+	pad.TouchEnded:Connect(function(hit: BasePart)
+		if not isLocalCharacterPart(hit) then return end
 		touchCount = math.max(0, touchCount - 1)
-		if touchCount == 0 then
-			playFrame.Visible = false
-		end
+		playPrompt.Visible = touchCount > 0
 	end)
 
-	-- Reset when the character respawns (e.g. after dying)
-	player.CharacterAdded:Connect(function()
+	localPlayer.CharacterAdded:Connect(function()
 		touchCount = 0
-		playFrame.Visible = false
+		playPrompt.Visible = false
 	end)
-end)
+end
+
+task.spawn(watchGamePad)
 

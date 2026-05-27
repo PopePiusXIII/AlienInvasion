@@ -1,8 +1,4 @@
 --!strict
--- GameManager.luau
--- Tracks match state (WAITING → ACTIVE → ENDED), saves player stats to DataStore,
--- and teleports everyone back to the Lobby when all battles finish.
-
 local Players           = game:GetService("Players")
 local DataStoreService  = game:GetService("DataStoreService")
 local TeleportService   = game:GetService("TeleportService")
@@ -17,8 +13,6 @@ export type MatchState = "WAITING" | "ACTIVE" | "ENDED"
 local matchState: MatchState = "WAITING"
 
 local statsStore = DataStoreService:GetDataStore(Config.DATA_STORE_NAME)
-
--- ── DataStore ─────────────────────────────────────────────────────────────────
 
 local function saveStats(player: Player, waveReached: number)
 	local key = "player_" .. tostring(player.UserId)
@@ -35,8 +29,6 @@ local function saveStats(player: Player, waveReached: number)
 	end
 end
 
--- ── Teleport ──────────────────────────────────────────────────────────────────
-
 local function returnAllToLobby()
 	local players = Players:GetPlayers()
 	if #players == 0 then return end
@@ -47,8 +39,6 @@ local function returnAllToLobby()
 		warn("[GameManager] TeleportAsync to lobby failed: " .. tostring(err))
 	end
 end
-
--- ── Public API ────────────────────────────────────────────────────────────────
 
 function GameManager.getState(): MatchState
 	return matchState
@@ -71,11 +61,10 @@ function GameManager.startMatch(waveEvent: RemoteEvent)
 
 	for _, player in ipairs(players) do
 		task.spawn(function()
-			-- WaveManager.startBattle returns the wave number the player reached.
-			-- Luau cooperative scheduling makes this decrement safe (no true parallelism).
-			local waveReached: number = (WaveManager :: any).startBattle(player, waveEvent)
+			local waveReached: number = WaveManager.startBattle(player, waveEvent)
 			saveStats(player, waveReached)
 
+			-- Luau cooperative scheduling makes this decrement safe (no true parallelism).
 			remaining -= 1
 			print(string.format("[GameManager] %s finished on wave %d. %d player(s) remaining.",
 				player.Name, waveReached, remaining))

@@ -1,3 +1,4 @@
+--!strict
 -- All tunable game values in one place.
 -- Adjust numbers here without touching any logic files.
 return {
@@ -7,7 +8,7 @@ return {
 	ZOMBIE_TOUCH_DAMAGE    = 10,
 	ZOMBIE_DAMAGE_COOLDOWN = 1,    -- seconds between touch hits
 	ZOMBIE_CHASE_INTERVAL  = 0.1,  -- how often MoveTo refreshes
-	ZOMBIE_SPAWN_DISTANCE  = 100,  -- exact studs from map centre
+	ZOMBIE_SPAWN_DISTANCE  = 100,  -- unused; zombies now spawn at the Spawn_Mob part in the map
 	ZOMBIE_SPAWN_HEIGHT    = 3,    -- studs above ground
 
 	-- Gun (Deagle)

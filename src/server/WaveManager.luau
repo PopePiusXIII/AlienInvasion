@@ -1,3 +1,5 @@
+--!strict
+
 local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -6,110 +8,116 @@ local ZombieManager = require(script.Parent.ZombieManager)
 
 local WaveManager = {}
 
--- Each player gets their own map clone placed at a unique world position.
-local nextMapSlot = 0
+local nextMapSlot: number = 0
 
-local function createPlayerMap(player)
+local function getBattleHumanoid(player: Player): Humanoid?
+	local character = player.Character
+	return character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
+end
+
+local function findZombieSpawnPosition(map: Model): Vector3
+	local spawnPart = map:FindFirstChild("Spawn_Mob", true)
+	if spawnPart and spawnPart:IsA("BasePart") then
+		return (spawnPart :: BasePart).Position
+	end
+	return map:GetPivot().Position
+end
+
+local function cloneMap(player: Player): Model?
 	local template = ServerStorage:FindFirstChild(Config.MAP_NAME)
-	if not template then
-		warn("[WaveManager] Map not found in ServerStorage: " .. Config.MAP_NAME)
+	if not template or not template:IsA("Model") then
+		warn("[WaveManager] Map template not found: " .. Config.MAP_NAME)
 		return nil
 	end
-
 	local slot = nextMapSlot
 	nextMapSlot += 1
-
-	local map = template:Clone()
-	map.Name = Config.MAP_NAME .. "_" .. player.Name
+	local map  = (template :: Model):Clone() :: Model
+	map.Name   = Config.MAP_NAME .. "_" .. player.Name
 	map:PivotTo(CFrame.new(slot * 4000, 0, 5000))
 	map.Parent = workspace
-
-	local spawnPart = map:FindFirstChild("Spawn_In", true)
-	if spawnPart and spawnPart:IsA("BasePart") then
-		map.PrimaryPart = spawnPart
-	end
-
-	print("[WaveManager] Map created for " .. player.Name .. " at slot " .. slot)
 	return map
 end
 
--- Teleports the player to the map, gives the gun, and runs the full wave loop.
--- Called by Main.server when the player confirms play via the lobby pad.
-function WaveManager.startBattle(player, waveEvent)
-	local map = createPlayerMap(player)
-	if not map then return end
-
+local function teleportToMap(player: Player, map: Model)
 	local character = player.Character
-	if not character then return end
-	local humanoid = character:FindFirstChildWhichIsA("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then return end
+	if character then
+		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
+	end
+end
 
-	-- Find the zombie spawn point; fall back to map centre if the part is missing
-	local spawnMobPart = map:FindFirstChild("Spawn_Mob", true)
-	local zombieSpawnPos = spawnMobPart and spawnMobPart.Position or map:GetPivot().Position
+local function giveGun(player: Player)
+	local template = ServerStorage:FindFirstChild(Config.GUN_NAME)
+	if not template then
+		warn("[WaveManager] Gun not found in ServerStorage: " .. Config.GUN_NAME)
+		return
+	end
+	if not player.Backpack:FindFirstChild(Config.GUN_NAME) then
+		template:Clone().Parent = player.Backpack
+	end
+end
 
-	-- Teleport to map
-	character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
-	print("[WaveManager] Teleported " .. player.Name .. " to map.")
-
-	-- Give the gun; it lives in ServerStorage so the lobby stays weapon-free
-	local gunTemplate = ServerStorage:FindFirstChild(Config.GUN_NAME)
-	if gunTemplate then
-		if not player.Backpack:FindFirstChild(Config.GUN_NAME) then
-			gunTemplate:Clone().Parent = player.Backpack
-			print("[WaveManager] Gave " .. Config.GUN_NAME .. " to " .. player.Name)
+local function cleanupPlayerZombies(playerName: string)
+	for _, obj in ipairs(workspace:GetChildren()) do
+		if obj.Name == "Zombie" and obj:GetAttribute("Owner") == playerName then
+			obj:Destroy()
 		end
-	else
-		warn("[WaveManager] Gun '" .. Config.GUN_NAME .. "' not found in ServerStorage.")
+	end
+end
+
+local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, waveEvent: RemoteEvent, humanoid: Humanoid)
+	print(string.format("[WaveManager] Wave %d started for %s (%d zombies).", waveNumber, player.Name, waveNumber))
+	waveEvent:FireClient(player, waveNumber)
+
+	local remaining = waveNumber
+	local function onZombieDied() remaining -= 1 end
+
+	for i = 1, waveNumber do
+		if not player.Parent or humanoid.Health <= 0 then break end
+		ZombieManager.spawn(player, onZombieDied, spawnPos)
+		if i < waveNumber then
+			task.wait(Config.WAVE_SPAWN_INTERVAL)
+		end
 	end
 
-	-- Wave loop
+	while remaining > 0 and player.Parent and humanoid.Health > 0 do
+		task.wait(0.5)
+	end
+end
+
+function WaveManager.startBattle(player: Player, waveEvent: RemoteEvent): number
+	local map = cloneMap(player)
+	if not map then return 0 end
+
+	local humanoid = getBattleHumanoid(player)
+	if not humanoid or humanoid.Health <= 0 then
+		map:Destroy()
+		return 0
+	end
+
+	teleportToMap(player, map)
+	giveGun(player)
+
+	local spawnPos   = findZombieSpawnPosition(map)
 	local waveNumber = Config.STARTING_WAVE
+
+	-- Use the captured humanoid reference throughout; player.Character changes on respawn
+	-- but this humanoid's Health stays 0 after death, so the loop detects death correctly.
 	while player.Parent and humanoid.Health > 0 do
-		local zombiesRemaining = waveNumber
-		print(string.format("[WaveManager] Wave %d: spawning %d zombies.", waveNumber, waveNumber))
-		waveEvent:FireClient(player, waveNumber)
+		runWave(player, waveNumber, spawnPos, waveEvent, humanoid)
 
-		-- Spawn all zombies for this wave
-		for i = 1, waveNumber do
-			if not player.Parent or humanoid.Health <= 0 then break end
-			ZombieManager.spawn(player, function()
-				zombiesRemaining -= 1
-			end, zombieSpawnPos)
-			if i < waveNumber then
-				task.wait(Config.WAVE_SPAWN_INTERVAL)
-			end
-		end
-
-		-- Wait until all zombies die or player dies
-		while zombiesRemaining > 0 and player.Parent and humanoid.Health > 0 do
-			task.wait(0.5)
-		end
-
-		-- Player died: clean up only this player's zombies
 		if humanoid.Health <= 0 then
-			print("[WaveManager] " .. player.Name .. " died. Cleaning up.")
-			for _, obj in ipairs(workspace:GetChildren()) do
-				if obj.Name == "Zombie" and obj:GetAttribute("Owner") == player.Name then
-					obj:Destroy()
-				end
-			end
+			print(string.format("[WaveManager] %s died on wave %d.", player.Name, waveNumber))
+			cleanupPlayerZombies(player.Name)
 			break
 		end
 
-		-- Wave cleared: next wave
 		print(string.format("[WaveManager] Wave %d cleared! Next in %ds.", waveNumber, Config.WAVE_BETWEEN_DELAY))
 		task.wait(Config.WAVE_BETWEEN_DELAY)
 		waveNumber += 1
 	end
 
-	-- Always destroy this player's map when the battle ends (death or disconnect)
-	if map.Parent then
-		map:Destroy()
-		print("[WaveManager] Destroyed map for " .. player.Name)
-	end
-
-	return waveNumber  -- tells GameManager how far this player reached
+	map:Destroy()
+	return waveNumber
 end
 
 return WaveManager
