@@ -11,6 +11,7 @@
 
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
+local RunService        = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework     = require(ReplicatedStorage.Shared.Framework)
@@ -35,7 +36,11 @@ local _isReloading:      boolean              = false
 local _isOnFireCooldown: boolean              = false
 local _equippedGun:      Tool?                = nil
 local _activatedConn:    RBXScriptConnection? = nil
+local _aimPitchConn:     RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
+local _baseGunGrip:      CFrame?              = nil
+
+local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
 type GunStats = {
 	damage: number,
@@ -128,6 +133,7 @@ local function fire()
 		and (muzzle :: BasePart).Position
 		or  (hrp :: BasePart).Position
 
+	GunFxModule.playShootSound(_equippedGun)
 	GunFxModule.flashMuzzle(_equippedGun, Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
@@ -135,6 +141,42 @@ local function fire()
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false
+end
+
+local function stopAimPitchTracking()
+	if _aimPitchConn then
+		_aimPitchConn:Disconnect()
+		_aimPitchConn = nil
+	end
+
+	if _equippedGun and _baseGunGrip then
+		_equippedGun.Grip = _baseGunGrip
+	end
+
+	_baseGunGrip = nil
+end
+
+local function startAimPitchTracking(gun: Tool)
+	stopAimPitchTracking()
+	_baseGunGrip = gun.Grip
+
+	_aimPitchConn = RunService.RenderStepped:Connect(function()
+		if _equippedGun ~= gun then return end
+		local character = _localPlayer.Character
+		if not character then return end
+
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if not hrp or not hrp:IsA("BasePart") then return end
+
+		local toMouse = _mouse.Hit.Position - (hrp :: BasePart).Position
+		local horizontal = Vector3.new(toMouse.X, 0, toMouse.Z)
+		if horizontal.Magnitude < 0.001 then return end
+
+		local pitch = math.atan2(toMouse.Y, horizontal.Magnitude)
+		pitch = math.clamp(pitch, -MAX_VERTICAL_AIM_RADIANS, MAX_VERTICAL_AIM_RADIANS)
+
+		gun.Grip = (_baseGunGrip :: CFrame) * CFrame.Angles(-pitch, 0, 0)
+	end)
 end
 
 local function onGunEquipped(gun: Tool)
@@ -146,6 +188,7 @@ local function onGunEquipped(gun: Tool)
 	_isReloading      = false
 	_isOnFireCooldown = false
 	_activatedConn    = gun.Activated:Connect(fire)
+	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
 end
 
@@ -154,6 +197,7 @@ local function onGunUnequipped()
 		_activatedConn:Disconnect()
 		_activatedConn = nil
 	end
+	stopAimPitchTracking()
 	_equippedGun = nil
 	refreshAmmoDisplay()
 end

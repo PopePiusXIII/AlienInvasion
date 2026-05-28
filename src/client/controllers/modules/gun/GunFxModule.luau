@@ -33,6 +33,15 @@ local function spawnTemplateMuzzleFlash(muzzle: BasePart, muzzleDelay: number): 
 	return true
 end
 
+function GunFxModule.playShootSound(gun: Tool)
+	local shootSound = gun:FindFirstChild("ShootSound", true)
+	if not shootSound or not shootSound:IsA("Sound") then return end
+
+	local sound = shootSound :: Sound
+	sound.TimePosition = 0
+	sound:Play()
+end
+
 function GunFxModule.flashMuzzle(gun: Tool, muzzleDelay: number)
 	local muzzle = gun:FindFirstChild("Muzzle", true)
 	if not muzzle or not muzzle:IsA("BasePart") then return end
