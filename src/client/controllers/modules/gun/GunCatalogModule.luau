@@ -14,6 +14,7 @@ export type GunStats = {
 	fireCooldown: number,
 	magSize: number,
 	reloadTime: number,
+	isAutomatic: boolean,
 	tracer: GunTracerStyle,
 }
 
@@ -28,6 +29,7 @@ function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string
 			fireCooldown = gunStats.fireCooldown,
 			magSize = gunStats.magSize,
 			reloadTime = gunStats.reloadTime,
+			isAutomatic = gunStats.isAutomatic == true,
 			tracer = (gunStats.tracer :: GunTracerStyle?) or defaultTracer,
 		}
 	end
@@ -37,6 +39,7 @@ function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string
 		fireCooldown = config.GUN_FIRE_COOLDOWN,
 		magSize = config.GUN_MAG_SIZE,
 		reloadTime = config.GUN_RELOAD_TIME,
+		isAutomatic = false,
 		tracer = defaultTracer,
 	}
 end

@@ -34,8 +34,11 @@ local _shootRemote: RemoteEvent
 -- Gun state — all mutable locals are module-private.
 local _isReloading:      boolean              = false
 local _isOnFireCooldown: boolean              = false
+local _isTriggerHeld:    boolean              = false
+local _isAutoFiring:     boolean              = false
 local _equippedGun:      Tool?                = nil
 local _activatedConn:    RBXScriptConnection? = nil
+local _deactivatedConn:  RBXScriptConnection? = nil
 local _aimPitchConn:     RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
 local _baseGunGrip:      CFrame?              = nil
@@ -48,6 +51,8 @@ type GunStats = {
 	fireCooldown: number,
 	magSize: number,
 	reloadTime: number,
+	isAutomatic: boolean,
+	tracer: GunCatalogModule.GunTracerStyle,
 }
 
 local function getGunStats(gunName: string?): GunStats
@@ -111,18 +116,18 @@ local function castShot(origin: Vector3): (Vector3, Model?)
 	return result.hitPosition, result.hitZombie
 end
 
-local function fire()
+local function fire(): boolean
 	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
 	local character = _localPlayer.Character
-	if _isOnFireCooldown or _isReloading or not _equippedGun or not character then return end
+	if _isOnFireCooldown or _isReloading or not _equippedGun or not character then return false end
 
 	local hrp = character:FindFirstChild("HumanoidRootPart")
-	if not hrp or not hrp:IsA("BasePart") then return end
+	if not hrp or not hrp:IsA("BasePart") then return false end
 
 	local ammo = getCurrentAmmo()
 	if ammo <= 0 then
 		task.spawn(reload)
-		return
+		return false
 	end
 
 	_isOnFireCooldown = true
@@ -144,6 +149,40 @@ local function fire()
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false
+	return true
+end
+
+local function startAutoFire(gun: Tool)
+	if _isAutoFiring then return end
+	_isAutoFiring = true
+
+	task.spawn(function()
+		while _isAutoFiring and _isTriggerHeld and _equippedGun == gun do
+			if not fire() then
+				task.wait(0.05)
+			end
+		end
+		_isAutoFiring = false
+	end)
+end
+
+local function stopTriggerFiring()
+	_isTriggerHeld = false
+	_isAutoFiring = false
+end
+
+local function onGunActivated(gun: Tool)
+	if _equippedGun ~= gun then return end
+
+	local stats = getGunStats(gun.Name)
+	_isTriggerHeld = true
+
+	if stats.isAutomatic then
+		startAutoFire(gun)
+		return
+	end
+
+	fire()
 end
 
 local function stopAimPitchTracking()
@@ -190,7 +229,11 @@ local function onGunEquipped(gun: Tool)
 	end
 	_isReloading      = false
 	_isOnFireCooldown = false
-	_activatedConn    = gun.Activated:Connect(fire)
+	stopTriggerFiring()
+	_activatedConn    = gun.Activated:Connect(function()
+		onGunActivated(gun)
+	end)
+	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
 end
@@ -200,6 +243,11 @@ local function onGunUnequipped()
 		_activatedConn:Disconnect()
 		_activatedConn = nil
 	end
+	if _deactivatedConn then
+		_deactivatedConn:Disconnect()
+		_deactivatedConn = nil
+	end
+	stopTriggerFiring()
 	stopAimPitchTracking()
 	_equippedGun = nil
 	refreshAmmoDisplay()

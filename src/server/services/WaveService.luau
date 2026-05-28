@@ -68,7 +68,7 @@ local function teleportToMap(player: Player, map: Model)
 end
 
 local function giveGuns(player: Player)
-	local desiredGunNames: { string } = { "M82", "Deagle" }
+	local desiredGunNames: { string } = { "M82", "Deagle", "M60", "M240B" }
 	LoadoutGrantModule.grant(player, desiredGunNames, function(message: string, ...: any)
 		Logger.warn(TAG, message, ...)
 	end)
