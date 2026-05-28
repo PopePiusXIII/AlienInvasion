@@ -21,6 +21,11 @@ return {
 	GUN_MAG_SIZE      = 7,
 	GUN_RELOAD_TIME   = 2.0,
 	GUN_MUZZLE_DELAY  = 0.05,
+	GUN_TRACER_DEFAULT = {
+		lifetime = 0.06,
+		thickness = 0.08,
+		color = Color3.fromRGB(255, 235, 170),
+	},
 	-- Per-weapon runtime stats used by GunController and CombatService.
 	GUN_STATS = {
 		Deagle = {
@@ -29,6 +34,11 @@ return {
 			fireCooldown = 0.15,
 			magSize = 7,
 			reloadTime = 2.0,
+			tracer = {
+				lifetime = 0.045,
+				thickness = 0.05,
+				color = Color3.fromRGB(255, 241, 160),
+			},
 		},
 		M82 = {
 			damage = 250,
@@ -36,6 +46,11 @@ return {
 			fireCooldown = 0.25,
 			magSize = 5,
 			reloadTime = 2.8,
+			tracer = {
+				lifetime = 0.08,
+				thickness = 0.11,
+				color = Color3.fromRGB(255, 219, 130),
+			},
 		},
 	},
 

@@ -136,7 +136,7 @@ local function fire()
 	local hitPosition, hitZombie = castShot(origin)
 
 	GunFxModule.playShootSound(_equippedGun)
-	GunFxModule.drawTracer(origin, hitPosition)
+	GunFxModule.drawTracer(origin, hitPosition, stats.tracer)
 	GunFxModule.flashMuzzle(_equippedGun, Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.

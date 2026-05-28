@@ -2,18 +2,34 @@
 
 local GunCatalogModule = {}
 
+export type GunTracerStyle = {
+	lifetime: number,
+	thickness: number,
+	color: Color3,
+}
+
 export type GunStats = {
 	damage: number,
 	range: number,
 	fireCooldown: number,
 	magSize: number,
 	reloadTime: number,
+	tracer: GunTracerStyle,
 }
 
 function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string?): GunStats
-	local statsByName = config.GUN_STATS :: { [string]: GunStats }
+	local defaultTracer = config.GUN_TRACER_DEFAULT :: GunTracerStyle
+	local statsByName = config.GUN_STATS :: { [string]: { [string]: any } }
 	if gunName and statsByName[gunName] then
-		return statsByName[gunName]
+		local gunStats = statsByName[gunName]
+		return {
+			damage = gunStats.damage,
+			range = gunStats.range,
+			fireCooldown = gunStats.fireCooldown,
+			magSize = gunStats.magSize,
+			reloadTime = gunStats.reloadTime,
+			tracer = (gunStats.tracer :: GunTracerStyle?) or defaultTracer,
+		}
 	end
 	return {
 		damage = config.GUN_DAMAGE,
@@ -21,11 +37,12 @@ function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string
 		fireCooldown = config.GUN_FIRE_COOLDOWN,
 		magSize = config.GUN_MAG_SIZE,
 		reloadTime = config.GUN_RELOAD_TIME,
+		tracer = defaultTracer,
 	}
 end
 
 function GunCatalogModule.isSupportedGunName(config: { [string]: any }, name: string): boolean
-	local statsByName = config.GUN_STATS :: { [string]: GunStats }
+	local statsByName = config.GUN_STATS :: { [string]: { [string]: any } }
 	return statsByName[name] ~= nil
 end
 
