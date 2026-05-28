@@ -105,9 +105,10 @@ local function reload()
 	refreshAmmoDisplay()
 end
 
-local function findHitZombie(origin: Vector3): Model?
+local function castShot(origin: Vector3): (Vector3, Model?)
 	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
-	return GunHitScanModule.findHitZombie(_mouse, _localPlayer.Character, origin, stats.range)
+	local result = GunHitScanModule.castShot(_mouse, _localPlayer.Character, origin, stats.range)
+	return result.hitPosition, result.hitZombie
 end
 
 local function fire()
@@ -132,12 +133,14 @@ local function fire()
 	local origin: Vector3 = (muzzle and muzzle:IsA("BasePart"))
 		and (muzzle :: BasePart).Position
 		or  (hrp :: BasePart).Position
+	local hitPosition, hitZombie = castShot(origin)
 
 	GunFxModule.playShootSound(_equippedGun)
+	GunFxModule.drawTracer(origin, hitPosition)
 	GunFxModule.flashMuzzle(_equippedGun, Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
-	Logger.fireServer(_shootRemote, findHitZombie(origin), _equippedGun.Name)
+	Logger.fireServer(_shootRemote, hitZombie, _equippedGun.Name)
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false

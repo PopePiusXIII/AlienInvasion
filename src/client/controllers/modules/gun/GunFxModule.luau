@@ -1,10 +1,14 @@
 --!strict
 
+local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GunFxModule = {}
 
 local muzzleFlashTemplate = ReplicatedStorage:FindFirstChild("MuzzleFlash")
+local TRACER_LIFETIME = 0.06
+local TRACER_THICKNESS = 0.08
+local TRACER_COLOR = Color3.fromRGB(255, 235, 170)
 
 local function spawnTemplateMuzzleFlash(muzzle: BasePart, muzzleDelay: number): boolean
 	if not muzzleFlashTemplate then return false end
@@ -40,6 +44,27 @@ function GunFxModule.playShootSound(gun: Tool)
 	local sound = shootSound :: Sound
 	sound.TimePosition = 0
 	sound:Play()
+end
+
+function GunFxModule.drawTracer(origin: Vector3, hitPosition: Vector3)
+	local direction = hitPosition - origin
+	local distance = direction.Magnitude
+	if distance < 0.01 then return end
+
+	local tracer = Instance.new("Part")
+	tracer.Name = "BulletTracer"
+	tracer.Anchored = true
+	tracer.CanCollide = false
+	tracer.CanTouch = false
+	tracer.CanQuery = false
+	tracer.CastShadow = false
+	tracer.Material = Enum.Material.Neon
+	tracer.Color = TRACER_COLOR
+	tracer.Size = Vector3.new(TRACER_THICKNESS, TRACER_THICKNESS, distance)
+	tracer.CFrame = CFrame.lookAt(origin, hitPosition) * CFrame.new(0, 0, -distance * 0.5)
+	tracer.Parent = workspace
+
+	Debris:AddItem(tracer, TRACER_LIFETIME)
 end
 
 function GunFxModule.flashMuzzle(gun: Tool, muzzleDelay: number)
