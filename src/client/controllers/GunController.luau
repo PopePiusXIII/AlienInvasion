@@ -125,7 +125,7 @@ local function fire()
 
 	local muzzle = _equippedGun:FindFirstChild("Muzzle", true)
 	local origin: Vector3 = (muzzle and muzzle:IsA("BasePart"))
-		and (muzzle :: BasePart).WorldPosition
+		and (muzzle :: BasePart).Position
 		or  (hrp :: BasePart).Position
 
 	GunFxModule.flashMuzzle(_equippedGun, Config.GUN_MUZZLE_DELAY)
