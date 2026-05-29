@@ -22,6 +22,7 @@ local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local WaveService  = require(script.Parent.WaveService)
 local DataService  = require(script.Parent.DataService)
+local EconomyService = require(script.Parent.EconomyService)
 local MatchAutoStartModule = require(script.Parent.modules.game.MatchAutoStartModule)
 local MatchReturnModule = require(script.Parent.modules.game.MatchReturnModule)
 
@@ -92,7 +93,8 @@ function GameService.startMatch()
 	for _, player in ipairs(players) do
 		task.spawn(function()
 			local waveReached = WaveService.startBattle(player)
-			DataService.saveStats(player, waveReached)
+			local economySummary = EconomyService.finalizeRun(player)
+			DataService.saveStats(player, waveReached, economySummary)
 
 			remaining -= 1
 			Logger.info(TAG, "%s done on wave %d. %d player(s) remaining.",

@@ -10,11 +10,12 @@
 -- Luau module caching prevents re-execution, but it documents the dep graph):
 --   PhysicsSetupService  — no deps
 --   ZombieService        — no deps
---   WaveService          — requires ZombieService
---   CombatService        — requires ZombieService
 --   DataService          — no deps
+--   EconomyService       — requires Config/RemoteNames
+--   WaveService          — requires ZombieService, EconomyService, DataService
+--   CombatService        — requires ZombieService, EconomyService
 --   PlayerService        — requires WaveService, DataService
---   GameService          — requires WaveService, DataService
+--   GameService          — requires WaveService, DataService, EconomyService
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,14 +29,15 @@ local services = script.Parent.services
 
 require(services.PhysicsSetupService)
 require(services.ZombieService)
+require(services.DataService)
+require(services.EconomyService)
 require(services.WaveService)
 require(services.CombatService)
-require(services.DataService)
 require(services.PlayerService)
 require(services.GameService)
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
-Logger.info("ServerRuntime", "Booting — 7 services registered.")
+Logger.info("ServerRuntime", "Booting — 8 services registered.")
 Framework.Start()
 Logger.info("ServerRuntime", "Framework started. All services live.")

@@ -18,6 +18,8 @@ local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 local ZombieService = require(script.Parent.ZombieService)
+local EconomyService = require(script.Parent.EconomyService)
+local DataService = require(script.Parent.DataService)
 local ClerkInteractionModule = require(script.Parent.modules.wave.ClerkInteractionModule)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
@@ -68,8 +70,15 @@ local function teleportToMap(player: Player, map: Model)
 end
 
 local function giveGuns(player: Player)
-	local desiredGunNames: { string } = { "M82", "Deagle", "M60", "M240B" }
-	LoadoutGrantModule.grant(player, desiredGunNames, function(message: string, ...: any)
+	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B" }
+	local unlockedGunNames: { string } = {}
+	for _, gunName in ipairs(allGunNames) do
+		if DataService.isWeaponUnlocked(player, gunName) then
+			table.insert(unlockedGunNames, gunName)
+		end
+	end
+
+	LoadoutGrantModule.grant(player, unlockedGunNames, function(message: string, ...: any)
 		Logger.warn(TAG, message, ...)
 	end)
 end
@@ -90,6 +99,7 @@ end
 -- Runs one full wave: spawns all zombies, waits for all to die (or player death).
 local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, humanoid: Humanoid)
 	Logger.info(TAG, "Wave %d — %s (%d zombies).", waveNumber, player.Name, waveNumber)
+	player:SetAttribute("CurrentWave", waveNumber)
 
 	-- All network sends go through Logger middleware for payload tracing.
 	Logger.fireClient(_waveAnnounceRemote, player, waveNumber)
@@ -116,6 +126,9 @@ end
 --- Run the full solo battle for one player. YIELDS until they die or disconnect.
 --- Returns the last wave number reached (0 if the map or humanoid was unavailable).
 function WaveService.startBattle(player: Player): number
+	EconomyService.beginRun(player)
+	player:SetAttribute("CurrentWave", Config.STARTING_WAVE)
+
 	local map = cloneMap(player)
 	if not map then return 0 end
 
@@ -155,6 +168,7 @@ function WaveService.startBattle(player: Player): number
 	end
 
 	map:Destroy()
+	player:SetAttribute("CurrentWave", nil)
 	Logger.info(TAG, "Map cleaned up for %s. Final wave: %d.", player.Name, waveNumber)
 	return waveNumber
 end

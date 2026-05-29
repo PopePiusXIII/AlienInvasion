@@ -21,6 +21,7 @@ local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 -- ServerRuntime requires PlayerService (dependency order: Zombie→Wave→Data→Player).
 local WaveService  = require(script.Parent.WaveService)
 local DataService  = require(script.Parent.DataService)
+local EconomyService = require(script.Parent.EconomyService)
 local PlayerSpawnModule = require(script.Parent.modules.player.PlayerSpawnModule)
 local PlayerEntryGateModule = require(script.Parent.modules.player.PlayerEntryGateModule)
 
@@ -88,7 +89,8 @@ function PlayerService._onRequestPlay(player: Player)
 		Logger.info(TAG, "%s finished on wave %d.", player.Name, waveReached)
 
 		-- Save regardless of how the battle ended (death, disconnect, etc.).
-		DataService.saveStats(player, waveReached)
+		local economySummary = EconomyService.finalizeRun(player)
+		DataService.saveStats(player, waveReached, economySummary)
 
 		-- Release the slot so the player can queue again.
 		_activePlayers[player] = nil

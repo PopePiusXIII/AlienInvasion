@@ -19,6 +19,7 @@ local Logger        = require(ReplicatedStorage.Shared.Logger)
 local Config        = require(ReplicatedStorage.Shared.Config)
 local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
 local ZombieService = require(script.Parent.ZombieService)
+local EconomyService = require(script.Parent.EconomyService)
 
 local TAG = "CombatService"
 
@@ -38,8 +39,12 @@ function CombatService:Init()
 	-- Logger.wrapServerEvent provides:
 	--   1. Automatic pcall — a buggy payload never crashes the server thread.
 	--   2. Net trace      — args logged when Config.DEBUG_NETWORKING = true.
-	Logger.wrapServerEvent(shootRemote, TAG, function(_player: Player, zombieModel: Instance, gunName: string?)
-		ZombieService.damageZombie(zombieModel :: Model?, resolveDamage(gunName))
+	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, gunName: string?)
+		local killed, zombieType, deathPosition = ZombieService.damageZombie(zombieModel :: Model?, resolveDamage(gunName))
+		if killed then
+			local waveNumber = tonumber(player:GetAttribute("CurrentWave")) or Config.STARTING_WAVE
+			EconomyService.grantKillRewards(player, zombieType, waveNumber, deathPosition)
+		end
 	end)
 
 	Logger.info(TAG, "ShootGun handler registered.")

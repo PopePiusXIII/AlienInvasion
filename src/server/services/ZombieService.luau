@@ -39,6 +39,9 @@ local function cloneZombie(target: Player): Model
 	local zombie: Model = _zombieTemplate:Clone()
 	zombie.Name = "Zombie"
 	zombie:SetAttribute("Owner", target.Name)
+	if zombie:GetAttribute("ZombieType") == nil then
+		zombie:SetAttribute("ZombieType", Config.ZOMBIE_DEFAULT_TYPE)
+	end
 	zombie.Parent = workspace
 	return zombie
 end
@@ -152,13 +155,23 @@ end
 --- Server-authoritative damage application.
 --- Validates identity, parent, and Humanoid before taking damage.
 --- NEVER trust the client to pass a valid model — always re-validate here.
-function ZombieService.damageZombie(zombieModel: Model?, amount: number)
-	if not zombieModel then return end
-	if zombieModel.Name ~= "Zombie" then return end           -- reject spoofed names
-	if zombieModel.Parent ~= workspace then return end        -- must be live in workspace
+function ZombieService.damageZombie(zombieModel: Model?, amount: number): (boolean, string, Vector3?)
+	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
+	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
+	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	local humanoid = zombieModel:FindFirstChildWhichIsA("Humanoid", true) :: Humanoid?
-	if not humanoid then return end
+	if not humanoid then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
+	if humanoid.Health <= 0 then
+		return false, tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE), nil
+	end
+
+	local healthBefore = humanoid.Health
+	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local deathPosition = if rootPart then rootPart.Position else zombieModel:GetPivot().Position
 	humanoid:TakeDamage(amount)
+	local zombieType = tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE)
+	local killed = healthBefore > 0 and amount >= healthBefore
+	return killed, zombieType, killed and deathPosition or nil
 end
 
 --- Destroy all workspace zombies owned by [playerName].

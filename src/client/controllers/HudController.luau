@@ -28,6 +28,7 @@ local _localPlayer = Players.LocalPlayer
 local _screenGui:  ScreenGui
 local _waveLabel:  TextLabel
 local _ammoLabel:  TextLabel
+local _silverLabel: TextLabel
 
 -- ── Builder helpers ───────────────────────────────────────────────────────────
 -- All UI is constructed programmatically here — no Studio explorer instances.
@@ -60,6 +61,21 @@ local function buildAmmoLabel(parent: ScreenGui): TextLabel
 	return label
 end
 
+local function buildSilverLabel(parent: ScreenGui): TextLabel
+	local label                  = Instance.new("TextLabel")
+	label.Name                   = "SilverLabel"
+	label.Size                   = UDim2.new(0.24, 0, 0.06, 0)
+	label.Position               = UDim2.new(0.02, 0, 0.88, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3             = Color3.fromRGB(230, 230, 230)
+	label.TextScaled             = true
+	label.Font                   = Enum.Font.GothamBold
+	label.TextXAlignment         = Enum.TextXAlignment.Left
+	label.Text                   = "SILVER: 0"
+	label.Parent                 = parent
+	return label
+end
+
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function HudController:Init()
@@ -71,6 +87,7 @@ function HudController:Init()
 
 	_waveLabel = buildWaveLabel(_screenGui)
 	_ammoLabel = buildAmmoLabel(_screenGui)
+	_silverLabel = buildSilverLabel(_screenGui)
 
 	Logger.info(TAG, "ScreenGui and HUD labels created.")
 end
@@ -78,6 +95,7 @@ end
 function HudController:Start()
 	local waveAnnounceRemote = Framework.GetRemote(RemoteNames.WAVE_ANNOUNCE)
 	local waveClearRemote    = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
+	local runCurrencyRemote  = Framework.GetRemote(RemoteNames.RUN_CURRENCY_UPDATED)
 
 	-- Logger.wrapClientEvent: pcall-isolated + net trace when DEBUG_NETWORKING = true.
 	Logger.wrapClientEvent(waveAnnounceRemote, TAG, function(waveNumber: number)
@@ -103,6 +121,12 @@ function HudController:Start()
 			Config.WAVE_CLEAR_SPEED_BOOST,
 			Config.WAVE_CLEAR_SCALE_BOOST
 		)
+	end)
+
+	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number)
+		if _silverLabel then
+			_silverLabel.Text = string.format("SILVER: %d", math.max(0, math.floor(silverStuds)))
+		end
 	end)
 
 	Logger.info(TAG, "Wave event listeners connected.")

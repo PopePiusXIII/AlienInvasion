@@ -26,6 +26,41 @@ return {
 		thickness = 0.08,
 		color = Color3.fromRGB(255, 235, 170),
 	},
+	STARTER_UNLOCKED_WEAPONS = {
+		"Deagle",
+		"M82",
+	},
+	GOLD_WEAPON_UNLOCK_PRICES = {
+		Deagle = 0,
+		M82 = 0,
+		M60 = 120,
+		M240B = 180,
+	},
+	BOLT_RISE_DURATION        = 0.5,
+	BOLT_HOVER_HEIGHT         = 0.5,
+	BOLT_ATTRACT_RADIUS       = 20,
+	BOLT_ATTRACT_ACCELERATION = 15,
+	SILVER_START_BALANCE = 0,
+	SILVER_DROP_BY_ZOMBIE_TYPE = {
+		Normal = { min = 2, max = 5 },
+		Fast = { min = 3, max = 6 },
+		Tank = { min = 5, max = 10 },
+	},
+	SILVER_WAVE_MULTIPLIER_STEP = 0.06,
+	GOLD_DROP_BY_ZOMBIE_TYPE = {
+		Normal = { chance = 0.035, min = 1, max = 3 },
+		Fast = { chance = 0.06, min = 1, max = 4 },
+		Tank = { chance = 0.1, min = 2, max = 6 },
+	},
+	GOLD_WAVE_CHANCE_STEP = 0.015,
+	GOLD_WAVE_REWARD_STEP = 0.04,
+	ZOMBIE_DEFAULT_TYPE = "Normal",
+	SHOP_SILVER_PRICES = {
+		ammoRefill = 30,
+		healthPack = 55,
+		damageBoost = 75,
+		speedBoost = 60,
+	},
 	-- Per-weapon runtime stats used by GunController and CombatService.
 	GUN_STATS = {
 		Deagle = {
@@ -44,10 +79,10 @@ return {
 		M82 = {
 			damage = 250,
 			range = 2500,
-			fireCooldown = 0.25,
-			magSize = 5,
+			fireCooldown = 0.1,
+			magSize = 100,
 			reloadTime = 2.8,
-			isAutomatic = false,
+			isAutomatic = true,
 			tracer = {
 				lifetime = 0.08,
 				thickness = 0.11,
@@ -83,7 +118,7 @@ return {
 	},
 
 	-- Wave progression
-	STARTING_WAVE            = 2,
+	STARTING_WAVE            = 20,
 	WAVE_START_DELAY         = 3,
 	WAVE_BETWEEN_DELAY       = 5,
 	WAVE_SPAWN_INTERVAL      = 1,
