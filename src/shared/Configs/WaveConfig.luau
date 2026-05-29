@@ -1,0 +1,9 @@
+--!strict
+return {
+	STARTING_WAVE          = 20,
+	WAVE_START_DELAY       = 3,
+	WAVE_BETWEEN_DELAY     = 5,
+	WAVE_SPAWN_INTERVAL    = 1,
+	WAVE_CLEAR_SPEED_BOOST = 10,
+	WAVE_CLEAR_SCALE_BOOST = 0.5,
+}

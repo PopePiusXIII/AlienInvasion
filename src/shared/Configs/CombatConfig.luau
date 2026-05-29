@@ -1,0 +1,73 @@
+--!strict
+return {
+	GUN_NAME          = "M82",
+	GUN_DAMAGE        = 34,
+	GUN_RANGE         = 1000,
+	GUN_FIRE_COOLDOWN = 0.15,
+	GUN_MAG_SIZE      = 7,
+	GUN_RELOAD_TIME   = 2.0,
+	GUN_MUZZLE_DELAY  = 0.05,
+	GUN_TRACER_DEFAULT = {
+		lifetime  = 0.06,
+		thickness = 0.08,
+		color     = Color3.fromRGB(255, 235, 170),
+	},
+	STARTER_UNLOCKED_WEAPONS = {
+		"Deagle",
+		"M82",
+	},
+	GUN_STATS = {
+		Deagle = {
+			damage       = 34,
+			range        = 1000,
+			fireCooldown = 0.15,
+			magSize      = 7,
+			reloadTime   = 2.0,
+			isAutomatic  = false,
+			tracer = {
+				lifetime  = 0.045,
+				thickness = 0.05,
+				color     = Color3.fromRGB(255, 241, 160),
+			},
+		},
+		M82 = {
+			damage       = 250,
+			range        = 2500,
+			fireCooldown = 0.1,
+			magSize      = 100,
+			reloadTime   = 2.8,
+			isAutomatic  = true,
+			tracer = {
+				lifetime  = 0.08,
+				thickness = 0.11,
+				color     = Color3.fromRGB(255, 219, 130),
+			},
+		},
+		M60 = {
+			damage       = 42,
+			range        = 1800,
+			fireCooldown = 0.08,
+			magSize      = 100,
+			reloadTime   = 4.2,
+			isAutomatic  = true,
+			tracer = {
+				lifetime  = 0.055,
+				thickness = 0.075,
+				color     = Color3.fromRGB(255, 226, 140),
+			},
+		},
+		M240B = {
+			damage       = 46,
+			range        = 2000,
+			fireCooldown = 0.09,
+			magSize      = 100,
+			reloadTime   = 4.4,
+			isAutomatic  = true,
+			tracer = {
+				lifetime  = 0.06,
+				thickness = 0.08,
+				color     = Color3.fromRGB(255, 214, 128),
+			},
+		},
+	},
+}

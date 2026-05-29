@@ -300,6 +300,7 @@ end
 function EconomyService.finalizeRun(player: Player): { silverEarned: number, silverSpent: number, goldEarned: number }
 	local wallet = getWallet(player)
 	local summary = { silverEarned = wallet.silverEarned, silverSpent = wallet.silverSpent, goldEarned = wallet.goldEarned }
+	Logger.fireClient(_runCurrencyUpdatedRemote, player, 0)
 	_walletByPlayer[player] = nil
 	return summary
 end
