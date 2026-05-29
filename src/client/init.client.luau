@@ -11,6 +11,7 @@
 --   HudController       — requires CharacterController
 --   GunController       — requires HudController
 --   LobbyController     — requires HudController
+--   ShopController      — no deps on other controllers
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,10 +29,11 @@ require(controllers.CharacterController)  -- no deps
 require(controllers.HudController)        -- requires CharacterController
 require(controllers.GunController)        -- requires HudController
 require(controllers.LobbyController)      -- requires HudController
+require(controllers.ShopController)       -- no deps
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
-Logger.info("ClientRuntime", "Booting — 4 controllers registered.")
+Logger.info("ClientRuntime", "Booting — 5 controllers registered.")
 Framework.Start()
 Logger.info("ClientRuntime", "Framework started. All controllers live.")
 

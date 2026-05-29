@@ -297,6 +297,18 @@ function EconomyService.getRunSilver(player: Player): number
 	return getWallet(player).silverStuds
 end
 
+function EconomyService.spendSilver(player: Player, amount: number): (boolean, number)
+	local cost = math.max(0, math.floor(amount))
+	local wallet = getWallet(player)
+	if wallet.silverStuds < cost then return false, wallet.silverStuds end
+	if cost > 0 then
+		wallet.silverStuds -= cost
+		wallet.silverSpent += cost
+		syncWalletToClient(player)
+	end
+	return true, wallet.silverStuds
+end
+
 function EconomyService.finalizeRun(player: Player): { silverEarned: number, silverSpent: number, goldEarned: number }
 	local wallet = getWallet(player)
 	local summary = { silverEarned = wallet.silverEarned, silverSpent = wallet.silverSpent, goldEarned = wallet.goldEarned }

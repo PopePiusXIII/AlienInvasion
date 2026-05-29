@@ -27,17 +27,23 @@ local TAG = "WaveService"
 
 local WaveService = Framework.CreateService({ Name = TAG })
 
-local _waveAnnounceRemote: RemoteEvent
-local _waveClearRemote:    RemoteEvent
-local _nextMapSlot:        number = 0
+local _waveAnnounceRemote:       RemoteEvent
+local _waveClearRemote:          RemoteEvent
+local _openGunShopRemote:        RemoteEvent
+local _requestGunPurchaseRemote: RemoteEvent
+local _gunPurchaseResultRemote:  RemoteEvent
+local _requestFreeLoadoutRemote: RemoteEvent
+local _nextMapSlot:              number = 0
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function WaveService:Init()
-	-- Create remotes during Init so they exist in RS.Remotes before any client joins.
-	_waveAnnounceRemote = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
-	_waveClearRemote    = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
-	Logger.info(TAG, "Remotes created: %s, %s", RemoteNames.WAVE_ANNOUNCE, RemoteNames.WAVE_CLEAR)
+	_waveAnnounceRemote       = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
+	_waveClearRemote          = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
+	_openGunShopRemote        = Framework.CreateRemote(RemoteNames.OPEN_GUN_SHOP)
+	_requestGunPurchaseRemote = Framework.CreateRemote(RemoteNames.REQUEST_GUN_PURCHASE)
+	_gunPurchaseResultRemote  = Framework.CreateRemote(RemoteNames.GUN_PURCHASE_RESULT)
+	_requestFreeLoadoutRemote = Framework.CreateRemote(RemoteNames.REQUEST_FREE_LOADOUT)
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
@@ -67,6 +73,49 @@ local function teleportToMap(player: Player, map: Model)
 	else
 		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
 	end
+end
+
+local function getPlayerGunNames(player: Player): { string }
+	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
+	local guns: { string } = {}
+	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
+		if container then
+			for _, item in ipairs(container:GetChildren()) do
+				if item:IsA("Tool") and prices[item.Name] ~= nil then
+					table.insert(guns, item.Name)
+				end
+			end
+		end
+	end
+	return guns
+end
+
+local function removeGunFromPlayer(player: Player, gunName: string)
+	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
+		if container then
+			local item = container:FindFirstChild(gunName)
+			if item and item:IsA("Tool") then
+				item:Destroy()
+				return
+			end
+		end
+	end
+end
+
+local function buildShopData(player: Player)
+	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
+	local available: { { name: string, price: number } } = {}
+	for gunName, price in prices do
+		table.insert(available, { name = gunName, price = price })
+	end
+	table.sort(available, function(a, b)
+		return if a.price == b.price then a.name < b.name else a.price < b.price
+	end)
+	return {
+		available     = available,
+		currentGuns   = getPlayerGunNames(player),
+		silverBalance = EconomyService.getRunSilver(player),
+	}
 end
 
 local function giveGuns(player: Player)
@@ -140,7 +189,7 @@ function WaveService.startBattle(player: Player): number
 
 	teleportToMap(player, map)
 	local attached = ClerkInteractionModule.attach(map, player, function()
-		giveGuns(player)
+		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))
 	end)
 	if not attached then
 		Logger.warn(TAG, "shopClerk part not found in map '%s'.", map.Name)
@@ -171,6 +220,45 @@ function WaveService.startBattle(player: Player): number
 	player:SetAttribute("CurrentWave", nil)
 	Logger.info(TAG, "Map cleaned up for %s. Final wave: %d.", player.Name, waveNumber)
 	return waveNumber
+end
+
+function WaveService:Start()
+	Logger.wrapServerEvent(_requestFreeLoadoutRemote, TAG, function(player: Player)
+		giveGuns(player)
+	end)
+
+	Logger.wrapServerEvent(_requestGunPurchaseRemote, TAG, function(player: Player, buyGunName: any, replaceGunName: any)
+		if type(buyGunName) ~= "string" then return end
+		local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
+		local price = prices[buyGunName]
+		if price == nil then
+			Logger.fireClient(_gunPurchaseResultRemote, player, false, "UNKNOWN_GUN", EconomyService.getRunSilver(player))
+			return
+		end
+		local currentGuns = getPlayerGunNames(player)
+		if table.find(currentGuns, buyGunName) then
+			Logger.fireClient(_gunPurchaseResultRemote, player, false, "ALREADY_OWNED", EconomyService.getRunSilver(player))
+			return
+		end
+		local currentSilver = EconomyService.getRunSilver(player)
+		if currentSilver < price then
+			Logger.fireClient(_gunPurchaseResultRemote, player, false, "INSUFFICIENT_SILVER", currentSilver)
+			return
+		end
+		if #currentGuns >= 2 then
+			if type(replaceGunName) ~= "string" or not table.find(currentGuns, replaceGunName) then
+				Logger.fireClient(_gunPurchaseResultRemote, player, false, "REPLACE_REQUIRED", currentSilver)
+				return
+			end
+			removeGunFromPlayer(player, replaceGunName)
+		end
+		local _, newBalance = EconomyService.spendSilver(player, price)
+		LoadoutGrantModule.grant(player, { buyGunName }, function(msg: string, ...: any)
+			Logger.warn(TAG, msg, ...)
+		end)
+		Logger.info(TAG, "[GunShop] %s bought %s for %d Silver.", player.Name, buyGunName, price)
+		Logger.fireClient(_gunPurchaseResultRemote, player, true, buyGunName, newBalance)
+	end)
 end
 
 return WaveService

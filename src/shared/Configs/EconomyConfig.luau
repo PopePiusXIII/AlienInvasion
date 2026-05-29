@@ -33,4 +33,10 @@ return {
 		damageBoost = 75,
 		speedBoost  = 60,
 	},
+	SHOP_GUN_PRICES = {
+		Deagle = 0,
+		M82    = 0,
+		M60    = 80,
+		M240B  = 100,
+	},
 }
