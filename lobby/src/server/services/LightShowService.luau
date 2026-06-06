@@ -91,12 +91,14 @@ end
 function LightShowService:Start()
 	Logger.info(TAG, "Service live.")
 	
-	-- Auto-start a demo show
+	-- Auto-start the Iron Cartilage show
 	task.defer(function()
 		local Config = require(ReplicatedStorage.Shared.LightShowConfig)
-		local sequence = Config.GetLoopedSequence(Config.GetFullShow(), 20, 3.0)
+		local baseShow = Config.GetIronCartilageShow()
+		local duration = Config.GetSequenceDuration(baseShow)
+		local sequence = Config.GetLoopedSequence(baseShow, 20, duration)
 		
-		Logger.info(TAG, "Starting autostart sequence (Lobby)...")
+		Logger.info(TAG, "Starting Iron Cartilage show sequence (Lobby)...")
 		self:PlaySequence(sequence)
 	end)
 end
