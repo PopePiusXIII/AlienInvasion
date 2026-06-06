@@ -35,9 +35,10 @@ require(services.WaveService)
 require(services.CombatService)
 require(services.PlayerService)
 require(services.GameService)
+require(services.FlyoverService)
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
-Logger.info("ServerRuntime", "Booting — 8 services registered.")
+Logger.info("ServerRuntime", "Booting — 9 services registered.")
 Framework.Start()
 Logger.info("ServerRuntime", "Framework started. All services live.")

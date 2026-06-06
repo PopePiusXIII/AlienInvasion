@@ -11,4 +11,8 @@ return {
 	MATCH_WAIT_TIMEOUT = 15,
 	MEMORY_STORE_NAME  = "MatchQueue",
 	DATA_STORE_NAME    = "PlayerStats",
+
+	-- Flyover configuration
+	FLYOVER_VELOCITY   = 150,
+	FLYOVER_LOOP_DELAY = 20,
 }
