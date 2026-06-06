@@ -3116,6 +3116,18 @@ LightShowConfig.IronCartilageData = {
 	{ 189.70, 'b', 8, 0.1 }
 }
 
+--- Calculates the total duration of a sequence (latest endTime).
+function LightShowConfig.GetSequenceDuration(sequence: {LightStep}): number
+	local maxTime = 0
+	for _, step in ipairs(sequence) do
+		local endTime = step.startTime + step.duration
+		if endTime > maxTime then
+			maxTime = endTime
+		end
+	end
+	return maxTime
+end
+
 function LightShowConfig.GetIronCartilageShow(): {LightStep}
 	local sequence = {}
 	for _, data in ipairs(LightShowConfig.IronCartilageData) do

@@ -13,4 +13,8 @@ return {
 	-- Observability — flip to true to trace every RemoteEvent payload.
 	DEBUG_NETWORKING  = false,
 	DEBUG_VERBOSE     = false,
+
+	-- Flyover configuration
+	FLYOVER_VELOCITY   = 200,
+	FLYOVER_LOOP_DELAY = 20,
 }
