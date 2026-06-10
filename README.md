@@ -455,3 +455,13 @@ In Creator Dashboard → your game → **Settings → Security**:
 | **Main.server.luau bypasses GameManager** | The GoToGame pad calls `WaveManager.startBattle` directly. In production the GoToGame pad is replaced by `MatchInit`'s auto-start which routes through `GameManager`. |
 | **No reconnection handling** | If a player disconnects mid-battle their map and zombies are cleaned up, but they cannot rejoin the same session. |
 | **Stats only save best wave** | DataStore tracks `bestWave` and `totalGames` per player. Kill count and time-survived are not tracked. |
+
+## Light Show Tool
+You can generate new light shows from MP3 files using the provided tool:
+```bash
+.venv/bin/python tools/generate_light_show.py path/to/song.mp3 --name MyNewSong --output src/shared/Configs/LightShowConfig.luau
+```
+Arguments:
+- `input`: Path to the MP3 file.
+- `--name`: The name for the Luau functions (e.g., `GetMyNewSongShow`).
+- `--output`: File to append the generated code to.

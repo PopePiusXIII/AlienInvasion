@@ -16,7 +16,9 @@ local services = script.Parent.services
 require(services.MatchQueueService)        -- no deps
 require(services.TeleportHelperService)    -- no deps
 require(services.MatchmakingService)       -- requires MatchQueueService, TeleportHelperService
+require(services.LightShowService)         -- no deps
+require(services.FlyoverService)           -- no deps
 
-Logger.info("LobbyServerRuntime", "Booting — 3 services registered.")
+Logger.info("LobbyServerRuntime", "Booting — 5 services registered.")
 Framework.Start()
 Logger.info("LobbyServerRuntime", "Framework started. All services live.")
