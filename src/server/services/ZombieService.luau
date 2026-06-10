@@ -23,33 +23,43 @@ export type OnDied = () -> ()
 
 local ZombieService = Framework.CreateService({ Name = TAG })
 
-local _zombieTemplate: Model
+local _zombieTemplates: { [string]: Model } = {}
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function ZombieService:Init()
-	-- WaitForChild blocks until the template exists; ensures no nil-clone race.
-	_zombieTemplate = ServerStorage:WaitForChild("Zombie") :: Model
-	Logger.info(TAG, "Zombie template cached.")
+	-- Cache every zombie template by type name at startup.
+	local types = Config.ZOMBIE_TYPES :: { [string]: { Template: string } }
+	for typeName, data in types do
+		_zombieTemplates[typeName] = ServerStorage:WaitForChild(data.Template) :: Model
+		Logger.info(TAG, "Zombie template cached: %s → %s", typeName, data.Template)
+	end
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
-local function cloneZombie(target: Player): Model
-	local zombie: Model = _zombieTemplate:Clone()
+local function resolveTemplate(zombieType: string): Model
+	local template = _zombieTemplates[zombieType]
+	if not template then
+		Logger.warn(TAG, "Zombie template for type '%s' not found in ServerStorage; defaulting to '%s'.", zombieType, Config.ZOMBIE_DEFAULT_TYPE)
+		template = _zombieTemplates[Config.ZOMBIE_DEFAULT_TYPE]
+	end
+	return template
+end
+
+local function cloneZombie(target: Player, zombieType: string): Model
+	local zombie: Model = resolveTemplate(zombieType):Clone()
 	zombie.Name = "Zombie"
 	zombie:SetAttribute("Owner", target.Name)
-	if zombie:GetAttribute("ZombieType") == nil then
-		zombie:SetAttribute("ZombieType", Config.ZOMBIE_DEFAULT_TYPE)
-	end
+	zombie:SetAttribute("ZombieType", zombieType)
 	zombie.Parent = workspace
 	return zombie
 end
 
-local function configureHumanoid(humanoid: Humanoid)
-	humanoid.MaxHealth       = Config.ZOMBIE_MAX_HEALTH
-	humanoid.Health          = Config.ZOMBIE_MAX_HEALTH
-	humanoid.WalkSpeed       = Config.ZOMBIE_WALK_SPEED
+local function configureHumanoid(humanoid: Humanoid, maxHealth: number, walkSpeed: number)
+	humanoid.MaxHealth       = maxHealth
+	humanoid.Health          = maxHealth
+	humanoid.WalkSpeed       = walkSpeed
 	humanoid.AutoJumpEnabled = true
 	humanoid.MaxSlopeAngle   = 90
 end
@@ -64,7 +74,7 @@ local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
 	)))
 end
 
-local function setupTouchDamage(zombie: Model, humanoid: Humanoid)
+local function setupTouchDamage(zombie: Model, humanoid: Humanoid, touchDamage: number)
 	-- One shared cooldown flag per zombie — prevents burst damage on multi-part contact.
 	local damageCooldown = false
 	for _, descendant in ipairs(zombie:GetDescendants()) do
@@ -79,7 +89,13 @@ local function setupTouchDamage(zombie: Model, humanoid: Humanoid)
 				local playerHumanoid = hitModel:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
 				if playerHumanoid and humanoid.Health > 0 then
 					damageCooldown = true
-					playerHumanoid:TakeDamage(Config.ZOMBIE_TOUCH_DAMAGE)
+					local zombieRoot = zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
+					local playerRoot = hitModel:FindFirstChild("HumanoidRootPart") :: BasePart?
+					local dist = if zombieRoot and playerRoot
+						then (zombieRoot.Position - playerRoot.Position).Magnitude
+						else -1
+					Logger.warn(TAG, "Touch hit: part='%s' hitModel='%s' dist=%.1f", part.Name, hitModel.Name, dist)
+					playerHumanoid:TakeDamage(touchDamage)
 					task.delay(Config.ZOMBIE_DAMAGE_COOLDOWN, function()
 						damageCooldown = false
 					end)
@@ -136,18 +152,22 @@ end
 
 --- Spawn a zombie that chases [target]. Calls [onDied] when it dies.
 --- [centerPos] is the map spawn-point; omit to use world origin.
-function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?)
-	local zombie   = cloneZombie(target)
+--- [zombieType] selects the variant; defaults to ZOMBIE_DEFAULT_TYPE.
+function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?, zombieType: string?)
+	local resolvedType = zombieType or Config.ZOMBIE_DEFAULT_TYPE
+	local types = Config.ZOMBIE_TYPES :: { [string]: { MaxHealth: number, WalkSpeed: number, TouchDamage: number } }
+	local stats = types[resolvedType] or types[Config.ZOMBIE_DEFAULT_TYPE]
+	local zombie   = cloneZombie(target, resolvedType)
 	local humanoid = zombie:FindFirstChildWhichIsA("Humanoid", true) :: Humanoid?
 	if not humanoid then
-		Logger.warn(TAG, "Zombie template is missing a Humanoid — skipping spawn.")
+		Logger.warn(TAG, "Zombie template '%s' is missing a Humanoid — skipping spawn.", resolvedType)
 		zombie:Destroy()
 		onDied()
 		return
 	end
-	configureHumanoid(humanoid)
+	configureHumanoid(humanoid, stats.MaxHealth, stats.WalkSpeed)
 	placeAtSpawnPosition(zombie, centerPos or Vector3.new(0, 0, 0))
-	setupTouchDamage(zombie, humanoid)
+	setupTouchDamage(zombie, humanoid, stats.TouchDamage)
 	connectDeathCleanup(zombie, humanoid, onDied)
 	startChaseLoop(zombie, humanoid, target)
 end

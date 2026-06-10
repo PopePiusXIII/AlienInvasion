@@ -145,6 +145,24 @@ local function getBattleHumanoid(player: Player): Humanoid?
 	return character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
 end
 
+local function pickZombieType(waveNumber: number): string
+	if waveNumber >= 30 then
+		local roll = math.random(4)
+		if roll == 1 then return "Tank"
+		elseif roll == 2 then return "Fire"
+		else return "Normal" end
+	elseif waveNumber >= 20 then
+		local roll = math.random(3)
+		if roll == 1 then return "Tank"
+		elseif roll == 2 then return "Fire"
+		else return "Normal" end
+	elseif waveNumber >= 10 then
+		return "Normal"
+	else
+		return "Normal"
+	end
+end
+
 -- Runs one full wave: spawns all zombies, waits for all to die (or player death).
 local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, humanoid: Humanoid)
 	Logger.info(TAG, "Wave %d — %s (%d zombies).", waveNumber, player.Name, waveNumber)
@@ -158,7 +176,7 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 
 	for i = 1, waveNumber do
 		if not player.Parent or humanoid.Health <= 0 then break end
-		ZombieService.spawn(player, onZombieDied, spawnPos)
+		ZombieService.spawn(player, onZombieDied, spawnPos, pickZombieType(waveNumber))
 		if i < waveNumber then
 			task.wait(Config.WAVE_SPAWN_INTERVAL)
 		end
