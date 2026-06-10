@@ -1,8 +1,5 @@
-# Project place file
-/AlienInvasion.rbxlx
-
-# Roblox Studio lock files
-/*.rbxlx.lock
-/*.rbxl.lock
+# Studio lock files (never commit these)
+*.rbxlx.lock
+*.rbxl.lock
 
 sourcemap.json

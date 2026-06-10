@@ -1,0 +1,28 @@
+{
+  "name": "AlienInvasion_Lobby",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared",
+        "Framework": { "$path": "../../packages/shared/Framework.luau" },
+        "Logger":    { "$path": "../../packages/shared/Logger.luau" }
+      }
+    },
+
+    "ServerScriptService": {
+      "LobbyServer": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "LobbyClient": {
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}

@@ -9,10 +9,10 @@ This document tracks engineering progress. Items marked `[x]` are complete.
 These features were fully built but are not covered by the phases below.
 
 ### 🏛️ Multi-Place Architecture
-- [x] Separate Lobby place (`lobby/`) with its own `default.project.json` and server runtime.
+- [x] Separate Lobby place (`places/lobby/`) with its own `default.project.json` and server runtime.
 - [x] `MatchmakingService` + `MatchQueueService` manage player queue server-side.
 - [x] `Matchmaker.server.luau` drives the fill-and-launch loop; `TeleportHelperService` teleports filled parties to the match place via reserved servers.
-- [x] `LobbyClient.client.luau` + `MatchmakingController` + `PadProximityModule` handle lobby UX and queue entry.
+- [x] `init.client.luau` + `MatchmakingController` + `PadProximityModule` handle lobby UX and queue entry.
 
 ### 🔧 Custom Framework & Logger
 - [x] `Framework.luau` — `CreateService`, `CreateController`, `GetRemote`, `CreateRemote`, `Start()` with enforced Init-before-Start ordering across all modules.
@@ -58,7 +58,7 @@ These features were fully built but are not covered by the phases below.
 
 ### 📦 Task 1.1: Environment Setup & Project Directory Structure
 - [x] **Version Control:** Initialize a Git repository with a robust `.gitignore` for Roblox binary files.
-- [x] **Rojo Configuration:** Configure a standard directory mapping via `default.project.json`.
+- [x] **Rojo Configuration:** Configure standard directory mappings via `places/match/default.project.json` and `places/lobby/default.project.json`.
 - [x] **Server Layer:** Create `src/ServerScriptService` for authoritative game state, combat verification controllers, AI directors, and data saving.
 - [x] **Shared Layer:** Create `src/ReplicatedStorage` for shared code modules (visual physics engines, configurations) and Remote definitions.
 - [x] **Client Layer:** Create `src/StarterPlayer/StarterPlayerScripts` for player input, UI rendering, camera manipulation, and local visual replication.

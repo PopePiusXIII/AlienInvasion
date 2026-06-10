@@ -31,30 +31,23 @@ A Roblox wave-survival shooter built with Rojo and Luau. Players fight off escal
 ```
 AlienInvasion/
 │
-├── default.project.json        ← Rojo project for the Match Place (the game)
-├── src/
-│   ├── shared/
-│   │   └── Config.luau         ← All tunable constants (one source of truth)
-│   ├── server/
-│   │   ├── Main.server.luau    ← Entry point; creates RemoteEvents; GoToGame pad
-│   │   ├── WaveManager.luau    ← Per-player map cloning, gun giving, wave loop
-│   │   ├── ZombieManager.luau  ← Zombie spawning, chasing, touch damage
-│   │   ├── GameManager.luau    ← Match state machine; DataStore saves; lobby return
-│   │   └── MatchInit.server.luau ← Auto-starts match when players arrive via teleport
-│   └── client/
-│       └── init.client.luau    ← Gun firing/reload, ammo HUD, wave HUD, GoToGame UI
-│
-└── lobby/
-    ├── default.project.json    ← Separate Rojo project for the Lobby Place
-    └── src/
-        ├── shared/
-        │   └── Config.luau         ← Lobby-side matchmaking constants
-        ├── server/
-        │   ├── Matchmaker.server.luau   ← Polling loop; creates queue RemoteEvents
-        │   ├── MatchmakerService.luau   ← MemoryStoreService queue module
-        │   └── TeleportHelper.luau      ← TeleportService wrapper with retry logic
-        └── client/
-            └── LobbyClient.client.luau  ← Find Match / Cancel UI; countdown
+├── places/
+│   ├── match/
+│   │   ├── default.project.json ← Rojo project for the Match Place
+│   │   └── src/
+│   │       ├── shared/
+│   │       ├── server/
+│   │       └── client/
+│   └── lobby/
+│       ├── default.project.json ← Rojo project for the Lobby Place
+│       └── src/
+│           ├── shared/
+│           ├── server/
+│           └── client/
+├── tools/
+├── AgentInstructions.md
+├── README.md
+└── roadMap.md
 ```
 
 ---
@@ -165,12 +158,12 @@ The game is split into **two separate Roblox Places** that live under the same g
 
 | Place | Rojo Project | Purpose |
 |---|---|---|
-| **Match Place** | `default.project.json` | The actual game (lobby pad + waves) |
-| **Lobby Place** | `lobby/default.project.json` | Queue UI + matchmaker |
+| **Match Place** | `places/match/default.project.json` | The actual game (lobby pad + waves) |
+| **Lobby Place** | `places/lobby/default.project.json` | Queue UI + matchmaker |
 
 ### Match Place (the game)
 
-Scripts under `src/server/`:
+Scripts under `places/match/src/server/`:
 
 | Script | Runs when | Does |
 |---|---|---|
@@ -186,7 +179,7 @@ Scripts under `src/server/`:
 
 ### Lobby Place (matchmaking)
 
-Scripts under `lobby/src/server/`:
+Scripts under `places/lobby/src/server/`:
 
 #### MatchmakerService.luau
 
@@ -288,29 +281,29 @@ The main matchmaking script. Runs a polling loop every `QUEUE_POLL_RATE` seconds
 
 | File | Service in Roblox |
 |---|---|
-| `src/shared/Config.luau` | `ReplicatedStorage.Shared.Config` |
-| `src/server/Main.server.luau` | `ServerScriptService.Server` |
-| `src/server/WaveManager.luau` | `ServerScriptService.Server.WaveManager` |
-| `src/server/ZombieManager.luau` | `ServerScriptService.Server.ZombieManager` |
-| `src/server/GameManager.luau` | `ServerScriptService.Server.GameManager` |
-| `src/server/MatchInit.server.luau` | `ServerScriptService.Server.MatchInit` |
-| `src/client/init.client.luau` | `StarterPlayer.StarterPlayerScripts.Client` |
+| `places/match/src/shared/Config.luau` | `ReplicatedStorage.Shared.Config` |
+| `places/match/src/server/Main.server.luau` | `ServerScriptService.Server` |
+| `places/match/src/server/WaveManager.luau` | `ServerScriptService.Server.WaveManager` |
+| `places/match/src/server/ZombieManager.luau` | `ServerScriptService.Server.ZombieManager` |
+| `places/match/src/server/GameManager.luau` | `ServerScriptService.Server.GameManager` |
+| `places/match/src/server/MatchInit.server.luau` | `ServerScriptService.Server.MatchInit` |
+| `places/match/src/client/init.client.luau` | `StarterPlayer.StarterPlayerScripts.Client` |
 
 ### Lobby Place
 
 | File | Service in Roblox |
 |---|---|
-| `lobby/src/shared/Config.luau` | `ReplicatedStorage.Shared.Config` |
-| `lobby/src/server/Matchmaker.server.luau` | `ServerScriptService.LobbyServer` |
-| `lobby/src/server/MatchmakerService.luau` | `ServerScriptService.LobbyServer.MatchmakerService` |
-| `lobby/src/server/TeleportHelper.luau` | `ServerScriptService.LobbyServer.TeleportHelper` |
-| `lobby/src/client/LobbyClient.client.luau` | `StarterPlayer.StarterPlayerScripts.LobbyClient` |
+| `places/lobby/src/shared/Config.luau` | `ReplicatedStorage.Shared.Config` |
+| `places/lobby/src/server/Matchmaker.server.luau` | `ServerScriptService.LobbyServer` |
+| `places/lobby/src/server/MatchmakerService.luau` | `ServerScriptService.LobbyServer.MatchmakerService` |
+| `places/lobby/src/server/TeleportHelper.luau` | `ServerScriptService.LobbyServer.TeleportHelper` |
+| `places/lobby/src/client/init.client.luau` | `StarterPlayer.StarterPlayerScripts.LobbyClient` |
 
 ---
 
 ## Config Reference
 
-All values live in `src/shared/Config.luau`. Change numbers here — no logic files need touching.
+Match-place values live in `places/match/src/shared/Config.luau`. Lobby-place values live in `places/lobby/src/shared/Config.luau`. Change numbers there — no logic files need touching.
 
 ### Zombie
 
@@ -387,13 +380,13 @@ All values live in `src/shared/Config.luau`. Change numbers here — no logic fi
 
 ### Testing in Studio
 
-1. Open the project with `rojo serve` (uses root `default.project.json`).
+1. Open the match place with `rojo serve places/match/default.project.json`.
 2. Click **Play** or use **Team Test** for multiplayer.
 3. Walk onto the GoToGame pad and click **PLAY GAME** to start a battle.
 4. `MatchInit.server.luau` exits immediately in Studio — the GoToGame pad is the only way to start.
 5. Enable **Studio Access to API Services** (File → Studio Settings → Security) to test DataStore saves.
 
-The lobby matchmaking scripts (`lobby/`) are never loaded in Studio — they require a live Roblox server environment.
+The lobby matchmaking scripts (`places/lobby/`) are not part of the match-place Studio session. Serve `places/lobby/default.project.json` when you need the lobby place.
 
 ---
 
@@ -403,10 +396,10 @@ The lobby matchmaking scripts (`lobby/`) are never loaded in Studio — they req
 
 ```powershell
 # Match Place
-rojo build default.project.json --output Match.rbxlx
+rojo build places/match/default.project.json --output Match.rbxlx
 
 # Lobby Place
-rojo build lobby/default.project.json --output Lobby.rbxlx
+rojo build places/lobby/default.project.json --output Lobby.rbxlx
 ```
 
 ### Step 2 — Publish to Roblox
@@ -423,13 +416,13 @@ rojo build lobby/default.project.json --output Lobby.rbxlx
 
 Update both Config files with the real numbers:
 
-**`src/shared/Config.luau`** (Match Place):
+**`places/match/src/shared/Config.luau`** (Match Place):
 ```lua
 LOBBY_PLACE_ID = 12345678,
 MATCH_PLACE_ID = 87654321,
 ```
 
-**`lobby/src/shared/Config.luau`** (Lobby Place):
+**`places/lobby/src/shared/Config.luau`** (Lobby Place):
 ```lua
 LOBBY_PLACE_ID = 12345678,
 MATCH_PLACE_ID = 87654321,
