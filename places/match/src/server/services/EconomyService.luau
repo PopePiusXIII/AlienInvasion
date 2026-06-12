@@ -14,6 +14,23 @@ local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
 local TAG = "EconomyService"
 local EconomyService = Framework.CreateService({ Name = TAG })
 
+type BoltState = {
+	bolt:         Instance,
+	root:         BasePart,
+	center:       Vector3,
+	hoverY:       number,
+	spawnY:       number,
+	riseElapsed:  number,
+	riseComplete: boolean,
+	attractSpeed: number,
+	collected:    boolean,
+	player:       Player,
+	amount:       number,
+	currencyName: string,
+	touchConns:   { RBXScriptConnection },
+}
+local _activeBolts: { BoltState } = {}
+
 export type RunWallet = {
 	silverStuds: number,
 	silverEarned: number,
@@ -28,7 +45,7 @@ local _shopPurchaseResultRemote: RemoteEvent
 local _silverBoltTemplate: Instance?
 local _goldBoltTemplate: Instance?
 
-local BOLT_LIFETIME    = 14
+local BOLT_LIFETIME    = 140
 local MAX_SILVER_BOLTS = 10
 local MAX_GOLD_BOLTS   = 6
 
@@ -85,9 +102,52 @@ end
 
 local function moveBolt(bolt: Instance, capturedRoot: BasePart, newPos: Vector3)
 	if bolt:IsA("Model") then
-		(bolt :: Model):MoveTo(newPos)
+		bolt:PivotTo(CFrame.new(newPos))
 	else
 		capturedRoot.CFrame = CFrame.new(newPos)
+	end
+end
+
+local function tickBolts(dt: number)
+	local clock = os.clock()
+	local i = #_activeBolts
+	while i > 0 do
+		local s = _activeBolts[i]
+		if s.collected or not s.bolt.Parent then
+			_activeBolts[i] = _activeBolts[#_activeBolts]
+			_activeBolts[#_activeBolts] = nil
+			i -= 1
+			continue
+		end
+
+		s.riseElapsed += dt
+		if not s.riseComplete then
+			local t = math.min(s.riseElapsed / Config.BOLT_RISE_DURATION, 1)
+			local easedY = s.spawnY + (s.hoverY - s.spawnY) * (1 - (1 - t)^2)
+			s.center = Vector3.new(s.center.X, easedY, s.center.Z)
+			moveBolt(s.bolt, s.root, s.center)
+			if t >= 1 then s.riseComplete = true end
+			i -= 1
+			continue
+		end
+
+		local playerRoot = s.player.Character
+			and s.player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if playerRoot then
+			local toPlayer = playerRoot.Position - s.center
+			if toPlayer.Magnitude <= Config.BOLT_ATTRACT_RADIUS then
+				s.attractSpeed = math.min(s.attractSpeed + Config.BOLT_ATTRACT_ACCELERATION * dt, 40)
+				if toPlayer.Magnitude > 0.5 then
+					s.center = s.center + toPlayer.Unit * s.attractSpeed * dt
+					moveBolt(s.bolt, s.root, s.center)
+				end
+			else
+				s.attractSpeed = 0
+				local bobY = s.hoverY
+				moveBolt(s.bolt, s.root, s.center)
+			end
+		end
+		i -= 1
 	end
 end
 
@@ -133,58 +193,35 @@ local function spawnBoltPickup(currencyName: string, player: Player, amount: num
 		boltCenter = capturedRoot.Position
 	end
 
-	local hoverY = spawnPosition.Y + Config.BOLT_HOVER_HEIGHT
-	local riseElapsed = 0
-	local riseComplete = false
-	local attractSpeed = 0
-	local collected = false
 	local touchConns: { RBXScriptConnection } = {}
-	local heartbeatConn: RBXScriptConnection? = nil
+	local state: BoltState = {
+		bolt         = bolt,
+		root         = capturedRoot,
+		center       = boltCenter,
+		hoverY       = spawnPosition.Y + Config.BOLT_HOVER_HEIGHT,
+		spawnY       = spawnPosition.Y,
+		riseElapsed  = 0,
+		riseComplete = false,
+		attractSpeed = 0,
+		collected    = false,
+		player       = player,
+		amount       = amount,
+		currencyName = currencyName,
+		touchConns   = touchConns,
+	}
+	table.insert(_activeBolts, state)
 
 	local function collectBolt()
-		if collected then return end
-		collected = true
-		if heartbeatConn then heartbeatConn:Disconnect() end
+		if state.collected then return end
+		state.collected = true
 		for _, c in ipairs(touchConns) do c:Disconnect() end
 		if currencyName == "Silver" then awardSilver(player, amount) else awardGold(player, amount) end
-		Logger.info(TAG, "[%s] +%d collected by %s.", currencyName, amount, player.Name)
 		if bolt.Parent then bolt:Destroy() end
 	end
 
-	heartbeatConn = RunService.Heartbeat:Connect(function(dt: number)
-		if not bolt.Parent or collected then
-			if heartbeatConn then heartbeatConn:Disconnect() end
-			return
-		end
-		riseElapsed += dt
-		if not riseComplete then
-			local t = math.min(riseElapsed / Config.BOLT_RISE_DURATION, 1)
-			local easedY = spawnPosition.Y + (hoverY - spawnPosition.Y) * (1 - (1 - t)^2)
-			boltCenter = Vector3.new(boltCenter.X, easedY, boltCenter.Z)
-			moveBolt(bolt, capturedRoot, boltCenter)
-			if t >= 1 then riseComplete = true end
-			return
-		end
-		local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if not playerRoot then return end
-		local toPlayer = playerRoot.Position - boltCenter
-		if toPlayer.Magnitude <= Config.BOLT_ATTRACT_RADIUS then
-			attractSpeed = math.min(attractSpeed + Config.BOLT_ATTRACT_ACCELERATION * dt, 40)
-			if toPlayer.Magnitude > 0.5 then
-				boltCenter = boltCenter + toPlayer.Unit * attractSpeed * dt
-				moveBolt(bolt, capturedRoot, boltCenter)
-			end
-		else
-			attractSpeed = 0
-			local bobY = hoverY + math.sin(os.clock() * 2) * 0.3
-			boltCenter = Vector3.new(boltCenter.X, bobY, boltCenter.Z)
-			moveBolt(bolt, capturedRoot, boltCenter)
-		end
-	end)
-
 	for _, p in ipairs(parts) do
 		table.insert(touchConns, p.Touched:Connect(function(hit: BasePart)
-			if not collected and Players:GetPlayerFromCharacter(hit.Parent) == player then
+			if not state.collected and Players:GetPlayerFromCharacter(hit.Parent) == player then
 				collectBolt()
 			end
 		end))
@@ -224,6 +261,9 @@ end
 function EconomyService:Init()
 	_silverBoltTemplate = ServerStorage:FindFirstChild("SilverBolt", true)
 	_goldBoltTemplate   = ServerStorage:FindFirstChild("GoldBolt", true)
+
+	-- Single shared loop drives all bolt physics — one Heartbeat connection total.
+	RunService.Heartbeat:Connect(tickBolts)
 
 	if not _silverBoltTemplate then Logger.warn(TAG, "SilverBolt not found in ServerStorage.") end
 	if not _goldBoltTemplate   then Logger.warn(TAG, "GoldBolt not found in ServerStorage.") end
