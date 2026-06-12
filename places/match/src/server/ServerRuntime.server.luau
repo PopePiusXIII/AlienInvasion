@@ -35,8 +35,6 @@ require(services.WaveService)
 require(services.CombatService)
 require(services.PlayerService)
 require(services.GameService)
-require(services.LightShowService)
-require(services.FlyoverService)
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 

@@ -14,7 +14,6 @@
 
 local Players           = game:GetService("Players")
 local TeleportService   = game:GetService("TeleportService")
-local RunService        = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework    = require(ReplicatedStorage.Shared.Framework)
@@ -41,13 +40,6 @@ function GameService:Init()
 end
 
 function GameService:Start()
-	-- Auto-start is only meaningful in a live reserved server (Match Place).
-	-- Suppress in Studio to avoid interfering with manual testing via the pad.
-	if RunService:IsStudio() then
-		Logger.info(TAG, "Studio mode — auto-start suppressed.")
-		return
-	end
-
 	task.spawn(function()
 		local shouldStart = MatchAutoStartModule.waitForMatchStart(
 			Players,

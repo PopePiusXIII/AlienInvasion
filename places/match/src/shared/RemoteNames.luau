@@ -10,7 +10,6 @@ return {
 	SHOOT_GUN     = "ShootGun",
 	WAVE_ANNOUNCE = "WaveAnnounce",
 	WAVE_CLEAR    = "WaveClear",
-	REQUEST_PLAY  = "RequestPlay",
 	RUN_CURRENCY_UPDATED  = "RunCurrencyUpdated",
 	REQUEST_SHOP_PURCHASE = "RequestShopPurchase",
 	SHOP_PURCHASE_RESULT  = "ShopPurchaseResult",

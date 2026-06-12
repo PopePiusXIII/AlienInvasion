@@ -2,8 +2,8 @@
 
 local ClerkInteractionModule = {}
 
-local function findClerkPart(map: Model): BasePart?
-	local clerk = map:FindFirstChild("shopClerk", true)
+local function findClerkPart(): BasePart?
+	local clerk = workspace:FindFirstChild("shopClerk", true)
 	if not clerk then return nil end
 	if clerk:IsA("BasePart") then
 		return clerk :: BasePart
@@ -21,8 +21,8 @@ local function findClerkPart(map: Model): BasePart?
 	return nil
 end
 
-function ClerkInteractionModule.attach(map: Model, player: Player, onClaim: () -> ()): boolean
-	local clerkPart = findClerkPart(map)
+function ClerkInteractionModule.attach(player: Player, onClaim: () -> ()): boolean
+	local clerkPart = findClerkPart()
 	if not clerkPart then return false end
 
 	local existing = clerkPart:FindFirstChild("ShopClerkPrompt")

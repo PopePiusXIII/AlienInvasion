@@ -10,7 +10,6 @@
 --     Fires WaveAnnounce and WaveClear to the player via the Logger middleware.
 --------------------------------------------------------------------------------
 
-local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework    = require(ReplicatedStorage.Shared.Framework)
@@ -33,7 +32,6 @@ local _openGunShopRemote:        RemoteEvent
 local _requestGunPurchaseRemote: RemoteEvent
 local _gunPurchaseResultRemote:  RemoteEvent
 local _requestFreeLoadoutRemote: RemoteEvent
-local _nextMapSlot:              number = 0
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -48,32 +46,32 @@ end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
-local function cloneMap(player: Player): Model?
-	local template = ServerStorage:FindFirstChild(Config.MAP_NAME)
-	if not template or not template:IsA("Model") then
-		Logger.warn(TAG, "Map template '%s' not found in ServerStorage.", Config.MAP_NAME)
-		return nil
-	end
-	local slot     = _nextMapSlot
-	_nextMapSlot  += 1
-	local map: Model = (template :: Model):Clone() :: Model
-	map.Name   = Config.MAP_NAME .. "_" .. player.Name
-	-- Space maps 4000 studs apart on the X axis to avoid overlap.
-	map:PivotTo(CFrame.new(slot * 4000, 0, 5000))
-	map.Parent = workspace
-	return map
-end
+-- local function cloneMap(player: Player): Model?
+-- 	local template = ServerStorage:FindFirstChild(Config.MAP_NAME)
+-- 	if not template or not template:IsA("Model") then
+-- 		Logger.warn(TAG, "Map template '%s' not found in ServerStorage.", Config.MAP_NAME)
+-- 		return nil
+-- 	end
+-- 	local slot     = _nextMapSlot
+-- 	_nextMapSlot  += 1
+-- 	local map: Model = (template :: Model):Clone() :: Model
+-- 	map.Name   = Config.MAP_NAME .. "_" .. player.Name
+-- 	-- Space maps 4000 studs apart on the X axis to avoid overlap.
+-- 	map:PivotTo(CFrame.new(slot * 4000, 0, 5000))
+-- 	map.Parent = workspace
+-- 	return map
+-- end
 
-local function teleportToMap(player: Player, map: Model)
-	local character = player.Character
-	if not character then return end
-	local spawnPart = map:FindFirstChild("Spawn_In", true)
-	if spawnPart and spawnPart:IsA("BasePart") then
-		character:PivotTo((spawnPart :: BasePart).CFrame * CFrame.new(0, 5, 0))
-	else
-		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
-	end
-end
+-- local function teleportToMap(player: Player, map: Model)
+-- 	local character = player.Character
+-- 	if not character then return end
+-- 	local spawnPart = map:FindFirstChild("Spawn_In", true)
+-- 	if spawnPart and spawnPart:IsA("BasePart") then
+-- 		character:PivotTo((spawnPart :: BasePart).CFrame * CFrame.new(0, 5, 0))
+-- 	else
+-- 		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
+-- 	end
+-- end
 
 local function getPlayerGunNames(player: Player): { string }
 	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
@@ -132,8 +130,8 @@ local function giveGuns(player: Player)
 	end)
 end
 
-local function findZombieSpawnPosition(map: Model): Vector3
-	local spawnPart = map:FindFirstChild("Spawn_Mob", true)
+local function findZombieSpawnPosition(): Vector3
+	local spawnPart = workspace:FindFirstChild("Spawn_Mob", true)
 	if spawnPart and spawnPart:IsA("BasePart") then
 		return (spawnPart :: BasePart).Position
 	end
@@ -196,24 +194,16 @@ function WaveService.startBattle(player: Player): number
 	EconomyService.beginRun(player)
 	player:SetAttribute("CurrentWave", Config.STARTING_WAVE)
 
-	local map = cloneMap(player)
-	if not map then return 0 end
-
 	local humanoid = getBattleHumanoid(player)
-	if not humanoid or humanoid.Health <= 0 then
-		map:Destroy()
-		return 0
-	end
-
-	teleportToMap(player, map)
-	local attached = ClerkInteractionModule.attach(map, player, function()
+	
+	local attached = ClerkInteractionModule.attach(player, function()
 		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))
 	end)
 	if not attached then
-		Logger.warn(TAG, "shopClerk part not found in map '%s'.", map.Name)
+		Logger.warn(TAG, "shopClerk part not found in workspace '%s'.")
 	end
 
-	local spawnPos   = findZombieSpawnPosition(map)
+	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = Config.STARTING_WAVE
 
 	-- The humanoid reference is captured once. Even if the character respawns,
@@ -234,9 +224,8 @@ function WaveService.startBattle(player: Player): number
 		waveNumber += 1
 	end
 
-	map:Destroy()
 	player:SetAttribute("CurrentWave", nil)
-	Logger.info(TAG, "Map cleaned up for %s. Final wave: %d.", player.Name, waveNumber)
+	Logger.info(TAG, "Final wave: %d.", player.Name, waveNumber)
 	return waveNumber
 end
 

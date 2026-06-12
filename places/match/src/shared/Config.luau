@@ -13,7 +13,7 @@ absorb(require(Configs.CombatConfig)  :: { [string]: any })
 absorb(require(Configs.EconomyConfig) :: { [string]: any })
 absorb(require(Configs.WaveConfig)    :: { [string]: any })
 absorb(require(Configs.PlayerConfig)  :: { [string]: any })
-absorb(require(Configs.MapConfig)     :: { [string]: any })
 absorb(require(Configs.DebugConfig)   :: { [string]: any })
+absorb(require(Configs.GameConfig)   :: { [string]: any })
 
 return result
