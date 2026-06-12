@@ -169,13 +169,14 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 	-- All network sends go through Logger middleware for payload tracing.
 	Logger.fireClient(_waveAnnounceRemote, player, waveNumber)
 
-	local remaining = waveNumber
+	local remaining = 10* waveNumber
 	local function onZombieDied() remaining -= 1 end
 
-	for i = 1, waveNumber do
+	local totalZombies = 10 * waveNumber
+	for i = 1, totalZombies do
 		if not player.Parent or humanoid.Health <= 0 then break end
 		ZombieService.spawn(player, onZombieDied, spawnPos, pickZombieType(waveNumber))
-		if i < waveNumber then
+		if i < totalZombies then
 			task.wait(Config.WAVE_SPAWN_INTERVAL)
 		end
 	end

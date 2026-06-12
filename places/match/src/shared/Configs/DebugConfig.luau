@@ -1,5 +1,5 @@
 --!strict
 return {
-	DEBUG_NETWORKING = true,
-	DEBUG_VERBOSE    = true,
+	DEBUG_NETWORKING = false,
+	DEBUG_VERBOSE    = false,
 }

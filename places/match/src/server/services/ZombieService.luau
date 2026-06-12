@@ -12,6 +12,7 @@
 
 local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PhysicsService = game:GetService("PhysicsService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
@@ -25,7 +26,51 @@ local ZombieService = Framework.CreateService({ Name = TAG })
 
 local _zombieTemplates: { [string]: Model } = {}
 
--- ── Lifecycle ─────────────────────────────────────────────────────────────────
+type ZombieEntry = { zombie: Model, humanoid: Humanoid, target: Player }
+local _activeZombies: { ZombieEntry } = {}
+
+local function tickChaseLoop()
+	while true do
+		local i = #_activeZombies
+		while i > 0 do
+			local entry = _activeZombies[i]
+			if not entry.zombie.Parent or entry.humanoid.Health <= 0 then
+				_activeZombies[i] = _activeZombies[#_activeZombies]
+				_activeZombies[#_activeZombies] = nil
+			else
+				local character = entry.target.Character
+				local targetRoot = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if targetRoot then
+					entry.humanoid:MoveTo(targetRoot.Position)
+				end
+			end
+			i -= 1
+		end
+		task.wait(Config.ZOMBIE_CHASE_INTERVAL)
+	end
+end
+
+local function setupZombieCollision(zombieModel: Model): nil
+    for _, part: Instance in ipairs(zombieModel:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CollisionGroup = "Zombies"
+        end
+    end
+    return nil
+end
+
+local function disableZombieDisplay(zombieModel: Model): nil
+    local humanoid: Humanoid? = zombieModel:FindFirstChildOfClass("Humanoid")
+    
+    if humanoid then
+        -- This hides the health bar entirely
+        humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+        
+        -- This ensures the Name/Display name never shows up by setting its render distance to 0
+        humanoid.NameDisplayDistance = 0
+    end
+    return nil
+end
 
 function ZombieService:Init()
 	-- Cache every zombie template by type name at startup.
@@ -33,7 +78,18 @@ function ZombieService:Init()
 	for typeName, data in types do
 		_zombieTemplates[typeName] = ServerStorage:WaitForChild(data.Template) :: Model
 		Logger.info(TAG, "Zombie template cached: %s → %s", typeName, data.Template)
+		setupZombieCollision(_zombieTemplates[typeName])
+		disableZombieDisplay(_zombieTemplates[typeName])
 	end
+
+	-- Ensure the group exists
+	pcall(function()
+		PhysicsService:RegisterCollisionGroup("Zombies")
+		PhysicsService:CollisionGroupSetCollidable("Zombies", "Zombies", false)
+	end)
+
+	-- Single shared loop drives all zombie AI — one coroutine total.
+	task.spawn(tickChaseLoop)
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
@@ -66,7 +122,7 @@ end
 
 local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
 	local angle  = math.rad(math.random(0, 360))
-	local spread = math.random(0, 3)
+	local spread = math.random(0, 15)
 	zombie:PivotTo(CFrame.new(spawnPos + Vector3.new(
 		math.cos(angle) * spread,
 		Config.ZOMBIE_SPAWN_HEIGHT,
@@ -75,34 +131,28 @@ local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
 end
 
 local function setupTouchDamage(zombie: Model, humanoid: Humanoid, touchDamage: number)
-	-- One shared cooldown flag per zombie — prevents burst damage on multi-part contact.
+	-- Single listener on one arm — avoids N listeners per zombie.
+	local touchPart = (zombie:FindFirstChild("Right Arm")
+		or zombie:FindFirstChild("Left Arm")
+		or zombie:FindFirstChild("RightHand")
+		or zombie:FindFirstChild("LeftHand")
+		or zombie:FindFirstChild("HumanoidRootPart")) :: BasePart?
+	if not touchPart then return end
+
 	local damageCooldown = false
-	for _, descendant in ipairs(zombie:GetDescendants()) do
-		if descendant:IsA("BasePart") then
-			local part: BasePart = descendant
-			part.Anchored        = false
-			part.CollisionGroup  = "Zombies"
-			part.Touched:Connect(function(hit: BasePart)
-				if damageCooldown then return end
-				local hitModel = hit.Parent
-				if not hitModel or hitModel.Name == "Zombie" then return end
-				local playerHumanoid = hitModel:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
-				if playerHumanoid and humanoid.Health > 0 then
-					damageCooldown = true
-					local zombieRoot = zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
-					local playerRoot = hitModel:FindFirstChild("HumanoidRootPart") :: BasePart?
-					local dist = if zombieRoot and playerRoot
-						then (zombieRoot.Position - playerRoot.Position).Magnitude
-						else -1
-					Logger.warn(TAG, "Touch hit: part='%s' hitModel='%s' dist=%.1f", part.Name, hitModel.Name, dist)
-					playerHumanoid:TakeDamage(touchDamage)
-					task.delay(Config.ZOMBIE_DAMAGE_COOLDOWN, function()
-						damageCooldown = false
-					end)
-				end
+	touchPart.Touched:Connect(function(hit: BasePart)
+		if damageCooldown then return end
+		local hitModel = hit.Parent
+		if not hitModel or hitModel.Name == "Zombie" then return end
+		local playerHumanoid = hitModel:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
+		if playerHumanoid and humanoid.Health > 0 then
+			damageCooldown = true
+			playerHumanoid:TakeDamage(touchDamage)
+			task.delay(Config.ZOMBIE_DAMAGE_COOLDOWN, function()
+				damageCooldown = false
 			end)
 		end
-	end
+	end)
 end
 
 local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: OnDied)
@@ -133,19 +183,8 @@ local function applyWallClimb(zombieRoot: BasePart, zombie: Model, humanoid: Hum
 	end
 end
 
-local function startChaseLoop(zombie: Model, humanoid: Humanoid, target: Player)
-	task.spawn(function()
-		while zombie.Parent and humanoid.Health > 0 do
-			local character  = target.Character
-			local targetRoot = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-			local zombieRoot = zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
-			if targetRoot and zombieRoot then
-				humanoid:MoveTo(targetRoot.Position)
-				applyWallClimb(zombieRoot, zombie, humanoid)
-			end
-			task.wait(Config.ZOMBIE_CHASE_INTERVAL)
-		end
-	end)
+local function registerZombie(zombie: Model, humanoid: Humanoid, target: Player)
+	table.insert(_activeZombies, { zombie = zombie, humanoid = humanoid, target = target })
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
@@ -169,7 +208,7 @@ function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?
 	placeAtSpawnPosition(zombie, centerPos or Vector3.new(0, 0, 0))
 	setupTouchDamage(zombie, humanoid, stats.TouchDamage)
 	connectDeathCleanup(zombie, humanoid, onDied)
-	startChaseLoop(zombie, humanoid, target)
+	registerZombie(zombie, humanoid, target)
 end
 
 --- Server-authoritative damage application.
