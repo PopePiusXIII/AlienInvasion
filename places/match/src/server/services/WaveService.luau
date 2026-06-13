@@ -147,12 +147,12 @@ local function pickZombieType(waveNumber: number): string
 	if waveNumber >= 30 then
 		local roll = math.random(4)
 		if roll == 1 then return "Tank"
-		elseif roll == 2 then return "Fire"
+		elseif roll == 2 then return "Tank"
 		else return "Normal" end
 	elseif waveNumber >= 20 then
 		local roll = math.random(3)
 		if roll == 1 then return "Tank"
-		elseif roll == 2 then return "Fire"
+		elseif roll == 2 then return "Tank"
 		else return "Normal" end
 	elseif waveNumber >= 10 then
 		return "Normal"

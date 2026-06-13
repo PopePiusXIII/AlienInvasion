@@ -41,7 +41,8 @@ local function tickChaseLoop()
 				local character = entry.target.Character
 				local targetRoot = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if targetRoot then
-					entry.humanoid:MoveTo(targetRoot.Position)
+					local dp = math.random(-10,10)
+					entry.humanoid:MoveTo(targetRoot.Position + Vector3.new(dp, 0, dp))
 				end
 			end
 			i -= 1
@@ -121,12 +122,11 @@ local function configureHumanoid(humanoid: Humanoid, maxHealth: number, walkSpee
 end
 
 local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
-	local angle  = math.rad(math.random(0, 360))
-	local spread = math.random(0, 15)
+	local spread = math.random(0, 60)
 	zombie:PivotTo(CFrame.new(spawnPos + Vector3.new(
-		math.cos(angle) * spread,
+		0.0,
 		Config.ZOMBIE_SPAWN_HEIGHT,
-		math.sin(angle) * spread
+		spread
 	)))
 end
 
@@ -161,26 +161,6 @@ local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: On
 		zombie:Destroy()
 		onDied()
 	end)
-end
-
--- Gives zombies a small upward impulse when a wall is detected ahead.
--- Prevents them from getting stuck on low obstacles.
-local function applyWallClimb(zombieRoot: BasePart, zombie: Model, humanoid: Humanoid)
-	local params = RaycastParams.new()
-	params.FilterDescendantsInstances = { zombie }
-	params.FilterType = Enum.RaycastFilterType.Exclude
-
-	local rayOrigin = zombieRoot.Position + Vector3.new(0, 1, 0)
-	local rayDir    = (zombieRoot.CFrame.LookVector + Vector3.new(0, 0.4, 0)).Unit * 5
-	local result    = workspace:Raycast(rayOrigin, rayDir, params)
-
-	if result and result.Instance and result.Instance.CanCollide then
-		zombieRoot.AssemblyLinearVelocity = Vector3.new(
-			zombieRoot.AssemblyLinearVelocity.X,
-			humanoid.WalkSpeed + 25,
-			zombieRoot.AssemblyLinearVelocity.Z
-		)
-	end
 end
 
 local function registerZombie(zombie: Model, humanoid: Humanoid, target: Player)
