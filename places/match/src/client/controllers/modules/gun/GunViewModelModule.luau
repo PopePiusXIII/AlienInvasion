@@ -15,16 +15,6 @@ local currentTemplate: Model? = nil
 local cameraModeConn: RBXScriptConnection? = nil
 local cameraCFrameConn: RBXScriptConnection? = nil
 
-local function setRealArmsVisible(visible: boolean)
-    local character = player and player.Character
-    if not character then return end
-    local modifier = visible and 0 or 1
-    for _, limb in ipairs(character:GetChildren()) do
-        if limb:IsA("BasePart") and (string.find(limb.Name, "Arm") or string.find(limb.Name, "Hand")) then
-            limb.LocalTransparencyModifier = modifier
-        end
-    end
-end
 
 local function setWorldToolVisible(visible: boolean)
     local modifier = visible and 0 or 1
@@ -64,7 +54,6 @@ local function mountViewmodel(template: Model)
     activeViewmodel.Parent = camera
 
     -- Immediately hide world tool and real arms while viewmodel is mounted
-    setRealArmsVisible(false)
     setWorldToolVisible(false)
 
     renderConnection = RunService.RenderStepped:Connect(function()
@@ -81,7 +70,6 @@ local function mountViewmodel(template: Model)
         if root and fakeCam then
             local viewmodelOffset = root.CFrame:ToObjectSpace(fakeCam.CFrame)
             root.CFrame = camera.CFrame * viewmodelOffset:Inverse()
-            setRealArmsVisible(false)
             setWorldToolVisible(false)
         end
     end)
@@ -93,7 +81,7 @@ local function isFirstPerson(): boolean
     if not root or not root:IsA("BasePart") then return false end
     local dist = (camera.CFrame.Position - root.Position).Magnitude
     -- When camera is inside the head/root, consider it first-person. Tweak threshold if needed.
-    return dist < 0.75
+    return dist < 2
 end
 
 local Module = {}
@@ -115,7 +103,6 @@ local function updateViewmodelVisibility()
         if activeViewmodel then
             destroyActiveViewmodel()
         end
-        setRealArmsVisible(true)
         setWorldToolVisible(true)
     end
 end
@@ -165,7 +152,6 @@ function Module.onGunUnequipped()
         cameraModeConn = nil
     end
     destroyActiveViewmodel()
-    setRealArmsVisible(true)
     setWorldToolVisible(true)
 end
 
