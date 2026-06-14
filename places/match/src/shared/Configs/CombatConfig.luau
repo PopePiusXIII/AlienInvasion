@@ -7,6 +7,7 @@ return {
 	GUN_MAG_SIZE      = 7,
 	GUN_RELOAD_TIME   = 2.0,
 	GUN_MUZZLE_DELAY  = 0.05,
+	HEADSHOT_MULTIPLIER = 2.0,
 	GUN_TRACER_DEFAULT = {
 		lifetime  = 0.06,
 		thickness = 0.08,

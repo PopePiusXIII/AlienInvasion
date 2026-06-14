@@ -35,12 +35,18 @@ end
 
 function CombatService:Init()
 	local shootRemote = Framework.CreateRemote(RemoteNames.SHOOT_GUN)
+	local hitSoundRemote = Framework.CreateRemote(RemoteNames.ZOMBIE_HIT_SOUND)
 
 	-- Logger.wrapServerEvent provides:
 	--   1. Automatic pcall — a buggy payload never crashes the server thread.
 	--   2. Net trace      — args logged when Config.DEBUG_NETWORKING = true.
-	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, gunName: string?)
-		local killed, zombieType, deathPosition = ZombieService.damageZombie(zombieModel :: Model?, resolveDamage(gunName))
+	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, gunName: string?, isHeadshot: boolean, hitPosition: Vector3)
+		if not zombieModel then return end
+		local killed, zombieType, deathPosition = ZombieService.damageZombie(zombieModel :: Model?, resolveDamage(gunName), isHeadshot)
+		
+		-- Server confirms the hit — tell client to play the appropriate sound.
+		Logger.fireClient(hitSoundRemote, player, hitPosition, isHeadshot)
+		
 		if killed then
 			local waveNumber = tonumber(player:GetAttribute("CurrentWave")) or Config.STARTING_WAVE
 			EconomyService.grantKillRewards(player, zombieType, waveNumber, deathPosition)

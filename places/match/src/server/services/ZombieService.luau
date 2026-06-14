@@ -248,7 +248,7 @@ end
 --- Server-authoritative damage application.
 --- Validates identity, parent, and Humanoid before taking damage.
 --- NEVER trust the client to pass a valid model — always re-validate here.
-function ZombieService.damageZombie(zombieModel: Model?, amount: number): (boolean, string, Vector3?)
+function ZombieService.damageZombie(zombieModel: Model?, amount: number, isHeadshot: boolean?): (boolean, string, Vector3?)
 	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
@@ -261,6 +261,12 @@ function ZombieService.damageZombie(zombieModel: Model?, amount: number): (boole
 	local healthBefore = humanoid.Health
 	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local deathPosition = if rootPart then rootPart.Position else zombieModel:GetPivot().Position
+
+	-- Apply headshot multiplier (server-authoritative — client flag is advisory only).
+	if isHeadshot then
+		amount = math.floor(amount * (Config.HEADSHOT_MULTIPLIER :: number))
+	end
+
 	humanoid:TakeDamage(amount)
 	local zombieType = tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE)
 	local killed = healthBefore > 0 and amount >= healthBefore
