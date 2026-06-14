@@ -20,4 +20,6 @@ return {
 	REQUEST_GUN_PURCHASE   = "RequestGunPurchase",
 	GUN_PURCHASE_RESULT    = "GunPurchaseResult",
 	REQUEST_FREE_LOADOUT   = "RequestFreeLoadout",
+	BOLT_SPAWNED           = "BoltSpawned",
+	CLAIM_BOLT             = "ClaimBolt",
 }
