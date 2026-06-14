@@ -42,9 +42,6 @@ local BOLT_LIFETIME    = 140
 local MAX_SILVER_BOLTS = 10
 local MAX_GOLD_BOLTS   = 6
 
--- Server-side collect radius: attract radius + 2× client collect radius to absorb latency.
-local BOLT_VALIDATE_RADIUS = (Config.BOLT_COLLECT_RADIUS :: number) * 2 + (Config.BOLT_ATTRACT_RADIUS :: number)
-
 local function randomInt(min: number, max: number): number
 	return math.random(math.floor(min), math.max(math.floor(min), math.floor(max)))
 end
@@ -162,17 +159,10 @@ local function onClaimBolt(player: Player, boltId: unknown)
 	local record = bolts[boltId]
 	if not record or record.claimed then return end
 
-	-- Verify the player is within a lenient radius of the bolt's spawn position.
-	-- We use spawn position as the reference; attract radius + 2× collect radius
-	-- gives a generous but not unbounded window that absorbs travel distance + latency.
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if root then
-		local dist = (root.Position - record.spawnPos).Magnitude
-		if dist > BOLT_VALIDATE_RADIUS then
-			Logger.warn(TAG, ("ClaimBolt rejected for %s: dist=%.1f studs (max %d)"):format(player.Name, dist, BOLT_VALIDATE_RADIUS))
-			return
-		end
-	end
+	-- Bolts are already scoped per-player (_boltsByPlayer[player]), so only the owning
+	-- player can claim them. The client-side attraction physics means bolts can drift
+	-- far from their spawn position before collection, making a strict distance check
+	-- counterproductive. Trust the per-player ownership model instead.
 
 	record.claimed = true
 	bolts[boltId] = nil
