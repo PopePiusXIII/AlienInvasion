@@ -54,10 +54,7 @@ local function tickChaseLoop()
 			playerTargets[idx] = targetRoot and targetRoot.Position or nil :: any
 		end
 
-		-- Parallel: pure math — compute move targets with repulsion offsets.
-		-- No DataModel reads or writes are performed here.
-		task.desynchronize()
-
+		-- Pure math — compute move targets with repulsion offsets.
 		local moveTargets: { [number]: Vector3 } = table.create(count)
 		for idx = 1, count do
 			local playerPos = playerTargets[idx]
@@ -91,9 +88,7 @@ local function tickChaseLoop()
 			moveTargets[idx] = moveTarget
 		end
 
-		-- Serial: apply MoveTo (DataModel write — must be synchronised).
-		task.synchronize()
-
+		-- Apply MoveTo (DataModel write).
 		for idx, entry in ipairs(_activeZombies) do
 			local target = moveTargets[idx]
 			if target then
