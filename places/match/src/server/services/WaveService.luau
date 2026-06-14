@@ -117,7 +117,7 @@ local function buildShopData(player: Player)
 end
 
 local function giveGuns(player: Player)
-	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B" }
+	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B", "BushMaster"}
 	local unlockedGunNames: { string } = {}
 	for _, gunName in ipairs(allGunNames) do
 		if DataService.isWeaponUnlocked(player, gunName) then

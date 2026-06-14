@@ -21,6 +21,7 @@ local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
 local HudController = require(script.Parent.HudController)
 local GunCatalogModule = require(script.Parent.modules.gun.GunCatalogModule)
 local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
+local GunViewModelModule = require(script.Parent.modules.gun.GunViewModelModule)
 local GunHitScanModule = require(script.Parent.modules.gun.GunHitScanModule)
 
 local TAG = "GunController"
@@ -241,7 +242,7 @@ local function onGunEquipped(gun: Tool)
 	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
 	local m = gun:FindFirstChild("Muzzle", true)
 	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
-	GunFxModule.onGunEquipped(gun)
+	GunViewModelModule.onGunEquipped(gun)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
 end
@@ -258,7 +259,7 @@ local function onGunUnequipped()
 	stopTriggerFiring()
 	stopAimPitchTracking()
 	_cachedMuzzle = nil
-	GunFxModule.onGunUnequipped()
+	GunViewModelModule.onGunUnequipped()
 	_equippedGun = nil
 	refreshAmmoDisplay()
 end

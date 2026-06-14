@@ -13,7 +13,7 @@ return {
 		color     = Color3.fromRGB(255, 235, 170),
 	},
 	STARTER_UNLOCKED_WEAPONS = {
-		"Deagle",
+		"BushMaster",
 		"M82",
 	},
 	GUN_STATS = {
@@ -66,6 +66,19 @@ return {
 			tracer = {
 				lifetime  = 0.06,
 				thickness = 0.08,
+				color     = Color3.fromRGB(255, 214, 128),
+			},
+		},
+		BushMaster = {
+			damage       = 100,
+			range        = 2000,
+			fireCooldown = 0.5,
+			magSize      = 12,
+			reloadTime   = 3,0,
+			isAutomatic  = true,
+			tracer = {
+				lifetime  = 0.06,
+				thickness = 0.5,
 				color     = Color3.fromRGB(255, 214, 128),
 			},
 		},
