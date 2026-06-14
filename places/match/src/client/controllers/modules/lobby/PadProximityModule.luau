@@ -18,10 +18,20 @@ function PadProximityModule.start(playPrompt: Frame, localPlayer: Player, padNam
 	local pad       = waitForGamePad(padName)
 	local threshold = 12
 	local playing   = false
+	local cachedHrp: BasePart? = nil
 
-	localPlayer.CharacterAdded:Connect(function()
+	localPlayer.CharacterAdded:Connect(function(character: Model)
 		playing = false
+		local hrp = character:WaitForChild("HumanoidRootPart", 10)
+		cachedHrp = (hrp and hrp:IsA("BasePart")) and hrp :: BasePart or nil
 	end)
+	localPlayer.CharacterRemoving:Connect(function()
+		cachedHrp = nil
+	end)
+	if localPlayer.Character then
+		local hrp = localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		cachedHrp = (hrp and hrp:IsA("BasePart")) and hrp :: BasePart or nil
+	end
 
 	local button = playPrompt:FindFirstChild("PlayButton") :: TextButton?
 	if button then
@@ -37,11 +47,10 @@ function PadProximityModule.start(playPrompt: Frame, localPlayer: Player, padNam
 			return
 		end
 
-		local char = getCharacter()
-		local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local root = cachedHrp
 		playPrompt.Visible = root ~= nil
-			and (root :: BasePart).Position.X ~= math.huge
-			and ((root :: BasePart).Position - pad.Position).Magnitude <= threshold
+			and root.Position.X ~= math.huge
+			and (root.Position - pad.Position).Magnitude <= threshold
 	end)
 end
 

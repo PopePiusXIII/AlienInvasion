@@ -29,7 +29,8 @@ type BoltState = {
 	currencyName: string,
 	touchConns:   { RBXScriptConnection },
 }
-local _activeBolts: { BoltState } = {}
+-- One bolt list per player; each player gets their own independent copy of every drop.
+local _boltsByPlayer: { [Player]: { BoltState } } = {}
 
 export type RunWallet = {
 	silverStuds: number,
@@ -108,47 +109,115 @@ local function moveBolt(bolt: Instance, capturedRoot: BasePart, newPos: Vector3)
 	end
 end
 
-local function tickBolts(dt: number)
-	local clock = os.clock()
-	local i = #_activeBolts
-	while i > 0 do
-		local s = _activeBolts[i]
-		if s.collected or not s.bolt.Parent then
-			_activeBolts[i] = _activeBolts[#_activeBolts]
-			_activeBolts[#_activeBolts] = nil
-			i -= 1
+-- One coroutine per player, each desynchronized — their parallel math phases run concurrently.
+local function tickBoltsForPlayer(player: Player)
+	local lastTick = os.clock()
+	while player.Parent do
+		local now = os.clock()
+		local dt = math.min(now - lastTick, 0.1)
+		lastTick = now
+
+		local bolts = _boltsByPlayer[player]
+		if not bolts or #bolts == 0 then
+			task.wait(1 / 30)
 			continue
 		end
 
-		s.riseElapsed += dt
-		if not s.riseComplete then
-			local t = math.min(s.riseElapsed / Config.BOLT_RISE_DURATION, 1)
-			local easedY = s.spawnY + (s.hoverY - s.spawnY) * (1 - (1 - t)^2)
-			s.center = Vector3.new(s.center.X, easedY, s.center.Z)
-			moveBolt(s.bolt, s.root, s.center)
-			if t >= 1 then s.riseComplete = true end
-			i -= 1
-			continue
-		end
-
-		local playerRoot = s.player.Character
-			and s.player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if playerRoot then
-			local toPlayer = playerRoot.Position - s.center
-			if toPlayer.Magnitude <= Config.BOLT_ATTRACT_RADIUS then
-				s.attractSpeed = math.min(s.attractSpeed + Config.BOLT_ATTRACT_ACCELERATION * dt, 40)
-				if toPlayer.Magnitude > 0.5 then
-					s.center = s.center + toPlayer.Unit * s.attractSpeed * dt
-					moveBolt(s.bolt, s.root, s.center)
-				end
-			else
-				s.attractSpeed = 0
-				local bobY = s.hoverY
-				moveBolt(s.bolt, s.root, s.center)
+		-- Serial: purge collected / expired bolts
+		local i = #bolts
+		while i > 0 do
+			local s = bolts[i]
+			if s.collected or not s.bolt.Parent then
+				bolts[i] = bolts[#bolts]
+				bolts[#bolts] = nil
 			end
+			i -= 1
 		end
-		i -= 1
+
+		local count = #bolts
+		if count == 0 then task.wait(1 / 60); continue end
+
+		-- Serial: snapshot player root and all bolt states before going parallel
+		local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local playerPos: Vector3? = playerRoot and (playerRoot :: BasePart).Position
+
+		local snapCenter:       { Vector3 } = table.create(count)
+		local snapRiseElapsed:  { number }  = table.create(count)
+		local snapRiseComplete: { boolean } = table.create(count)
+		local snapHoverY:       { number }  = table.create(count)
+		local snapSpawnY:       { number }  = table.create(count)
+		local snapAttractSpeed: { number }  = table.create(count)
+
+		for idx, s in ipairs(bolts) do
+			snapCenter[idx]       = s.center
+			snapRiseElapsed[idx]  = s.riseElapsed
+			snapRiseComplete[idx] = s.riseComplete
+			snapHoverY[idx]       = s.hoverY
+			snapSpawnY[idx]       = s.spawnY
+			snapAttractSpeed[idx] = s.attractSpeed
+		end
+
+		-- Parallel: pure math — no DataModel access
+		task.desynchronize()
+
+		local newCenter:       { Vector3 } = table.create(count)
+		local newAttractSpeed: { number }  = table.create(count)
+		local newRiseComplete: { boolean } = table.create(count)
+		local newRiseElapsed:  { number }  = table.create(count)
+
+		local riseDuration = Config.BOLT_RISE_DURATION
+		local attrRad      = Config.BOLT_ATTRACT_RADIUS
+		local attrAccel    = Config.BOLT_ATTRACT_ACCELERATION
+
+		for idx = 1, count do
+			local center       = snapCenter[idx]
+			local riseElapsed  = snapRiseElapsed[idx] + dt
+			local riseComplete = snapRiseComplete[idx]
+			local hoverY       = snapHoverY[idx]
+			local spawnY       = snapSpawnY[idx]
+			local attractSpeed = snapAttractSpeed[idx]
+
+			if not riseComplete then
+				local t = math.min(riseElapsed / riseDuration, 1)
+				local easedY = spawnY + (hoverY - spawnY) * (1 - (1 - t) ^ 2)
+				center = Vector3.new(center.X, easedY, center.Z)
+				if t >= 1 then riseComplete = true end
+			elseif playerPos then
+				local dx = playerPos.X - center.X
+				local dy = playerPos.Y - center.Y
+				local dz = playerPos.Z - center.Z
+				local mag = math.sqrt(dx*dx + dy*dy + dz*dz)
+				if mag <= attrRad then
+					attractSpeed = math.min(attractSpeed + attrAccel * dt, 40)
+					if mag > 0.5 then
+						local inv = attractSpeed * dt / mag
+						center = Vector3.new(center.X + dx*inv, center.Y + dy*inv, center.Z + dz*inv)
+					end
+				else
+					attractSpeed = 0
+				end
+			end
+
+			newCenter[idx]       = center
+			newAttractSpeed[idx] = attractSpeed
+			newRiseComplete[idx] = riseComplete
+			newRiseElapsed[idx]  = riseElapsed
+		end
+
+		-- Serial: write back state and move bolts in the DataModel
+		task.synchronize()
+
+		for idx, s in ipairs(bolts) do
+			s.center       = newCenter[idx]
+			s.attractSpeed = newAttractSpeed[idx]
+			s.riseComplete = newRiseComplete[idx]
+			s.riseElapsed  = newRiseElapsed[idx]
+			moveBolt(s.bolt, s.root, newCenter[idx])
+		end
+
+		RunService.Heartbeat:Wait()
 	end
+	_boltsByPlayer[player] = nil
 end
 
 local function spawnBoltPickup(currencyName: string, player: Player, amount: number, spawnPosition: Vector3): boolean
@@ -209,7 +278,10 @@ local function spawnBoltPickup(currencyName: string, player: Player, amount: num
 		currencyName = currencyName,
 		touchConns   = touchConns,
 	}
-	table.insert(_activeBolts, state)
+	local playerBolts = _boltsByPlayer[player]
+	if playerBolts then
+		table.insert(playerBolts, state)
+	end
 
 	local function collectBolt()
 		if state.collected then return end
@@ -262,9 +334,6 @@ function EconomyService:Init()
 	_silverBoltTemplate = ServerStorage:FindFirstChild("SilverBolt", true)
 	_goldBoltTemplate   = ServerStorage:FindFirstChild("GoldBolt", true)
 
-	-- Single shared loop drives all bolt physics — one Heartbeat connection total.
-	RunService.Heartbeat:Connect(tickBolts)
-
 	if not _silverBoltTemplate then Logger.warn(TAG, "SilverBolt not found in ServerStorage.") end
 	if not _goldBoltTemplate   then Logger.warn(TAG, "GoldBolt not found in ServerStorage.") end
 
@@ -278,9 +347,21 @@ function EconomyService:Init()
 end
 
 function EconomyService:Start()
+	local function onPlayerAdded(player: Player)
+		_boltsByPlayer[player] = {}
+		task.spawn(tickBoltsForPlayer, player)
+	end
+
+	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player: Player)
 		_walletByPlayer[player] = nil
+		_boltsByPlayer[player] = nil
 	end)
+
+	-- Handle players already in the server at startup.
+	for _, player in ipairs(Players:GetPlayers()) do
+		onPlayerAdded(player)
+	end
 end
 
 function EconomyService.beginRun(player: Player)
@@ -290,6 +371,8 @@ function EconomyService.beginRun(player: Player)
 		silverSpent  = 0,
 		goldEarned   = 0,
 	}
+	-- Clear any leftover bolts from a previous run.
+	_boltsByPlayer[player] = {}
 	syncWalletToClient(player)
 end
 
@@ -301,11 +384,16 @@ function EconomyService.grantKillRewards(player: Player, zombieType: string, wav
 		origin = root.Position
 	end
 
-	spawnBoltBurst("Silver", player, calculateSilverReward(zombieType, waveNumber), origin)
+	local silverAmount = calculateSilverReward(zombieType, waveNumber)
+	local goldAmount   = rollGoldReward(zombieType, waveNumber)
 
-	local goldAmount = rollGoldReward(zombieType, waveNumber)
-	if goldAmount > 0 then
-		spawnBoltBurst("Gold", player, goldAmount, origin)
+	-- Every active player gets their own bolt copy to collect — shared kill reward.
+	for _, recipient in ipairs(Players:GetPlayers()) do
+		if not _boltsByPlayer[recipient] then continue end
+		spawnBoltBurst("Silver", recipient, silverAmount, origin)
+		if goldAmount > 0 then
+			spawnBoltBurst("Gold", recipient, goldAmount, origin)
+		end
 	end
 end
 

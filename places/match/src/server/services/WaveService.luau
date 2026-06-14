@@ -135,7 +135,8 @@ local function findZombieSpawnPosition(): Vector3
 	if spawnPart and spawnPart:IsA("BasePart") then
 		return (spawnPart :: BasePart).Position
 	end
-	return map:GetPivot().Position
+	Logger.warn(TAG, "Spawn_Mob not found in Workspace — falling back to origin.")
+	return Vector3.new(0, 0, 0)
 end
 
 local function getBattleHumanoid(player: Player): Humanoid?

@@ -5,8 +5,10 @@ return {
 		Tank    = { MaxHealth = 250, WalkSpeed = 6,  TouchDamage = 25, Template = "Tank_Zombie"    },
 	},
 	ZOMBIE_DEFAULT_TYPE    = "Normal",
-	ZOMBIE_DAMAGE_COOLDOWN = 1,
-	ZOMBIE_CHASE_INTERVAL  = 0.3,
-	ZOMBIE_SPAWN_DISTANCE  = 100,
-	ZOMBIE_SPAWN_HEIGHT    = 3,
+	ZOMBIE_DAMAGE_COOLDOWN     = 1,
+	ZOMBIE_CHASE_INTERVAL      = 0.3,
+	ZOMBIE_SPAWN_DISTANCE      = 100,
+	ZOMBIE_SPAWN_HEIGHT        = 3,
+	ZOMBIE_REPULSION_DISTANCE  = 8,   -- studs; zombies within this range push apart
+	ZOMBIE_REPULSION_FORCE     = 14,  -- max offset (studs) applied to MoveTo target
 }

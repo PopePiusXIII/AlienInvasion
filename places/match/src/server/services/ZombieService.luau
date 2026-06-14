@@ -31,22 +31,76 @@ local _activeZombies: { ZombieEntry } = {}
 
 local function tickChaseLoop()
 	while true do
+		-- Serial: purge dead / removed zombies (DataModel writes not allowed in parallel).
 		local i = #_activeZombies
 		while i > 0 do
 			local entry = _activeZombies[i]
 			if not entry.zombie.Parent or entry.humanoid.Health <= 0 then
 				_activeZombies[i] = _activeZombies[#_activeZombies]
 				_activeZombies[#_activeZombies] = nil
-			else
-				local character = entry.target.Character
-				local targetRoot = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-				if targetRoot then
-					local dp = math.random(-10,10)
-					entry.humanoid:MoveTo(targetRoot.Position + Vector3.new(dp, 0, dp))
-				end
 			end
 			i -= 1
 		end
+
+		-- Serial: snapshot positions and player targets before going parallel.
+		local count = #_activeZombies
+		local rootPositions: { [number]: Vector3 } = table.create(count)
+		local playerTargets: { [number]: Vector3? } = table.create(count)
+		for idx, entry in ipairs(_activeZombies) do
+			local root = entry.zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
+			rootPositions[idx] = root and root.Position or nil :: any
+			local character = entry.target.Character
+			local targetRoot = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			playerTargets[idx] = targetRoot and targetRoot.Position or nil :: any
+		end
+
+		-- Parallel: pure math — compute move targets with repulsion offsets.
+		-- No DataModel reads or writes are performed here.
+		task.desynchronize()
+
+		local moveTargets: { [number]: Vector3 } = table.create(count)
+		for idx = 1, count do
+			local playerPos = playerTargets[idx]
+			if not playerPos then continue end
+
+			local dp = math.random(-10, 10)
+			local moveTarget = playerPos + Vector3.new(dp, 0, dp)
+
+			local myPos = rootPositions[idx]
+			if myPos then
+				local rx, rz = 0, 0
+				local repDist = Config.ZOMBIE_REPULSION_DISTANCE
+				local repForce = Config.ZOMBIE_REPULSION_FORCE
+				for jdx = 1, count do
+					if jdx == idx then continue end
+					local otherPos = rootPositions[jdx]
+					if not otherPos then continue end
+					local dx = myPos.X - otherPos.X
+					local dz = myPos.Z - otherPos.Z
+					local distSq = dx * dx + dz * dz
+					if distSq < repDist * repDist and distSq > 0.0001 then
+						local dist = math.sqrt(distSq)
+						local strength = repForce * (1 - dist / repDist)
+						rx += (dx / dist) * strength
+						rz += (dz / dist) * strength
+					end
+				end
+				moveTarget = moveTarget + Vector3.new(rx, 0, rz)
+			end
+
+			moveTargets[idx] = moveTarget
+		end
+
+		-- Serial: apply MoveTo (DataModel write — must be synchronised).
+		task.synchronize()
+
+		for idx, entry in ipairs(_activeZombies) do
+			local target = moveTargets[idx]
+			if target then
+				entry.humanoid:MoveTo(target)
+			end
+		end
+
 		task.wait(Config.ZOMBIE_CHASE_INTERVAL)
 	end
 end

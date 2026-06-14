@@ -42,6 +42,8 @@ local _deactivatedConn:  RBXScriptConnection? = nil
 local _aimPitchConn:     RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
 local _baseGunGrip:      CFrame?              = nil
+local _cachedMuzzle:     BasePart?            = nil
+local _cachedHrp:        BasePart?            = nil
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
@@ -121,8 +123,8 @@ local function fire(): boolean
 	local character = _localPlayer.Character
 	if _isOnFireCooldown or _isReloading or not _equippedGun or not character then return false end
 
-	local hrp = character:FindFirstChild("HumanoidRootPart")
-	if not hrp or not hrp:IsA("BasePart") then return false end
+	local hrp = _cachedHrp
+	if not hrp then return false end
 
 	local ammo = getCurrentAmmo()
 	if ammo <= 0 then
@@ -134,15 +136,12 @@ local function fire(): boolean
 	setCurrentAmmo(ammo - 1)
 	refreshAmmoDisplay()
 
-	local muzzle = _equippedGun:FindFirstChild("Muzzle", true)
-	local origin: Vector3 = (muzzle and muzzle:IsA("BasePart"))
-		and (muzzle :: BasePart).Position
-		or  (hrp :: BasePart).Position
+	local origin: Vector3 = _cachedMuzzle and _cachedMuzzle.Position or (hrp :: BasePart).Position
 	local hitPosition, hitZombie = castShot(origin)
 
-	GunFxModule.playShootSound(_equippedGun)
+	GunFxModule.playShootSound()
 	GunFxModule.drawTracer(origin, hitPosition, stats.tracer)
-	GunFxModule.flashMuzzle(_equippedGun, Config.GUN_MUZZLE_DELAY)
+	GunFxModule.flashMuzzle(Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
 	Logger.fireServer(_shootRemote, hitZombie, _equippedGun.Name)
@@ -204,13 +203,10 @@ local function startAimPitchTracking(gun: Tool)
 
 	_aimPitchConn = RunService.RenderStepped:Connect(function()
 		if _equippedGun ~= gun then return end
-		local character = _localPlayer.Character
-		if not character then return end
+		local hrp = _cachedHrp
+		if not hrp then return end
 
-		local hrp = character:FindFirstChild("HumanoidRootPart")
-		if not hrp or not hrp:IsA("BasePart") then return end
-
-		local toMouse = _mouse.Hit.Position - (hrp :: BasePart).Position
+		local toMouse = _mouse.Hit.Position - hrp.Position
 		local horizontal = Vector3.new(toMouse.X, 0, toMouse.Z)
 		if horizontal.Magnitude < 0.001 then return end
 
@@ -219,6 +215,15 @@ local function startAimPitchTracking(gun: Tool)
 
 		gun.Grip = (_baseGunGrip :: CFrame) * CFrame.Angles(-pitch, 0, 0)
 	end)
+end
+
+local function onCharacterAdded(character: Model)
+	local hrp = character:WaitForChild("HumanoidRootPart", 10)
+	_cachedHrp = (hrp and hrp:IsA("BasePart")) and hrp :: BasePart or nil
+end
+
+local function onCharacterRemoving()
+	_cachedHrp = nil
 end
 
 local function onGunEquipped(gun: Tool)
@@ -234,6 +239,9 @@ local function onGunEquipped(gun: Tool)
 		onGunActivated(gun)
 	end)
 	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
+	local m = gun:FindFirstChild("Muzzle", true)
+	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
+	GunFxModule.onGunEquipped(gun)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
 end
@@ -249,6 +257,8 @@ local function onGunUnequipped()
 	end
 	stopTriggerFiring()
 	stopAimPitchTracking()
+	_cachedMuzzle = nil
+	GunFxModule.onGunUnequipped()
 	_equippedGun = nil
 	refreshAmmoDisplay()
 end
@@ -287,8 +297,13 @@ function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
 	_shootRemote = Framework.GetRemote(RemoteNames.SHOOT_GUN)
 
-	_localPlayer.CharacterAdded:Connect(watchCharacter)
+	_localPlayer.CharacterAdded:Connect(function(character: Model)
+		onCharacterAdded(character)
+		watchCharacter(character)
+	end)
+	_localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 	if _localPlayer.Character then
+		onCharacterAdded(_localPlayer.Character)
 		watchCharacter(_localPlayer.Character)
 	end
 

@@ -7,6 +7,12 @@ local GunFxModule = {}
 
 local muzzleFlashTemplate = ReplicatedStorage:FindFirstChild("MuzzleFlash")
 
+-- Cached per-gun references, populated once when a gun is equipped.
+local _cachedMuzzle:    BasePart?        = nil
+local _cachedFlash:     PointLight?      = nil
+local _cachedParticles: ParticleEmitter? = nil
+local _cachedSound:     Sound?           = nil
+
 type GunTracerStyle = {
 	lifetime: number,
 	thickness: number,
@@ -40,13 +46,42 @@ local function spawnTemplateMuzzleFlash(muzzle: BasePart, muzzleDelay: number): 
 	return true
 end
 
-function GunFxModule.playShootSound(gun: Tool)
-	local shootSound = gun:FindFirstChild("ShootSound", true)
-	if not shootSound or not shootSound:IsA("Sound") then return end
+function GunFxModule.onGunEquipped(gun: Tool)
+	_cachedMuzzle    = nil
+	_cachedFlash     = nil
+	_cachedParticles = nil
+	_cachedSound     = nil
 
-	local sound = shootSound :: Sound
-	sound.TimePosition = 0
-	sound:Play()
+	local m = gun:FindFirstChild("Muzzle", true)
+	if m and m:IsA("BasePart") then
+		_cachedMuzzle = m :: BasePart
+		local fl = m:FindFirstChild("FlashLight")
+		if fl and fl:IsA("PointLight") then
+			_cachedFlash = fl :: PointLight
+		end
+		local pe = m:FindFirstChildWhichIsA("ParticleEmitter")
+		if pe then
+			_cachedParticles = pe :: ParticleEmitter
+		end
+	end
+
+	local snd = gun:FindFirstChild("ShootSound", true)
+	if snd and snd:IsA("Sound") then
+		_cachedSound = snd :: Sound
+	end
+end
+
+function GunFxModule.onGunUnequipped()
+	_cachedMuzzle    = nil
+	_cachedFlash     = nil
+	_cachedParticles = nil
+	_cachedSound     = nil
+end
+
+function GunFxModule.playShootSound()
+	if not _cachedSound then return end
+	_cachedSound.TimePosition = 0
+	_cachedSound:Play()
 end
 
 function GunFxModule.drawTracer(origin: Vector3, hitPosition: Vector3, tracerStyle: GunTracerStyle)
@@ -70,25 +105,25 @@ function GunFxModule.drawTracer(origin: Vector3, hitPosition: Vector3, tracerSty
 	Debris:AddItem(tracer, tracerStyle.lifetime)
 end
 
-function GunFxModule.flashMuzzle(gun: Tool, muzzleDelay: number)
-	local muzzle = gun:FindFirstChild("Muzzle", true)
-	if not muzzle or not muzzle:IsA("BasePart") then return end
+function GunFxModule.flashMuzzle(muzzleDelay: number)
+	local muzzle = _cachedMuzzle
+	if not muzzle then return end
 
-	if spawnTemplateMuzzleFlash(muzzle :: BasePart, muzzleDelay) then
+	if spawnTemplateMuzzleFlash(muzzle, muzzleDelay) then
 		return
 	end
 
-	local flash = muzzle:FindFirstChild("FlashLight")
-	if flash and flash:IsA("PointLight") then
-		(flash :: PointLight).Enabled = true
+	local flash = _cachedFlash
+	if flash then
+		flash.Enabled = true
 		task.delay(muzzleDelay, function()
-			(flash :: PointLight).Enabled = false
+			flash.Enabled = false
 		end)
 	end
 
-	local particles = muzzle:FindFirstChildWhichIsA("ParticleEmitter")
+	local particles = _cachedParticles
 	if particles then
-		(particles :: ParticleEmitter):Emit(8)
+		particles:Emit(8)
 	end
 end
 
