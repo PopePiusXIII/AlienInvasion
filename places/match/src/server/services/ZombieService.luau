@@ -204,9 +204,61 @@ local function setupTouchDamage(zombie: Model, humanoid: Humanoid, touchDamage: 
 	end)
 end
 
+-- ── Death cleanup (NO ragdoll, NO piece explosion — just wait & destroy) ──
+local function applyKnockback(zombieModel: Model, knockbackForce: number, shooterPos: Vector3?)
+	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not rootPart or not shooterPos then return end
+	local direction = (rootPart.Position - shooterPos).Unit
+	rootPart.Velocity = direction * knockbackForce
+	-- Store the knockback direction so ragdoll can reuse it on death.
+	zombieModel:SetAttribute("KnockbackDirX", direction.X)
+	zombieModel:SetAttribute("KnockbackDirY", direction.Y)
+	zombieModel:SetAttribute("KnockbackDirZ", direction.Z)
+end
+
+local function ragdollAndExplode(zombieModel: Model, explosionForce: number)
+	-- Disable the humanoid so joints don't restore pose
+	local humanoid = zombieModel:FindFirstChildWhichIsA("Humanoid", true) :: Humanoid?
+	if humanoid then
+		humanoid.BreakJointsOnDeath = false -- we handle it manually
+	end
+
+	-- Break all welds so body parts become independent
+	for _, descendant in ipairs(zombieModel:GetDescendants()) do
+		if descendant:IsA("WeldConstraint") or descendant:IsA("Weld") or descendant:IsA("ManualWeld") then
+			descendant:Destroy()
+		end
+	end
+
+	-- Recover the shot direction from the last knockback (or fall back to straight up).
+	local dirX = zombieModel:GetAttribute("KnockbackDirX") :: number?
+	local dirY = zombieModel:GetAttribute("KnockbackDirY") :: number?
+	local dirZ = zombieModel:GetAttribute("KnockbackDirZ") :: number?
+	local shotDir: Vector3
+	if dirX and dirY and dirZ then
+		shotDir = Vector3.new(dirX, dirY, dirZ)
+	else
+		shotDir = Vector3.yAxis
+	end
+
+	-- Throw each body part along the shot direction with a small randomized spread.
+	for _, part in ipairs(zombieModel:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.CanCollide = true
+
+			-- Dampen inherited knockback velocity so pieces don't fly off too far,
+			-- then add an impulse along the shot direction plus small random spread.
+			part.Velocity = part.Velocity * 0.15 + shotDir * explosionForce 
+
+		end
+	end
+end
+
 local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: OnDied)
 	humanoid.Died:Connect(function()
-		task.wait(0.5)
+		ragdollAndExplode(zombie, 30)
+		task.wait(2.0)
 		zombie:Destroy()
 		onDied()
 	end)
@@ -243,26 +295,22 @@ end
 --- Server-authoritative damage application.
 --- Validates identity, parent, and Humanoid before taking damage.
 --- NEVER trust the client to pass a valid model — always re-validate here.
-function ZombieService.damageZombie(zombieModel: Model?, amount: number, isHeadshot: boolean?): (boolean, string, Vector3?)
+function ZombieService.damageZombie(zombieModel: Model?, amount: number, isHeadshot: boolean?, knockbackForce: number, shooterPos: Vector3?): (boolean, string, Vector3?)
 	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	local humanoid = zombieModel:FindFirstChildWhichIsA("Humanoid", true) :: Humanoid?
 	if not humanoid then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
-	if humanoid.Health <= 0 then
-		return false, tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE), nil
-	end
+	if humanoid.Health <= 0 then return false, tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE), nil end
 
 	local healthBefore = humanoid.Health
 	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local deathPosition = if rootPart then rootPart.Position else zombieModel:GetPivot().Position
 
-	-- Apply headshot multiplier (server-authoritative — client flag is advisory only).
-	if isHeadshot then
-		amount = math.floor(amount * (Config.HEADSHOT_MULTIPLIER :: number))
-	end
+	if isHeadshot then amount = math.floor(amount * (Config.HEADSHOT_MULTIPLIER :: number)) end
 
 	humanoid:TakeDamage(amount)
+	applyKnockback(zombieModel, knockbackForce, shooterPos)
 	local zombieType = tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE)
 	local killed = healthBefore > 0 and amount >= healthBefore
 	return killed, zombieType, killed and deathPosition or nil
