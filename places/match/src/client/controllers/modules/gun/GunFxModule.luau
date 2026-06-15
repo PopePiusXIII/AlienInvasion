@@ -80,6 +80,7 @@ function GunFxModule.onGunUnequipped()
 	_cachedFlash     = nil
 	_cachedParticles = nil
 	_cachedSound     = nil
+	_currentGunName = nil
 end
 
 function GunFxModule.playShootSound()
@@ -157,6 +158,80 @@ function GunFxModule.playShootAnimation()
 	end)
 	if not ok or not track then
 		warn("GunFxModule.playShootAnimation: failed to load animation track for '" .. tostring(_currentGunName) .. "'")
+		return
+	end
+
+	track:Play()
+end
+
+function GunFxModule.playReloadAnimation()
+	if not _currentGunName then
+		warn("GunFxModule.playReloadAnimation: no current gun name set")
+		return
+	end
+
+	local viewModelsFolder = ReplicatedStorage:FindFirstChild("ViewModels")
+	if not viewModelsFolder then
+		warn("GunFxModule.playReloadAnimation: ReplicatedStorage.ViewModels not found")
+		return
+	end
+
+	local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
+	if not template or not template:IsA("Model") then
+		warn("GunFxModule.playReloadAnimation: no ViewModel template for gun '" .. tostring(_currentGunName) .. "' in ReplicatedStorage.ViewModels")
+		return
+	end
+
+	local animObj = template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation")
+	if not animObj or not animObj:IsA("Animation") then
+		warn("GunFxModule.playReloadAnimation: ViewModel template for '" .. tostring(_currentGunName) .. "' has no Animation named 'reloadAnimation' or 'ReloadAnimation'")
+		return
+	end
+
+	-- Play the animation on the camera-mounted viewmodel instance (if present)
+	local cam = workspace.CurrentCamera
+	if not cam then
+		warn("GunFxModule.playReloadAnimation: workspace.CurrentCamera is nil")
+		return
+	end
+
+	local vmInstance = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
+	if not vmInstance or not vmInstance:IsA("Model") then
+		warn("GunFxModule.playReloadAnimation: no viewmodel instance named '" .. tostring(_currentGunName) .. "' parented to Camera")
+		return
+	end
+
+	local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
+	local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
+
+	local animator: Animator? = nil
+	if animationController then
+		animator = animationController:FindFirstChildWhichIsA("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = animationController
+		end
+	elseif humanoid then
+		animator = humanoid:FindFirstChildWhichIsA("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = humanoid
+		end
+	else
+		warn("GunFxModule.playReloadAnimation: viewmodel instance '" .. tostring(vmInstance.Name) .. "' has neither AnimationController nor Humanoid")
+		return
+	end
+
+	if not animator then
+		warn("GunFxModule.playReloadAnimation: failed to obtain Animator for viewmodel '" .. tostring(vmInstance.Name) .. "'")
+		return
+	end
+
+	local ok, track = pcall(function()
+		return animator:LoadAnimation(animObj :: Animation)
+	end)
+	if not ok or not track then
+		warn("GunFxModule.playReloadAnimation: failed to load animation track for '" .. tostring(_currentGunName) .. "'")
 		return
 	end
 

@@ -105,6 +105,8 @@ local function reload()
 	if _isReloading or getCurrentAmmo() == stats.magSize then return end
 	_isReloading = true
 	refreshAmmoDisplay()
+	-- Play reload animation on viewmodel if available
+	GunFxModule.playReloadAnimation()
 	task.wait(stats.reloadTime)
 	if _equippedGun and _equippedGun == reloadingGun then
 		setCurrentAmmo(stats.magSize)
