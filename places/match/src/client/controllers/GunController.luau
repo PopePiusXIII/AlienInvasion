@@ -56,6 +56,8 @@ type GunStats = {
 	magSize: number,
 	reloadTime: number,
 	isAutomatic: boolean,
+	isShotgun: boolean,
+	knockbackForce: number,
 	tracer: GunCatalogModule.GunTracerStyle,
 }
 
@@ -106,9 +108,21 @@ local function reload()
 	if _isReloading or getCurrentAmmo() == stats.magSize then return end
 	_isReloading = true
 	refreshAmmoDisplay()
-	-- Play reload animation on viewmodel if available
-	GunFxModule.playReloadAnimation()
-	task.wait(stats.reloadTime)
+
+	if stats.isShotgun then
+		-- Shotgun: play reload animation once per shell needed to fill the mag.
+		local shellsNeeded = stats.magSize - getCurrentAmmo()
+		local timePerShell = stats.reloadTime / stats.magSize
+		for _i = 1, shellsNeeded do
+			GunFxModule.playReloadAnimation()
+			task.wait(timePerShell)
+		end
+	else
+		-- Standard gun: single reload animation for the whole mag.
+		GunFxModule.playReloadAnimation()
+		task.wait(stats.reloadTime)
+	end
+
 	if _equippedGun and _equippedGun == reloadingGun then
 		setCurrentAmmo(stats.magSize)
 	end

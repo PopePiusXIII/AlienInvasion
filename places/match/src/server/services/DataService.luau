@@ -20,7 +20,7 @@ local TAG = "DataService"
 
 local DataService = Framework.CreateService({ Name = TAG })
 
-local _statsStore: DataStore
+local _statsStore: DataStore = DataStoreService:GetDataStore("AlienInvasion_Profiles")
 local _profileCache: { [Player]: { [string]: any } } = {}
 
 type PlayerProfile = {

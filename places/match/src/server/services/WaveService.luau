@@ -196,8 +196,10 @@ function WaveService.startBattle(player: Player): number
 	EconomyService.beginRun(player)
 	player:SetAttribute("CurrentWave", Config.STARTING_WAVE)
 
-	local humanoid = getBattleHumanoid(player)
-	
+	-- Wait for the player's character and humanoid to be ready before proceeding.
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+
 	local attached = ClerkInteractionModule.attach(player, function()
 		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))
 	end)

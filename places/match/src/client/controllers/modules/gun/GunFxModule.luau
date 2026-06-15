@@ -12,6 +12,7 @@ local _cachedMuzzle:    BasePart?        = nil
 local _cachedFlash:     PointLight?      = nil
 local _cachedParticles: ParticleEmitter? = nil
 local _cachedSound:     Sound?           = nil
+local _cachedReloadSnd: Sound?           = nil
 local _currentGunName:  string?          = nil
 
 type GunTracerStyle = {
@@ -69,6 +70,11 @@ function GunFxModule.onGunEquipped(gun: Tool)
 	local snd = gun:FindFirstChild("ShootSound", true)
 	if snd and snd:IsA("Sound") then
 		_cachedSound = snd :: Sound
+	end
+
+	local reloadSnd = gun:FindFirstChild("ReloadSound", true)
+	if reloadSnd and reloadSnd:IsA("Sound") then
+		_cachedReloadSnd = reloadSnd :: Sound
 	end
 
 	-- remember current gun name for viewmodel animation lookup
@@ -236,6 +242,12 @@ function GunFxModule.playReloadAnimation()
 	end
 
 	track:Play()
+
+	-- Play reload sound alongside the animation
+	if _cachedReloadSnd then
+		_cachedReloadSnd.TimePosition = 0
+		_cachedReloadSnd:Play()
+	end
 end
 
 function GunFxModule.drawTracer(origin: Vector3, hitPosition: Vector3, tracerStyle: GunTracerStyle)
