@@ -31,6 +31,7 @@ require(controllers.GunController)        -- requires HudController
 require(controllers.ShopController)       -- no deps
 require(controllers.BoltController)       -- no deps
 require(controllers.ZombieController)     -- no deps
+require(controllers.ZombieAnimationController) -- starts animation manager for zombies
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
