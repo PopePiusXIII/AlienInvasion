@@ -5,15 +5,13 @@
 -- Without this, zombies appear to stutter/jerk as Roblox replicates MoveTo
 -- positions at discrete intervals.
 --
--- IMPORTANT: Only smooths zombies the client does NOT have network ownership of.
--- Zombies owned by the local player are already smooth (server MoveTo applies
--- directly). This controller handles OTHER players' zombies which stutter due
--- to replication lag.
+-- Smooths ALL zombies — for ones the client owns (via SetNetworkOwner on server),
+-- the lerp delta is tiny so it's effectively a no-op. For other players' zombies,
+-- this smooths out replication lag stutter.
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger = require(ReplicatedStorage.Shared.Logger)
@@ -34,10 +32,8 @@ type ZombieSmoothEntry = {
 
 local _smoothedZombies: { ZombieSmoothEntry } = {}
 local _zombieMap: { [Instance]: ZombieSmoothEntry } = {}
-local _localPlayer: Player?
 
 --- Find or create a smoothing entry for a zombie model.
---- Only smooths zombies the local player does NOT own (other players' zombies).
 local function getOrCreateEntry(zombie: Model): ZombieSmoothEntry?
 	if _zombieMap[zombie] then
 		return _zombieMap[zombie]
@@ -46,12 +42,6 @@ local function getOrCreateEntry(zombie: Model): ZombieSmoothEntry?
 	local rootPart = zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not rootPart then
 		Logger.warn(TAG, "Zombie %q has no HumanoidRootPart, skipping smoothing.", zombie:GetFullName())
-		return nil
-	end
-
-	-- Skip zombies we own — they're already smooth via direct MoveTo application.
-	-- Only smooth zombies owned by other players (which stutter from replication lag).
-	if _localPlayer and rootPart:GetNetworkOwner() == _localPlayer then
 		return nil
 	end
 
@@ -86,7 +76,6 @@ function ZombieController:Init()
 end
 
 function ZombieController:Start()
-	_localPlayer = Players.LocalPlayer
 	local workspace = game:GetService("Workspace")
 
 	-- Register any existing zombies at startup.
@@ -116,12 +105,6 @@ function ZombieController:Start()
 
 			-- Validate the zombie still exists.
 			if not entry.model.Parent then
-				removeEntry(entry.model)
-				continue
-			end
-
-			-- If network ownership changed to us, stop smoothing (MoveTo is now direct).
-			if _localPlayer and entry.rootPart:GetNetworkOwner() == _localPlayer then
 				removeEntry(entry.model)
 				continue
 			end

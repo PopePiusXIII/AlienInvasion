@@ -1,5 +1,7 @@
 --!strict
 return {
+	DATA_STORE_NAME = "PlayerStats",
+
 	BOLT_RISE_DURATION        = 0.5,
 	BOLT_HOVER_HEIGHT         = 0.1,
 	BOLT_ATTRACT_RADIUS       = 20,
