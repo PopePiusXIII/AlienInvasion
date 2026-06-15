@@ -141,6 +141,7 @@ local function fire(): boolean
 	local hitPosition, hitZombie = castShot(origin)
 
 	GunFxModule.playShootSound()
+	GunFxModule.playShootAnimation()
 	GunFxModule.drawTracer(origin, hitPosition, stats.tracer)
 	GunFxModule.flashMuzzle(Config.GUN_MUZZLE_DELAY)
 
@@ -242,6 +243,7 @@ local function onGunEquipped(gun: Tool)
 	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
 	local m = gun:FindFirstChild("Muzzle", true)
 	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
+	GunFxModule.onGunEquipped(gun)
 	GunViewModelModule.onGunEquipped(gun)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
@@ -260,6 +262,7 @@ local function onGunUnequipped()
 	stopAimPitchTracking()
 	_cachedMuzzle = nil
 	GunViewModelModule.onGunUnequipped()
+	GunFxModule.onGunUnequipped()
 	_equippedGun = nil
 	refreshAmmoDisplay()
 end

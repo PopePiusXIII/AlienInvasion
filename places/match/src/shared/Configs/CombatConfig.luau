@@ -75,7 +75,7 @@ return {
 			fireCooldown = 0.5,
 			magSize      = 12,
 			reloadTime   = 3,0,
-			isAutomatic  = true,
+			isAutomatic  = false,
 			tracer = {
 				lifetime  = 0.06,
 				thickness = 0.5,
