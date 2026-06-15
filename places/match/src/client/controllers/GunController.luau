@@ -30,7 +30,8 @@ local GunController = Framework.CreateController({ Name = TAG })
 
 local _localPlayer  = Players.LocalPlayer
 local _mouse        = _localPlayer:GetMouse()
-local _shootRemote: RemoteEvent
+local _shootRemote:      RemoteEvent
+local _hitSoundRemote:   RemoteEvent
 
 -- Gun state — all mutable locals are module-private.
 local _isReloading:      boolean              = false
@@ -115,10 +116,9 @@ local function reload()
 	refreshAmmoDisplay()
 end
 
-local function castShot(origin: Vector3): (Vector3, Model?)
+local function castShot(origin: Vector3)
 	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
-	local result = GunHitScanModule.castShot(_mouse, _localPlayer.Character, origin, stats.range)
-	return result.hitPosition, result.hitZombie
+	return GunHitScanModule.castShot(_mouse, _localPlayer.Character, origin, stats.range)
 end
 
 local function fire(): boolean
@@ -140,7 +140,10 @@ local function fire(): boolean
 	refreshAmmoDisplay()
 
 	local origin: Vector3 = _cachedMuzzle and _cachedMuzzle.Position or (hrp :: BasePart).Position
-	local hitPosition, hitZombie = castShot(origin)
+	local result = castShot(origin)
+	local hitPosition = result.hitPosition
+	local hitZombie = result.hitZombie
+	local isHeadshot = result.isHeadshot
 
 	GunFxModule.playShootSound()
 	GunFxModule.playShootAnimation()
@@ -148,7 +151,7 @@ local function fire(): boolean
 	GunFxModule.flashMuzzle(Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
-	Logger.fireServer(_shootRemote, hitZombie, _equippedGun.Name)
+	Logger.fireServer(_shootRemote, hitZombie, isHeadshot, hitPosition)
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false
@@ -319,6 +322,20 @@ function GunController:Start()
 		if input.KeyCode == Enum.KeyCode.R then
 			task.spawn(reload)
 		end
+	end)
+
+	-- Play hit sound (body or headshot) when server confirms a hit.
+	_hitSoundRemote = Framework.GetRemote(RemoteNames.ZOMBIE_HIT_SOUND)
+	local soundsFolder = ReplicatedStorage:FindFirstChild("Sounds") :: Folder?
+	_hitSoundRemote.OnClientEvent:Connect(function(hitPosition: Vector3, isHeadshot: boolean)
+		local templateName = isHeadshot and "ZombieHeadshotHit" or "ZombieBodyHit"
+		local template = soundsFolder and soundsFolder:FindFirstChild(templateName) :: Sound?
+		if not template then return end
+
+		local sound = (template :: Sound):Clone()
+		sound.Parent = _localPlayer.Character or workspace
+		sound:Play()
+		sound.Ended:Connect(function() sound:Destroy() end)
 	end)
 
 	Logger.info(TAG, "ShootGun remote acquired; gun watchers connected.")

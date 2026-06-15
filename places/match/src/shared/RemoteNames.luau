@@ -22,4 +22,5 @@ return {
 	REQUEST_FREE_LOADOUT   = "RequestFreeLoadout",
 	BOLT_SPAWNED           = "BoltSpawned",
 	CLAIM_BOLT             = "ClaimBolt",
+	ZOMBIE_HIT_SOUND       = "ZombieHitSound",
 }

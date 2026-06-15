@@ -5,6 +5,8 @@ local GunHitScanModule = {}
 export type ShotResult = {
 	hitPosition: Vector3,
 	hitZombie: Model?,
+	hitPart: BasePart?,
+	isHeadshot: boolean,
 }
 
 function GunHitScanModule.castShot(mouse: Mouse, character: Model?, origin: Vector3, range: number): ShotResult
@@ -20,8 +22,13 @@ function GunHitScanModule.castShot(mouse: Mouse, character: Model?, origin: Vect
 		return {
 			hitPosition = origin + direction,
 			hitZombie = nil,
+			hitPart = nil,
+			isHeadshot = false,
 		}
 	end
+
+	local hitPart = result.Instance:IsA("BasePart") and result.Instance :: BasePart or nil
+	local isHeadshot = hitPart and hitPart.Name:lower():find("head") ~= nil or false
 
 	local ancestor = result.Instance:FindFirstAncestorOfClass("Model")
 	local zombie = (ancestor and ancestor.Name == "Zombie") and ancestor :: Model or nil
@@ -29,6 +36,8 @@ function GunHitScanModule.castShot(mouse: Mouse, character: Model?, origin: Vect
 	return {
 		hitPosition = result.Position,
 		hitZombie = zombie,
+		hitPart = hitPart,
+		isHeadshot = isHeadshot,
 	}
 end
 
