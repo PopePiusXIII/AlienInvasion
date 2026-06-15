@@ -12,11 +12,13 @@
 
 local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local PhysicsService = game:GetService("PhysicsService")
+local PhysicsService    = game:GetService("PhysicsService")
+local PlayersService    = game:GetService("Players")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Config)
+local ZombiePathfinderActor = require(script.Parent.modules.zombie.ZombiePathfinderActor)
 
 local TAG = "ZombieService"
 
@@ -29,11 +31,12 @@ local _zombieTemplates: { [string]: Model } = {}
 type ZombieEntry = { zombie: Model, humanoid: Humanoid, target: Player }
 local _activeZombies: { ZombieEntry } = {}
 
-local function tickChaseLoop()
-	local PlayersService = game:GetService("Players")
-
+-- ── Snapshot feeder (main thread) ────────────────────────────────────────────
+-- Purges dead zombies and feeds fresh position snapshots to the desynchronized
+-- pathfinder actor. The heavy repulsion math runs off the main thread.
+local function snapshotFeederLoop()
 	while true do
-		-- Serial: purge dead / removed zombies (DataModel writes not allowed in parallel).
+		-- Serial: purge dead / removed zombies (DataModel writes — must stay on main thread).
 		local i = #_activeZombies
 		while i > 0 do
 			local entry = _activeZombies[i]
@@ -44,80 +47,16 @@ local function tickChaseLoop()
 			i -= 1
 		end
 
-		-- Gather all alive player positions.
-		local playerPositions: { [string]: Vector3 } = {}
-		for _, player in ipairs(PlayersService:GetPlayers()) do
-			local character = player.Character
-			if character then
-				local targetRoot = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-				if targetRoot then
-					playerPositions[player.Name] = targetRoot.Position
-				end
-			end
-		end
-
-		-- Serial: snapshot zombie root positions before going parallel.
-		local count = #_activeZombies
-		local rootPositions: { [number]: Vector3 } = table.create(count)
-		for idx, entry in ipairs(_activeZombies) do
+		-- Snapshot zombie root positions and feed to the desynchronized actor.
+		local snapshots: { ZombiePathfinderActor.ZombieSnapshot } = {}
+		for _, entry in ipairs(_activeZombies) do
 			local root = entry.zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
-			rootPositions[idx] = root and root.Position or nil :: any
+			table.insert(snapshots, {
+				rootPosition = root and root.Position or nil,
+				humanoid = entry.humanoid,
+			})
 		end
-
-		-- Pure math — compute move targets chasing the closest alive player, with repulsion offsets.
-		local moveTargets: { [number]: Vector3 } = table.create(count)
-		for idx = 1, count do
-			local myPos = rootPositions[idx]
-			if not myPos then continue end
-
-			-- Find closest alive player to this zombie.
-			local closestPlayerPos: Vector3? = nil
-			local closestDistSq = math.huge
-			for _, playerPos in pairs(playerPositions) do
-				local dx = myPos.X - playerPos.X
-				local dz = myPos.Z - playerPos.Z
-				local distSq = dx * dx + dz * dz
-				if distSq < closestDistSq then
-					closestDistSq = distSq
-					closestPlayerPos = playerPos
-				end
-			end
-
-			if not closestPlayerPos then continue end
-
-			local dp = math.random(-10, 10)
-			local moveTarget = closestPlayerPos + Vector3.new(dp, 0, dp)
-
-			-- Repulsion from nearby zombies.
-			local rx, rz = 0, 0
-			local repDist = Config.ZOMBIE_REPULSION_DISTANCE
-			local repForce = Config.ZOMBIE_REPULSION_FORCE
-			for jdx = 1, count do
-				if jdx == idx then continue end
-				local otherPos = rootPositions[jdx]
-				if not otherPos then continue end
-				local dx = myPos.X - otherPos.X
-				local dz = myPos.Z - otherPos.Z
-				local distSq = dx * dx + dz * dz
-				if distSq < repDist * repDist and distSq > 0.0001 then
-					local dist = math.sqrt(distSq)
-					local strength = repForce * (1 - dist / repDist)
-					rx += (dx / dist) * strength
-					rz += (dz / dist) * strength
-				end
-			end
-			moveTarget = moveTarget + Vector3.new(rx, 0, rz)
-
-			moveTargets[idx] = moveTarget
-		end
-
-		-- Apply MoveTo (DataModel write).
-		for idx, entry in ipairs(_activeZombies) do
-			local target = moveTargets[idx]
-			if target then
-				entry.humanoid:MoveTo(target)
-			end
-		end
+		ZombiePathfinderActor.setSnapshots(snapshots)
 
 		task.wait(Config.ZOMBIE_CHASE_INTERVAL)
 	end
@@ -160,9 +99,14 @@ function ZombieService:Init()
 		PhysicsService:RegisterCollisionGroup("Zombies")
 		PhysicsService:CollisionGroupSetCollidable("Zombies", "Zombies", false)
 	end)
+end
 
-	-- Single shared loop drives all zombie AI — one coroutine total.
-	task.spawn(tickChaseLoop)
+function ZombieService:Start()
+	-- Start parallel pathfinder actor (handles repulsion + MoveTo off main thread).
+	ZombiePathfinderActor.start()
+
+	-- Lightweight snapshot feeder stays on main thread for DataModel safety.
+	task.spawn(snapshotFeederLoop)
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────

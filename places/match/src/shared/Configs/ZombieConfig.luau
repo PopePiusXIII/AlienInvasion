@@ -6,7 +6,7 @@ return {
 	},
 	ZOMBIE_DEFAULT_TYPE    = "Normal",
 	ZOMBIE_DAMAGE_COOLDOWN     = 1,
-	ZOMBIE_CHASE_INTERVAL      = 0.3,
+	ZOMBIE_CHASE_INTERVAL      = 0.1,
 	ZOMBIE_SPAWN_DISTANCE      = 100,
 	ZOMBIE_SPAWN_HEIGHT        = 3,
 	ZOMBIE_REPULSION_DISTANCE  = 8,   -- studs; zombies within this range push apart

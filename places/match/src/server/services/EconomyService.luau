@@ -38,7 +38,7 @@ local _shopPurchaseResultRemote:  RemoteEvent
 local _boltSpawnedRemote:         RemoteEvent
 local _claimBoltRemote:           RemoteEvent
 
-local BOLT_LIFETIME    = 140
+local BOLT_LIFETIME    = 10
 local MAX_SILVER_BOLTS = 10
 local MAX_GOLD_BOLTS   = 6
 
