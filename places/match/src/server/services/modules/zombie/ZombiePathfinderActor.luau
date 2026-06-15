@@ -175,9 +175,12 @@ local function chaseLoop()
 			computeMoveTargets(rootPositions, playerPositions, count)
 		end, true) -- true = parallel context
 
-		-- Wait for parallel task to finish (typically <1ms).
-		while not _ready do
-			task.wait()
+		-- Non-blocking wait: if computation isn't ready, skip this frame.
+		-- Blocking here (while not _ready do task.wait() end) stalls the main thread,
+		-- causing stutter that worsens with more zombies (2+ players, later waves).
+		if not _ready then
+			task.wait(Config.ZOMBIE_CHASE_INTERVAL)
+			continue
 		end
 
 		-- Apply MoveTo on main thread (DataModel write).

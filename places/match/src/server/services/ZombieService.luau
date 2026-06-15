@@ -126,6 +126,15 @@ local function cloneZombie(target: Player, zombieType: string): Model
 	zombie:SetAttribute("Owner", target.Name)
 	zombie:SetAttribute("ZombieType", zombieType)
 	zombie.Parent = workspace
+
+	-- Give network ownership to the target player so they receive smooth
+	-- physics updates for zombies chasing them (reduces stutter from replication lag).
+	for _, part in ipairs(zombie:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part:SetNetworkOwner(target)
+		end
+	end
+
 	return zombie
 end
 

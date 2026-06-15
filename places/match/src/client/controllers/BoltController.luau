@@ -27,6 +27,7 @@ type ClientBoltState = {
 	riseComplete: boolean,
 	attractSpeed: number,
 	claimed:      boolean,
+	spawnTime:    number,
 }
 
 local _activeBolts: { ClientBoltState } = {}
@@ -37,6 +38,9 @@ local _boltSpawnedRemote: RemoteEvent
 local _claimBoltRemote:   RemoteEvent
 
 local _localPlayer: Player
+
+-- Must match the server-side BOLT_LIFETIME so client visuals expire in sync.
+local BOLT_LIFETIME = 10
 
 local function moveBolt(bolt: Instance, root: BasePart, pos: Vector3)
 	if bolt:IsA("Model") then
@@ -105,6 +109,7 @@ local function onBoltSpawned(id: number, currencyName: string, _amount: number, 
 		riseComplete = false,
 		attractSpeed = 0,
 		claimed      = false,
+		spawnTime    = tick(),
 	}
 	table.insert(_activeBolts, state)
 end
@@ -144,8 +149,9 @@ function BoltController:Start()
 		while i > 0 do
 			local s = _activeBolts[i]
 
-			-- Purge if already claimed or model was destroyed externally.
-			if s.claimed or not s.bolt.Parent then
+			-- Purge if already claimed, model was destroyed externally, or bolt has expired.
+			if s.claimed or not s.bolt.Parent or (tick() - s.spawnTime) >= BOLT_LIFETIME then
+				if s.bolt.Parent then s.bolt:Destroy() end
 				_activeBolts[i] = _activeBolts[#_activeBolts]
 				_activeBolts[#_activeBolts] = nil
 				i -= 1
