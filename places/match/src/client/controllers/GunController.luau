@@ -147,7 +147,7 @@ local function fire(): boolean
 	GunFxModule.flashMuzzle(Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
-	Logger.fireServer(_shootRemote, hitZombie, _equippedGun.Name, isHeadshot, hitPosition)
+	Logger.fireServer(_shootRemote, hitZombie, isHeadshot, hitPosition)
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false

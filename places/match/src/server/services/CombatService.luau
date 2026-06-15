@@ -8,6 +8,7 @@
 -- Security notes:
 --   • The client sends the Instance it thinks it hit. Server re-validates:
 --     name == "Zombie", parent == workspace, has a live Humanoid.
+--   • Gun name is resolved server-side from the player's equipped Tool — client input is ignored.
 --   • ZombieService.damageZombie() is the authoritative damage gate.
 --   • Logger.wrapServerEvent() pcall-isolates this handler from the server thread.
 --------------------------------------------------------------------------------
@@ -25,29 +26,18 @@ local TAG = "CombatService"
 
 local CombatService = Framework.CreateService({ Name = TAG })
 
-local function resolveDamage(gunName: string?): number
-	local statsByName = Config.GUN_STATS :: { [string]: any }
-	if gunName and statsByName[gunName] and type(statsByName[gunName].damage) == "number" then
-		return statsByName[gunName].damage
-	end
-	return Config.GUN_DAMAGE
-end
-
-local function resolveKnockbackForce(gunName: string?): number
-	local statsByName = Config.GUN_STATS :: { [string]: any }
-	if gunName and statsByName[gunName] and type(statsByName[gunName].knockbackForce) == "number" then
-		return statsByName[gunName].knockbackForce
-	end
-	return Config.GUN_KNOCKBACK_FORCE
-end
-
 function CombatService:Init()
 	local shootRemote = Framework.CreateRemote(RemoteNames.SHOOT_GUN)
 	local hitSoundRemote = Framework.CreateRemote(RemoteNames.ZOMBIE_HIT_SOUND)
 
-	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, gunName: string?, isHeadshot: boolean, hitPosition: Vector3)
+	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, isHeadshot: boolean, hitPosition: Vector3)
 		if not zombieModel then return end
 		local character = player.Character
+
+		-- Server-authoritative gun resolution: read from the equipped Tool, not from client input.
+		local equippedTool = character and character:FindFirstChildWhichIsA("Tool") :: Tool?
+		local serverGunName: string? = if equippedTool then equippedTool.Name else nil
+
 		local shooterPos: Vector3?
 		if character then
 			local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -55,9 +45,8 @@ function CombatService:Init()
 		end
 		local killed, zombieType, deathPosition = ZombieService.damageZombie(
 			zombieModel :: Model?,
-			resolveDamage(gunName),
+			serverGunName,
 			isHeadshot,
-			resolveKnockbackForce(gunName),
 			shooterPos
 		)
 
