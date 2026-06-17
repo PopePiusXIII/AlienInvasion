@@ -5,9 +5,12 @@
 
     "ReplicatedStorage": {
       "Shared": {
-        "$path": "src/shared",
-        "Framework": { "$path": "../../packages/shared/Framework.luau" },
-        "Logger":    { "$path": "../../packages/shared/Logger.luau" }
+        "$className": "Folder",
+        "Config":       { "$path": "src/shared/Config.luau" },
+        "LightShowConfig": { "$path": "src/shared/LightShowConfig.luau" },
+        "RemoteNames":  { "$path": "src/shared/RemoteNames.luau" },
+        "Framework":    { "$path": "../../packages/shared/Framework.luau" },
+        "Logger":       { "$path": "../../packages/shared/Logger.luau" }
       }
     },
 

@@ -17,7 +17,7 @@ return {
 			Template = "Normal_Run_Zombie",
 			-- Optional Animations table. If present, keys are action names and values
 			-- are Roblox asset ids (number or string). Example:
-			Animations = { walk = 180426354, jump = 125750702 }
+			Animations = { walk = 140652003617107, jump = 125750702 }
 		},
 		Tank    = {
 			MaxHealth = 250,
