@@ -3,6 +3,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Logger = require(ReplicatedStorage.Shared.Logger)
+local Config = require(ReplicatedStorage.Shared.Config)
+
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
@@ -18,6 +21,7 @@ local cameraCFrameConn: RBXScriptConnection? = nil
 
 local function setWorldToolVisible(visible: boolean)
     local modifier = visible and 0 or 1
+    modifier = 0
     if not currentTool then return end
     for _, descendant in ipairs(currentTool:GetDescendants()) do
         if descendant:IsA("BasePart") then
@@ -48,10 +52,34 @@ local function mountViewmodel(template: Model)
             part.CastShadow = false
             part.CanCollide = false
             part.LocalTransparencyModifier = 0
+            part.CanQuery = false
         end
     end
 
     activeViewmodel.Parent = camera
+
+    -- Prefer a PrimaryPart for robust model transforms
+    local root = activeViewmodel:FindFirstChild("HumanoidRootPart")
+    if root and activeViewmodel.PrimaryPart == nil then
+        activeViewmodel.PrimaryPart = root
+    end
+
+    -- Debug: compare muzzle offsets in template vs clone when verbose
+    if Config and Config.DEBUG_VERBOSE then
+        local function debugLogMuzzleState(model: Model, label: string)
+            local m = model:FindFirstChild("Muzzle", true)
+            local r = model:FindFirstChild("HumanoidRootPart")
+            if m and r and m:IsA("BasePart") and r:IsA("BasePart") then
+                local rel = r.CFrame:ToObjectSpace(m.CFrame)
+                Logger.info("GunViewModelModule", label .. " muzzle rel to root: " .. tostring(rel))
+            else
+                Logger.info("GunViewModelModule", label .. " muzzle or root missing for debug")
+            end
+        end
+        -- If we have a template (passed into mountViewmodel), log its muzzle too if possible
+        -- Note: currentTemplate is set elsewhere; just log the clone state here
+        debugLogMuzzleState(activeViewmodel, "activeViewmodel (cloned)")
+    end
 
     -- Immediately hide world tool and real arms while viewmodel is mounted
     setWorldToolVisible(false)
@@ -65,11 +93,12 @@ local function mountViewmodel(template: Model)
             return
         end
 
-        local root = activeViewmodel:FindFirstChild("HumanoidRootPart")
+        local rootPart = activeViewmodel:FindFirstChild("HumanoidRootPart")
         local fakeCam = activeViewmodel:FindFirstChild("FakeCamera")
-        if root and fakeCam then
-            local viewmodelOffset = root.CFrame:ToObjectSpace(fakeCam.CFrame)
-            root.CFrame = camera.CFrame * viewmodelOffset:Inverse()
+        if rootPart and fakeCam and activeViewmodel.PrimaryPart then
+            local viewmodelOffset = rootPart.CFrame:ToObjectSpace(fakeCam.CFrame)
+            -- Use SetPrimaryPartCFrame for more robust model transforms
+            activeViewmodel:SetPrimaryPartCFrame(camera.CFrame * viewmodelOffset:Inverse())
             setWorldToolVisible(false)
         end
     end)
@@ -85,6 +114,26 @@ local function isFirstPerson(): boolean
 end
 
 local Module = {}
+
+function Module.getActiveMuzzleForTool(toolName: string): BasePart?
+    if not activeViewmodel then
+        return nil
+    end
+
+    local weaponModel = activeViewmodel:FindFirstChild("WeaponModel", true)
+    local muzzle: Instance? = nil
+    if weaponModel then
+        muzzle = weaponModel:FindFirstChild("Muzzle", true)
+    else
+        warn("Cant find weapon model in view Model")
+    end
+    if muzzle and muzzle:IsA("BasePart") then
+        return muzzle :: BasePart
+    else
+        warn("Cant find muzzle in weaponModel in view model")
+    end
+    return nil
+end
 
 local function updateViewmodelVisibility()
     if not currentTool then

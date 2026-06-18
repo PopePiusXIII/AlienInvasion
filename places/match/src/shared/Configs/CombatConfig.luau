@@ -85,8 +85,8 @@ return {
 			isShotgun      = true,
 			knockbackForce = 45,
 			tracer = {
-				lifetime  = 0.06,
-				thickness = 0.5,
+				lifetime  = 10,
+				thickness = 0.1,
 				color     = Color3.fromRGB(255, 214, 128),
 			},
 		},
