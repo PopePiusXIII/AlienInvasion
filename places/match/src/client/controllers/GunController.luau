@@ -42,10 +42,13 @@ local _equippedGun:      Tool?                = nil
 local _activatedConn:    RBXScriptConnection? = nil
 local _deactivatedConn:  RBXScriptConnection? = nil
 local _aimPitchConn:     RBXScriptConnection? = nil
+local _cameraModeConn:   RBXScriptConnection? = nil
+local _cameraCFrameConn: RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
 local _baseGunGrip:      CFrame?              = nil
 local _cachedMuzzle:     BasePart?            = nil
 local _cachedHrp:        BasePart?            = nil
+local _camera = workspace.CurrentCamera
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
@@ -243,6 +246,78 @@ local function onCharacterAdded(character: Model)
 	_cachedHrp = (hrp and hrp:IsA("BasePart")) and hrp :: BasePart or nil
 end
 
+local function isFirstPerson(): boolean
+	if not _localPlayer or not _localPlayer.Character or not _camera then return false end
+	local root = _localPlayer.Character:FindFirstChild("Head") or _localPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") then return false end
+	local dist = (_camera.CFrame.Position - root.Position).Magnitude
+	Logger.info(TAG, "isFirstPerson: distance=" .. tostring(dist))
+	return dist < 2
+end
+
+local function updateCachedMuzzleForView()
+	if not _equippedGun then return end
+	if isFirstPerson() then
+		Logger.info(TAG, "updateCachedMuzzleForView: detected FIRST PERSON for gun=" .. tostring(_equippedGun.Name))
+		local vmMuzzle = GunViewModelModule.getActiveMuzzleForTool(_equippedGun.Name)
+		if vmMuzzle then
+			_cachedMuzzle = vmMuzzle
+			Logger.info(TAG, "updateCachedMuzzleForView: cached muzzle set to active viewmodel muzzle (" .. tostring(vmMuzzle:GetFullName()) .. ")")
+			return
+		end
+		else
+			Logger.info(TAG, "view model: has no Muzzle for " .. tostring(_equippedGun.Name))
+		end
+	else
+		Logger.info(TAG, "updateCachedMuzzleForView: detected THIRD PERSON for gun=" .. tostring(_equippedGun and _equippedGun.Name or "nil"))
+		local m = _equippedGun:FindFirstChild("Muzzle", true)
+		if m and m:IsA("BasePart") then
+			_cachedMuzzle = m :: BasePart
+			Logger.info(TAG, "updateCachedMuzzleForView: cached muzzle set to tool muzzle (" .. tostring(m:GetFullName()) .. ")")
+		else
+			Logger.info(TAG, "updateCachedMuzzleForView: tool has no Muzzle for " .. tostring(_equippedGun.Name))
+		end
+	end
+end
+
+local function startViewModeTracking()
+	if _cameraModeConn then
+		_cameraModeConn:Disconnect()
+		_cameraModeConn = nil
+	end
+	if _cameraCFrameConn then
+		_cameraCFrameConn:Disconnect()
+		_cameraCFrameConn = nil
+	end
+	if _localPlayer then
+		_cameraModeConn = _localPlayer:GetPropertyChangedSignal("CameraMode"):Connect(function()
+			Logger.info(TAG, "startViewModeTracking: CameraMode changed: " .. tostring(_localPlayer.CameraMode))
+			updateCachedMuzzleForView()
+		end)
+		Logger.info(TAG, "startViewModeTracking: listening to CameraMode changes")
+	end
+	-- Ensure we have the current camera (may be nil at module load time)
+	_camera = workspace.CurrentCamera
+	if _camera then
+		_cameraCFrameConn = _camera:GetPropertyChangedSignal("CFrame"):Connect(function()
+			updateCachedMuzzleForView()
+		end)
+		Logger.info(TAG, "startViewModeTracking: listening to Camera.CFrame changes")
+	end
+end
+
+local function stopViewModeTracking()
+	if _cameraModeConn then
+		_cameraModeConn:Disconnect()
+		_cameraModeConn = nil
+	end
+	if _cameraCFrameConn then
+		_cameraCFrameConn:Disconnect()
+		_cameraCFrameConn = nil
+	end
+	Logger.info(TAG, "stopViewModeTracking: stopped camera/view tracking")
+end
+
 local function onCharacterRemoving()
 	_cachedHrp = nil
 end
@@ -262,6 +337,9 @@ local function onGunEquipped(gun: Tool)
 	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
 	local m = gun:FindFirstChild("Muzzle", true)
 	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
+	-- Track camera/view changes and update cached muzzle to viewmodel muzzle when in first-person
+	startViewModeTracking()
+	updateCachedMuzzleForView()
 	GunFxModule.onGunEquipped(gun)
 	GunViewModelModule.onGunEquipped(gun)
 	startAimPitchTracking(gun)
@@ -279,6 +357,7 @@ local function onGunUnequipped()
 	end
 	stopTriggerFiring()
 	stopAimPitchTracking()
+	stopViewModeTracking()
 	_cachedMuzzle = nil
 	GunViewModelModule.onGunUnequipped()
 	GunFxModule.onGunUnequipped()
