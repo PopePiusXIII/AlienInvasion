@@ -10,7 +10,12 @@
         "LightShowConfig": { "$path": "src/shared/LightShowConfig.luau" },
         "RemoteNames":  { "$path": "src/shared/RemoteNames.luau" },
         "Framework":    { "$path": "../../packages/shared/Framework.luau" },
-        "Logger":       { "$path": "../../packages/shared/Logger.luau" }
+        "Logger":       { "$path": "../../packages/shared/Logger.luau" },
+        "vide":         { "$path": "../../src/shared/vide" }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" }
       }
     },
 

@@ -16,8 +16,9 @@ local Logger    = require(ReplicatedStorage.Shared.Logger)
 local controllers = script.controllers
 
 require(controllers.CharacterController)
+require(controllers.LobbyHudController)
 require(controllers.MatchmakingController)
 
-Logger.info("LobbyClientRuntime", "Booting — 2 controllers registered.")
+Logger.info("LobbyClientRuntime", "Booting — 3 controllers registered.")
 Framework.Start()
 Logger.info("LobbyClientRuntime", "Framework started.")

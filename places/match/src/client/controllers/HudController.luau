@@ -1,7 +1,7 @@
 --!strict
 --------------------------------------------------------------------------------
 -- HudController.luau  (src/client/controllers)
--- Owns all in-game HUD: wave label, ammo counter, upgrade echo text.
+-- Owns all in-game HUD via the reactive vide MatchHUD component.
 -- Listens to WaveAnnounce and WaveClear, delegates stat boosts to
 -- CharacterController. Single Responsibility: UI presentation only.
 --
@@ -10,7 +10,7 @@
 --   HudController.getScreenGui()            — called by LobbyController to parent its UI
 --------------------------------------------------------------------------------
 
-local Players        = game:GetService("Players")
+local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework             = require(ReplicatedStorage.Shared.Framework)
@@ -18,6 +18,7 @@ local Logger                = require(ReplicatedStorage.Shared.Logger)
 local Config                = require(ReplicatedStorage.Shared.Config)
 local RemoteNames           = require(ReplicatedStorage.Shared.RemoteNames)
 local CharacterController   = require(script.Parent.CharacterController)
+local MatchHUD              = require(ReplicatedStorage.Shared.vide.MatchHUD)
 local HudUpgradeEchoModule  = require(script.Parent.modules.hud.HudUpgradeEchoModule)
 
 local TAG = "HudController"
@@ -26,70 +27,19 @@ local HudController = Framework.CreateController({ Name = TAG })
 
 local _localPlayer = Players.LocalPlayer
 local _screenGui:  ScreenGui
-local _waveLabel:  TextLabel
-local _ammoLabel:  TextLabel
-local _silverLabel: TextLabel
-
--- ── Builder helpers ───────────────────────────────────────────────────────────
--- All UI is constructed programmatically here — no Studio explorer instances.
-
-local function buildWaveLabel(parent: ScreenGui): TextLabel
-	local label                  = Instance.new("TextLabel")
-	label.Name                   = "WaveLabel"
-	label.Size                   = UDim2.new(0.4, 0, 0.1, 0)
-	label.Position               = UDim2.new(0.3, 0, 0.1, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3             = Color3.new(1, 0.2, 0.2)
-	label.TextScaled             = true
-	label.Font                   = Enum.Font.GothamBold
-	label.Text                   = ""
-	label.Parent                 = parent
-	return label
-end
-
-local function buildAmmoLabel(parent: ScreenGui): TextLabel
-	local label                  = Instance.new("TextLabel")
-	label.Name                   = "AmmoLabel"
-	label.Size                   = UDim2.new(0.18, 0, 0.07, 0)
-	label.Position               = UDim2.new(0.80, 0, 0.88, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3             = Color3.new(1, 1, 1)
-	label.TextScaled             = true
-	label.Font                   = Enum.Font.GothamBold
-	label.Text                   = ""
-	label.Parent                 = parent
-	return label
-end
-
-local function buildSilverLabel(parent: ScreenGui): TextLabel
-	local label                  = Instance.new("TextLabel")
-	label.Name                   = "SilverLabel"
-	label.Size                   = UDim2.new(0.24, 0, 0.06, 0)
-	label.Position               = UDim2.new(0.02, 0, 0.88, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3             = Color3.fromRGB(230, 230, 230)
-	label.TextScaled             = true
-	label.Font                   = Enum.Font.GothamBold
-	label.TextXAlignment         = Enum.TextXAlignment.Left
-	label.Text                   = "SILVER: 0"
-	label.Parent                 = parent
-	return label
-end
-
+local _controls
+local _unmount: () -> ()
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function HudController:Init()
-	-- Create the ScreenGui here so it is owned once, never duplicated.
 	_screenGui              = Instance.new("ScreenGui")
 	_screenGui.Name         = "AlienInvasionHud"
 	_screenGui.ResetOnSpawn = false
 	_screenGui.Parent       = _localPlayer.PlayerGui
 
-	_waveLabel = buildWaveLabel(_screenGui)
-	_ammoLabel = buildAmmoLabel(_screenGui)
-	_silverLabel = buildSilverLabel(_screenGui)
+	_controls, _unmount = MatchHUD.createMatchHUD({ parentGui = _screenGui })
 
-	Logger.info(TAG, "ScreenGui and HUD labels created.")
+	Logger.info(TAG, "ScreenGui created; MatchHUD mounted via vide.")
 end
 
 function HudController:Start()
@@ -99,9 +49,9 @@ function HudController:Start()
 
 	-- Logger.wrapClientEvent: pcall-isolated + net trace when DEBUG_NETWORKING = true.
 	Logger.wrapClientEvent(waveAnnounceRemote, TAG, function(waveNumber: number)
-		_waveLabel.Text = "WAVE " .. tostring(waveNumber)
+		_controls.setWaveText("WAVE " .. tostring(waveNumber))
 		task.delay(3, function()
-			_waveLabel.Text = ""
+			_controls.clearWaveText()
 		end)
 	end)
 
@@ -124,9 +74,7 @@ function HudController:Start()
 	end)
 
 	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number)
-		if _silverLabel then
-			_silverLabel.Text = string.format("SILVER: %d", math.max(0, math.floor(silverStuds)))
-		end
+		_controls.setSilverAmount(silverStuds)
 	end)
 
 	Logger.info(TAG, "Wave event listeners connected.")
@@ -137,10 +85,7 @@ end
 --- Called by GunController to update the ammo display.
 --- Keeps ammo rendering decoupled from gun state logic.
 function HudController.setAmmoText(text: string, color: Color3)
-	if _ammoLabel then
-		_ammoLabel.Text       = text
-		_ammoLabel.TextColor3 = color
-	end
+	_controls.setAmmoText(text, color)
 end
 
 --- Expose the ScreenGui so other controllers can parent their own UI into it.

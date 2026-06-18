@@ -1,0 +1,116 @@
+--!strict
+--------------------------------------------------------------------------------
+-- LobbyMainHUD.luau  (src/shared/vide)
+-- The default HUD visible in the lobby at all times.
+--
+-- Shows:
+--   - Game title (top-center)
+--   - Player name + silver balance (top-left)
+--   - Navigation hint text (bottom-center, e.g. "Walk to a pad to play")
+--
+-- Always-on, non-reactive panel — no show/hide toggling needed.
+--------------------------------------------------------------------------------
+
+local Players           = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local vide  = require(ReplicatedStorage.Packages.vide)
+local theme = require(script.Parent.VideTheme)
+
+local create = vide.create
+local source = vide.source
+local derive = vide.derive
+local root   = vide.root
+
+export type LobbyMainHUDProps = {
+    title: string,
+    hintText: string,
+}
+
+--- Creates the always-visible lobby HUD.
+--- Returns the ScreenGui instance and a control table for updating reactive fields.
+function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
+    setSilver: (number) -> (),
+    setHint:   (string) -> (),
+})
+    local silverAmount = source(0)
+    local hintMsg      = source(props.hintText)
+
+    local screenGui = create "ScreenGui" {
+        Name           = "LobbyMainHud",
+        ResetOnSpawn   = false,
+        IgnoreGuiInset = true,
+    }
+
+    -- Create a reactive scope; instances are parented manually via Parent property
+    root(function()
+        -- Game title (top-center) — static
+        create "TextLabel" {
+            Name                   = "Title",
+            Parent                 = screenGui,
+            Size                 = UDim2.new(0.5, 0, 0.1, 0),
+            Position             = UDim2.new(0.25, 0, 0.02, 0),
+            BackgroundTransparency = 1,
+            TextColor3           = theme.TEXT_HIGHLIGHT,
+            TextScaled           = true,
+            Font                 = theme.FONT_BOLD,
+            Text                 = props.title,
+        }
+
+        -- Player name (top-left) — static
+        create "TextLabel" {
+            Name                   = "PlayerName",
+            Parent                 = screenGui,
+            Size                 = UDim2.new(0.3, 0, 0.06, 0),
+            Position             = UDim2.new(0.02, 0, 0.02, 0),
+            BackgroundTransparency = 1,
+            TextColor3           = theme.TEXT_PRIMARY,
+            TextScaled           = true,
+            Font                 = theme.FONT_BOLD,
+            TextXAlignment       = Enum.TextXAlignment.Left,
+            Text                 = Players.LocalPlayer.Name,
+        }
+
+        -- Silver balance (top-left, below player name) — reactive
+        derive(function()
+            return create "TextLabel" {
+                Name                   = "SilverLabel",
+                Parent                 = screenGui,
+                Size                 = UDim2.new(0.3, 0, 0.06, 0),
+                Position             = UDim2.new(0.02, 0, 0.09, 0),
+                BackgroundTransparency = 1,
+                TextColor3           = theme.SILVER,
+                TextScaled           = true,
+                Font                 = theme.FONT_REGULAR,
+                TextXAlignment       = Enum.TextXAlignment.Left,
+                Text                 = "SILVER: " .. tostring(math.max(0, math.floor(silverAmount()))),
+            }
+        end)
+
+        -- Navigation hint (bottom-center) — reactive
+        derive(function()
+            return create "TextLabel" {
+                Name                   = "Hint",
+                Parent                 = screenGui,
+                Size                 = UDim2.new(0.5, 0, 0.06, 0),
+                Position             = UDim2.new(0.25, 0, 0.90, 0),
+                BackgroundTransparency = 1,
+                TextColor3           = theme.TEXT_SECONDARY,
+                TextScaled           = true,
+                Font                 = theme.FONT_REGULAR,
+                Text                 = hintMsg(),
+            }
+        end)
+    end)
+
+    local controls = {
+        setSilver = function(amount: number) silverAmount(amount) end,
+        setHint   = function(msg: string) hintMsg(msg) end,
+    }
+
+    return screenGui, controls
+end
+
+return {
+    createLobbyMainHUD = createLobbyMainHUD,
+}
