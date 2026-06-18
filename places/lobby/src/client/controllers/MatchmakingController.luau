@@ -79,7 +79,7 @@ function MatchmakingController:Start()
 		LobbyHudController.setStatus("Teleporting…")
 	end)
 
-	-- Proximity gate: show the panel only when the player is near the GoToGame pad.
+	-- Proximity gate: create the panel only when the player is near the GoToGame pad.
 	task.spawn(function()
 		local pad: BasePart? = nil
 		while not pad do
@@ -103,8 +103,8 @@ function MatchmakingController:Start()
 			if inRange then
 				LobbyHudController.setPanelVisible(true)
 			elseif not _isQueued then
-				-- Not near pad and not queued → hide.
-				LobbyHudController.setPanelVisible(false)
+				-- Not near pad and not queued → hide and destroy.
+				LobbyHudController.hidePanel()
 			end
 		end)
 	end)

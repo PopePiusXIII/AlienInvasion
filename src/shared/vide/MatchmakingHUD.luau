@@ -1,7 +1,8 @@
 --!strict
 --------------------------------------------------------------------------------
--- LobbyHUD.luau  (src/shared/vide)
--- Reactive vide component for the Lobby matchmaking UI.
+-- MatchmakingHUD.luau  (src/shared/vide)
+-- Reactive vide component for the matchmaking UI.
+-- Only rendered when the player enters the matchmaking area.
 --
 -- Renders a centered panel with:
 --   - Title label ("ALIEN INVASION")
@@ -24,7 +25,7 @@ local derive = vide.derive
 local switch = vide.switch
 local root   = vide.root
 
-export type LobbyHUDProps = {
+export type MatchmakingHUDProps = {
     title: string,
     statusText: string,
     buttonText: string,
@@ -32,9 +33,9 @@ export type LobbyHUDProps = {
     onShopClicked: () -> (),
 }
 
---- Creates the Lobby Matchmaking ScreenGui.
+--- Creates the Matchmaking ScreenGui.
 --- Returns the ScreenGui instance and a control table for imperative updates.
-function createLobbyHUD(props: LobbyHUDProps): (Instance, {
+function createMatchmakingHUD(props: MatchmakingHUDProps): (Instance, {
     setVisible: (boolean) -> (),
     setStatus:  (string) -> (),
     setButton:  (string, boolean) -> (),
@@ -129,27 +130,6 @@ function createLobbyHUD(props: LobbyHUDProps): (Instance, {
                         end,
                     }
                 end),
-
-                -- Shop button
-                create "TextButton" {
-                    Name                = "ShopButton",
-                    Size              = UDim2.new(0.58, 0, 0.16, 0),
-                    Position          = UDim2.new(0.21, 0, 0.94, 0),
-                    BackgroundColor3 = theme.ACCENT,
-                    BorderSizePixel   = 0,
-                    TextColor3       = theme.TEXT_PRIMARY,
-                    TextScaled       = true,
-                    Font             = theme.FONT_BOLD,
-                    Text             = "SHOP",
-
-                    create "UICorner" {
-                        CornerRadius = theme.BUTTON_CORNER,
-                    },
-
-                    Activated = function()
-                        props.onShopClicked()
-                    end,
-                },
             },
         })
     end)
@@ -168,5 +148,5 @@ function createLobbyHUD(props: LobbyHUDProps): (Instance, {
 end
 
 return {
-    createLobbyHUD = createLobbyHUD,
+    createMatchmakingHUD = createMatchmakingHUD,
 }

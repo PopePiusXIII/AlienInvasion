@@ -16,6 +16,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local vide  = require(ReplicatedStorage.Packages.vide)
 local theme = require(script.Parent.VideTheme)
+local ui    = require(script.Parent.UiConfig)
+local DepressedButton = require(script.Parent.DepressedButton)
 
 local create = vide.create
 local source = vide.source
@@ -40,6 +42,14 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         Name           = "LobbyMainHud",
         ResetOnSpawn   = false,
         IgnoreGuiInset = true,
+    }
+
+    -- Click sound (static, not reactive)
+    local clickSound = create "Sound" {
+        Name     = "ShopClick",
+        Parent   = screenGui,
+        SoundId  = ui.sounds.Click,
+        Volume   = ui.button.clickVolume,
     }
 
     -- Create a reactive scope; instances are parented manually via Parent property
@@ -101,6 +111,41 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
                 Text                 = hintMsg(),
             }
         end)
+
+        -- Shop button (bottom-center) — reusable DepressedButton component
+        DepressedButton({
+            parent   = screenGui,
+            position = UDim2.new(0.6, 0, 0.9, 0),
+            image    = ui.images.ShopButton,
+            size     = ui.button.normalSize,
+            onActivated = function()
+                -- TODO: open shop UI
+            end,
+        })
+
+                -- Shop button (bottom-center) — reusable DepressedButton component
+        DepressedButton({
+            parent   = screenGui,
+            position = UDim2.new(0.5, 0, 0.9, 0),
+            image    = ui.images.ShopButton,
+            size     = ui.button.normalSize,
+            onActivated = function()
+                -- TODO: open shop UI
+            end,
+        })
+
+                -- Shop button (bottom-center) — reusable DepressedButton component
+        DepressedButton({
+            parent   = screenGui,
+            position = UDim2.new(0.4, 0, 0.9, 0),
+            image    = ui.images.ShopButton,
+            size     = ui.button.normalSize,
+            onActivated = function()
+                -- TODO: open shop UI
+            end,
+        })
+
+
     end)
 
     local controls = {

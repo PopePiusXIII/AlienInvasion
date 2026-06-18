@@ -3,7 +3,7 @@
 -- LobbyHudController.luau  (places/lobby/src/client/controllers)
 -- Owns all lobby UI via reactive vide components:
 --   - LobbyMainHUD    — always-on title, player name, silver, hint text
---   - LobbyHUD        — matchmaking panel (show/hide near pad)
+--   - LobbyHUD        — matchmaking panel (created/destroyed on proximity)
 --
 -- Single Responsibility: UI presentation only.
 -- Queue state and remote logic belongs in MatchmakingController.
@@ -15,7 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Framework  = require(ReplicatedStorage.Shared.Framework)
 local Logger     = require(ReplicatedStorage.Shared.Logger)
 local LobbyMainHUD = require(ReplicatedStorage.Shared.vide.LobbyMainHUD)
-local LobbyHUD     = require(ReplicatedStorage.Shared.vide.LobbyHUD)
+local MatchmakingHUDModule     = require(ReplicatedStorage.Shared.vide.MatchmakingHUD)
 
 local TAG = "LobbyHudController"
 
@@ -25,9 +25,10 @@ local LobbyHudController = Framework.CreateController({ Name = TAG })
 local _mainScreenGui: Instance
 local _mainControls:  { setSilver: (number) -> (), setHint: (string) -> () }
 
--- Matchmaking panel (shown/hidden by proximity)
-local _matchScreenGui: Instance
-local _matchControls:   { setVisible: (boolean) -> (), setStatus: (string) -> (), setButton: (string, boolean) -> () }
+-- Matchmaking panel (lazily created when player enters matchmaking area)
+local _matchScreenGui:   Instance?
+local _matchControls:    { setVisible: (boolean) -> (), setStatus: (string) -> (), setButton: (string, boolean) -> () }?
+local _isMatchPanelActive = false
 
 -- Callbacks set by MatchmakingController so the HUD can delegate button clicks back.
 local _onFindMatchClicked: () -> () = function() end
@@ -39,12 +40,17 @@ function LobbyHudController:Init()
 	-- Always-on lobby HUD
 	_mainScreenGui, _mainControls = LobbyMainHUD.createLobbyMainHUD({
 		title    = "ALIEN INVASION",
-		hintText = "Walk to a pad to play",
 	})
 	_mainScreenGui.Parent = Players.LocalPlayer.PlayerGui
+end
 
-	-- Matchmaking panel (initially hidden)
-	_matchScreenGui, _matchControls = LobbyHUD.createLobbyHUD({
+-- ── Matchmaking panel lifecycle ───────────────────────────────────────────────
+
+local function createMatchPanel()
+	if _isMatchPanelActive then return end
+	_isMatchPanelActive = true
+
+	_matchScreenGui, _matchControls = MatchmakingHUDModule.createMatchmakingHUD({
 		title      = "ALIEN INVASION",
 		statusText = "Click FIND MATCH to enter the queue.",
 		buttonText = "FIND MATCH",
@@ -56,8 +62,19 @@ function LobbyHudController:Init()
 		end,
 	})
 	_matchScreenGui.Parent = Players.LocalPlayer.PlayerGui
+	Logger.info(TAG, "Matchmaking panel created.")
+end
 
-	Logger.info(TAG, "Both lobby HUDs created via vide.")
+local function destroyMatchPanel()
+	if not _isMatchPanelActive then return end
+	_isMatchPanelActive = false
+
+	if _matchScreenGui and _matchScreenGui.Parent then
+		_matchScreenGui:Destroy()
+	end
+	_matchScreenGui  = nil
+	_matchControls   = nil
+	Logger.info(TAG, "Matchmaking panel destroyed.")
 end
 
 -- ── Public API — called by MatchmakingController ──────────────────────────────
@@ -73,23 +90,38 @@ function LobbyHudController.setShopCallback(cb: () -> ())
 end
 
 --- Show or hide the matchmaking panel.
+--- Creates the panel if it doesn't exist yet (lazy initialization).
 function LobbyHudController.setPanelVisible(visible: boolean)
-	_matchControls.setVisible(visible)
+	if visible then
+		createMatchPanel()
+		if _matchControls then
+			_matchControls.setVisible(true)
+		end
+	elseif not _isMatchPanelActive then
+		-- Panel was never created, nothing to hide.
+	else
+		_matchControls.setVisible(false)
+	end
 end
 
 --- Update the status text on the matchmaking panel.
 function LobbyHudController.setStatus(msg: string)
-	_matchControls.setStatus(msg)
+	if _matchControls then
+		_matchControls.setStatus(msg)
+	end
 end
 
 --- Update the button text and enabled state.
 function LobbyHudController.setButtonText(text: string, enabled: boolean)
-	_matchControls.setButton(text, enabled)
+	if _matchControls then
+		_matchControls.setButton(text, enabled)
+	end
 end
 
 --- Hide the matchmaking panel entirely (e.g. during teleport countdown).
+--- Also destroys the panel to clean up resources.
 function LobbyHudController.hidePanel()
-	_matchControls.setVisible(false)
+	destroyMatchPanel()
 end
 
 --- Update silver balance on the main HUD.
