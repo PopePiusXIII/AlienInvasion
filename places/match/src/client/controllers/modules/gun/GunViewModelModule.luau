@@ -119,18 +119,10 @@ function Module.getActiveMuzzleForTool(toolName: string): BasePart?
     if not activeViewmodel then
         return nil
     end
-
     local weaponModel = activeViewmodel:FindFirstChild("WeaponModel", true)
-    local muzzle: Instance? = nil
-    if weaponModel then
-        muzzle = weaponModel:FindFirstChild("Muzzle", true)
-    else
-        warn("Cant find weapon model in view Model")
-    end
+    local muzzle: Instance? = weaponModel and weaponModel:FindFirstChild("Muzzle", true) or activeViewmodel:FindFirstChild("Muzzle", true)
     if muzzle and muzzle:IsA("BasePart") then
         return muzzle :: BasePart
-    else
-        warn("Cant find muzzle in weaponModel in view model")
     end
     return nil
 end
@@ -164,10 +156,6 @@ function Module.onGunEquipped(tool: Tool)
     local template: Model? = nil
     if ViewModels then
         template = ViewModels:FindFirstChild(tool.Name)
-    end
-    -- Fallback: try lowercased name
-    if not template and ViewModels then
-        template = ViewModels:FindFirstChild(string.lower(tool.Name))
     end
 
     currentTemplate = (template and template:IsA("Model")) and template or nil

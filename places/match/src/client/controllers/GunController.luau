@@ -258,26 +258,17 @@ end
 local function updateCachedMuzzleForView()
 	if not _equippedGun then return end
 	if isFirstPerson() then
-		Logger.info(TAG, "updateCachedMuzzleForView: detected FIRST PERSON for gun=" .. tostring(_equippedGun.Name))
+		-- In first-person, strictly use the active camera-mounted viewmodel muzzle.
 		local vmMuzzle = GunViewModelModule.getActiveMuzzleForTool(_equippedGun.Name)
-		if vmMuzzle then
-			_cachedMuzzle = vmMuzzle
-			Logger.info(TAG, "updateCachedMuzzleForView: cached muzzle set to active viewmodel muzzle (" .. tostring(vmMuzzle:GetFullName()) .. ")")
-			return
-		end
-		else
-			Logger.info(TAG, "view model: has no Muzzle for " .. tostring(_equippedGun.Name))
-		end
-	else
-		Logger.info(TAG, "updateCachedMuzzleForView: detected THIRD PERSON for gun=" .. tostring(_equippedGun and _equippedGun.Name or "nil"))
-		local m = _equippedGun:FindFirstChild("Muzzle", true)
-		if m and m:IsA("BasePart") then
-			_cachedMuzzle = m :: BasePart
-			Logger.info(TAG, "updateCachedMuzzleForView: cached muzzle set to tool muzzle (" .. tostring(m:GetFullName()) .. ")")
-		else
-			Logger.info(TAG, "updateCachedMuzzleForView: tool has no Muzzle for " .. tostring(_equippedGun.Name))
-		end
+		_cachedMuzzle = (vmMuzzle and vmMuzzle:IsA("BasePart")) and vmMuzzle :: BasePart or nil
+		GunFxModule.setCachedMuzzle(_cachedMuzzle)
+		return
 	end
+
+	-- Third-person: use the tool's muzzle (if present)
+	local m = _equippedGun:FindFirstChild("Muzzle", true)
+	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
+	GunFxModule.setCachedMuzzle(_cachedMuzzle)
 end
 
 local function startViewModeTracking()
@@ -341,6 +332,8 @@ local function onGunEquipped(gun: Tool)
 	startViewModeTracking()
 	updateCachedMuzzleForView()
 	GunFxModule.onGunEquipped(gun)
+	-- Ensure FX module uses the controller's cached muzzle (viewmodel muzzle when appropriate)
+	GunFxModule.setCachedMuzzle(_cachedMuzzle)
 	GunViewModelModule.onGunEquipped(gun)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
