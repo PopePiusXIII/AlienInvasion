@@ -10,7 +10,9 @@
 --   HudController       — requires CharacterController
 --   GunController       — requires HudController
 --   ShopController      — no deps on other controllers
---   BoltController      — no deps on other controllers-------------------------
+--   BoltController      — no deps on other controllers
+--   ZombieAnimationController — plays zombie walk/run animations
+--------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -23,15 +25,16 @@ local Logger    = require(ReplicatedStorage.Shared.Logger)
 -- `script` refers to it directly and `script.controllers` is its child folder.
 local controllers = script.controllers
 
-require(controllers.CharacterController)  -- no deps
-require(controllers.HudController)        -- requires CharacterController
-require(controllers.GunController)        -- requires HudController
-require(controllers.ShopController)       -- no deps
-require(controllers.BoltController)       -- no deps
+require(controllers.CharacterController)      -- no deps
+require(controllers.HudController)            -- requires CharacterController
+require(controllers.GunController)            -- requires HudController
+require(controllers.ShopController)           -- no deps
+require(controllers.BoltController)           -- no deps
+require(controllers.ZombieAnimationController) -- no deps
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
-Logger.info("ClientRuntime", "Booting — 5 controllers registered.")
+Logger.info("ClientRuntime", "Booting — 6 controllers registered.")
 Framework.Start()
 Logger.info("ClientRuntime", "Framework started. All controllers live.")
 
