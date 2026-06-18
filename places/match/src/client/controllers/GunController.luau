@@ -251,7 +251,6 @@ local function isFirstPerson(): boolean
 	local root = _localPlayer.Character:FindFirstChild("Head") or _localPlayer.Character:FindFirstChild("HumanoidRootPart")
 	if not root or not root:IsA("BasePart") then return false end
 	local dist = (_camera.CFrame.Position - root.Position).Magnitude
-	Logger.info(TAG, "isFirstPerson: distance=" .. tostring(dist))
 	return dist < 2
 end
 
