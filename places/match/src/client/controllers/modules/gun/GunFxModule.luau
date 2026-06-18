@@ -89,6 +89,27 @@ function GunFxModule.onGunUnequipped()
 	_currentGunName = nil
 end
 
+function GunFxModule.setCachedMuzzle(muzzle: BasePart?)
+	_cachedMuzzle = muzzle
+	_cachedFlash = nil
+	_cachedParticles = nil
+	-- Prefer sounds/flash/particles found on the muzzle part when present
+	if muzzle then
+		local fl = muzzle:FindFirstChild("FlashLight")
+		if fl and fl:IsA("PointLight") then
+			_cachedFlash = fl :: PointLight
+		end
+		local pe = muzzle:FindFirstChildWhichIsA("ParticleEmitter")
+		if pe then
+			_cachedParticles = pe :: ParticleEmitter
+		end
+		local snd = muzzle:FindFirstChild("ShootSound", true)
+		if snd and snd:IsA("Sound") then
+			_cachedSound = snd :: Sound
+		end
+	end
+end
+
 function GunFxModule.playShootSound()
 	if not _cachedSound then return end
 	_cachedSound.TimePosition = 0
