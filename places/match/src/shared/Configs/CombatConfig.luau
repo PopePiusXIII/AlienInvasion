@@ -90,5 +90,19 @@ return {
 				color     = Color3.fromRGB(255, 214, 128),
 			},
 		},
+		HandCannon = {
+			damage         = 180,
+			range          = 1500,
+			fireCooldown   = 1.2,
+			magSize        = 6,
+			reloadTime     = 3.5,
+			isAutomatic    = false,
+			knockbackForce = 90,
+			tracer = {
+				lifetime  = 0.12,
+				thickness = 0.14,
+				color     = Color3.fromRGB(255, 180, 130),
+			},
+		},
 	},
 }

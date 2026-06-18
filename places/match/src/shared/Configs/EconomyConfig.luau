@@ -29,6 +29,7 @@ return {
 		M82    = 0,
 		M60    = 120,
 		M240B  = 180,
+		HandCannon = 160,
 	},
 	SHOP_SILVER_PRICES = {
 		ammoRefill  = 30,
@@ -41,5 +42,6 @@ return {
 		M82    = 0,
 		M60    = 80,
 		M240B  = 100,
+		HandCannon = 0,
 	},
 }

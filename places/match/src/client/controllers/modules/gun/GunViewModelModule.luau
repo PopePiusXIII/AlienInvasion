@@ -21,7 +21,6 @@ local cameraCFrameConn: RBXScriptConnection? = nil
 
 local function setWorldToolVisible(visible: boolean)
     local modifier = visible and 0 or 1
-    modifier = 0
     if not currentTool then return end
     for _, descendant in ipairs(currentTool:GetDescendants()) do
         if descendant:IsA("BasePart") then
@@ -115,7 +114,7 @@ end
 
 local Module = {}
 
-function Module.getActiveMuzzleForTool(toolName: string): BasePart?
+function Module.getActiveMuzzleForTool(): BasePart?
     if not activeViewmodel then
         return nil
     end
