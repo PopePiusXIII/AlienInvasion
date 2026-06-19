@@ -29,6 +29,7 @@ return {
 		M82    = 0,
 		M60    = 120,
 		M240B  = 180,
+		MG42   = 120,
 		HandCannon = 160,
 	},
 	SHOP_SILVER_PRICES = {
@@ -42,6 +43,7 @@ return {
 		M82    = 0,
 		M60    = 80,
 		M240B  = 100,
+		MG42   = 80,
 		HandCannon = 0,
 	},
 }
