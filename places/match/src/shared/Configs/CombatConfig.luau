@@ -99,7 +99,7 @@ return {
 			isShotgun      = true,
 			knockbackForce = 45,
 			tracer = {
-				lifetime  = 10,
+				lifetime  = .06,
 				thickness = 0.1,
 				color     = Color3.fromRGB(255, 214, 128),
 			},
@@ -113,7 +113,7 @@ return {
 			isAutomatic    = false,
 			knockbackForce = 90,
 			tracer = {
-				lifetime  = 0.12,
+				lifetime  = 0.06,
 				thickness = 0.14,
 				color     = Color3.fromRGB(255, 180, 130),
 			},
