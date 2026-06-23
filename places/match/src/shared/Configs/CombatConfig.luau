@@ -21,7 +21,7 @@ return {
 	GUN_STATS = {
 		Deagle = {
 			damage         = 34,
-			range          = 1000,
+			range          = 500,
 			fireCooldown   = 0.15,
 			magSize        = 7,
 			reloadTime     = 2.0,
@@ -35,21 +35,21 @@ return {
 		},
 		M82 = {
 			damage         = 250,
-			range          = 2500,
+			range          = 500,
 			fireCooldown   = 0.1,
 			magSize        = 100,
 			reloadTime     = 2.8,
 			isAutomatic    = true,
 			knockbackForce = 60,
 			tracer = {
-				lifetime  = 0.08,
+				lifetime  = 0.06,
 				thickness = 0.11,
 				color     = Color3.fromRGB(255, 219, 130),
 			},
 		},
 		M60 = {
 			damage         = 42,
-			range          = 1800,
+			range          = 500,
 			fireCooldown   = 0.08,
 			magSize        = 100,
 			reloadTime     = 4.2,
@@ -63,7 +63,7 @@ return {
 		},
 		MG42 = {
 			damage         = 42,
-			range          = 1800,
+			range          = 500,
 			fireCooldown   = 0.04,
 			magSize        = 100,
 			reloadTime     = 4.2,
@@ -77,7 +77,7 @@ return {
 		},
 		M240B = {
 			damage         = 46,
-			range          = 2000,
+			range          = 500,
 			fireCooldown   = 0.09,
 			magSize        = 100,
 			reloadTime     = 4.4,
@@ -91,7 +91,7 @@ return {
 		},
 		BushMaster = {
 			damage         = 100,
-			range          = 2000,
+			range          = 500,
 			fireCooldown   = 0.5,
 			magSize        = 12,
 			reloadTime     = 3.0,
@@ -106,7 +106,7 @@ return {
 		},
 		HandCannon = {
 			damage         = 180,
-			range          = 1500,
+			range          = 500,
 			fireCooldown   = 1.2,
 			magSize        = 6,
 			reloadTime     = 3.5,
