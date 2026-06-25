@@ -119,8 +119,12 @@ local function reload()
 		for _i = 1, shellsNeeded do
 			local track = GunFxModule.playReloadAnimation()
 			local waitTime
-			if track and track.Length and track.Length > 0 then
-				waitTime = track.Length
+			if track then
+				if track and track.Length and track.Length > 0 then
+					waitTime = track.Length
+				else
+					waitTime = timePerShell
+				end
 			else
 				waitTime = timePerShell
 			end
@@ -130,8 +134,12 @@ local function reload()
 		-- Standard gun: single reload animation for the whole mag.
 		local track = GunFxModule.playReloadAnimation()
 		local waitTime
-		if track and track.Length and track.Length > 0 then
-			waitTime = track.Length
+		if track then
+			if track and track.Length and track.Length > 0 then
+				waitTime = track.Length
+			else
+				waitTime = stats.reloadTime
+			end
 		else
 			waitTime = stats.reloadTime
 		end
