@@ -72,8 +72,9 @@ local function buildGui()
 
 	local frame = Instance.new("Frame")
 	frame.Name = "Main"
-	frame.Size = UDim2.new(0, 420, 0, 462)
-	frame.Position = UDim2.new(0.5, -210, 0.5, -231)
+	-- Larger shop UI so longer gun lists (MP5/SCAR) are visible
+	frame.Size = UDim2.new(0, 640, 0, 640)
+	frame.Position = UDim2.new(0.5, -320, 0.5, -320)
 	frame.BackgroundColor3 = C_BG
 	frame.BorderSizePixel = 0
 	frame.Visible = false
@@ -103,23 +104,22 @@ local function buildGui()
 	makeLabel(frame, "AVAILABLE GUNS", UDim2.new(1, -32, 0, 18), UDim2.new(0, 16, 0, 140), 10, C_SUBTEXT)
 
 	local af = Instance.new("Frame")
-	af.Name = "Available"; af.Size = UDim2.new(1, -32, 0, 218); af.Position = UDim2.new(0, 16, 0, 162)
+	af.Name = "Available"; af.Size = UDim2.new(1, -32, 0, 396); af.Position = UDim2.new(0, 16, 0, 162)
 	af.BackgroundTransparency = 1; af.Parent = frame
 	_availableFrame = af
-
-	_statusLabel = makeLabel(frame, "", UDim2.new(1, -32, 0, 18), UDim2.new(0, 16, 0, 385), 13, C_RED)
+	_statusLabel = makeLabel(frame, "", UDim2.new(1, -32, 0, 18), UDim2.new(0, 16, 0, 563), 13, C_RED)
 	_statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 
-	makeDivider(frame, 408)
+	makeDivider(frame, 586)
 
-	local freeBtn = makeButton(frame, "Get Free Loadout", UDim2.new(0, 183, 0, 36), UDim2.new(0, 16, 0, 416), Color3.fromRGB(45, 65, 115))
+	local freeBtn = makeButton(frame, "Get Free Loadout", UDim2.new(0, 183, 0, 36), UDim2.new(0, 16, 0, 594), Color3.fromRGB(45, 65, 115))
 	freeBtn.MouseButton1Click:Connect(function()
 		_requestFreeLoadoutRemote:FireServer()
 		_statusLabel.Text = "Loadout refreshed!"
 		_statusLabel.TextColor3 = C_GREEN
 	end)
 
-	local closeFooterBtn = makeButton(frame, "Close", UDim2.new(0, 183, 0, 36), UDim2.new(1, -199, 0, 416), C_PANEL)
+	local closeFooterBtn = makeButton(frame, "Close", UDim2.new(0, 183, 0, 36), UDim2.new(1, -199, 0, 594), C_PANEL)
 	closeFooterBtn.MouseButton1Click:Connect(GunShopModule.hide)
 
 	local sp = Instance.new("Frame")

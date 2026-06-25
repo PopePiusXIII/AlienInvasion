@@ -31,6 +31,8 @@ return {
 		M240B  = 180,
 		MG42   = 120,
 		HandCannon = 160,
+		MP5 = 0,
+		SCAR = 0
 	},
 	SHOP_SILVER_PRICES = {
 		ammoRefill  = 30,
@@ -45,5 +47,7 @@ return {
 		M240B  = 100,
 		MG42   = 80,
 		HandCannon = 0,
+		MP5 = 0,
+		SCAR = 0
 	},
 }
