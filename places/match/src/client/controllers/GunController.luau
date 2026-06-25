@@ -258,7 +258,7 @@ local function updateCachedMuzzleForView()
 	if not _equippedGun then return end
 	if isFirstPerson() then
 		-- In first-person, strictly use the active camera-mounted viewmodel muzzle.
-		local vmMuzzle = GunViewModelModule.getActiveMuzzleForTool(_equippedGun.Name)
+		local vmMuzzle = GunViewModelModule.getActiveMuzzleForTool()
 		_cachedMuzzle = (vmMuzzle and vmMuzzle:IsA("BasePart")) and vmMuzzle :: BasePart or nil
 		GunFxModule.setCachedMuzzle(_cachedMuzzle)
 		return
@@ -329,11 +329,11 @@ local function onGunEquipped(gun: Tool)
 	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
 	-- Track camera/view changes and update cached muzzle to viewmodel muzzle when in first-person
 	startViewModeTracking()
+	GunViewModelModule.onGunEquipped(gun)
 	updateCachedMuzzleForView()
 	GunFxModule.onGunEquipped(gun)
 	-- Ensure FX module uses the controller's cached muzzle (viewmodel muzzle when appropriate)
 	GunFxModule.setCachedMuzzle(_cachedMuzzle)
-	GunViewModelModule.onGunEquipped(gun)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
 end
