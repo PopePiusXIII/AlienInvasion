@@ -17,6 +17,9 @@ local _currentGunName:  string?          = nil
 local _cachedShootAnimObj: Animation?     = nil
 local _cachedAnimator:    Animator?       = nil
 local _cachedShootTrack:  AnimationTrack? = nil
+local _cachedReloadAnimObj: Animation?     = nil
+local _cachedReloadAnimator: Animator?     = nil
+local _cachedReloadTrack:  AnimationTrack? = nil
 
 type GunTracerStyle = {
 	lifetime: number,
@@ -87,6 +90,10 @@ function GunFxModule.onGunEquipped(gun: Tool)
 	_cachedShootAnimObj = nil
 	_cachedAnimator = nil
 	_cachedShootTrack = nil
+
+	_cachedReloadAnimObj = nil
+	_cachedReloadAnimator = nil
+	_cachedReloadTrack = nil
 end
 
 function GunFxModule.onGunUnequipped()
@@ -99,6 +106,10 @@ function GunFxModule.onGunUnequipped()
 	_cachedShootAnimObj = nil
 	_cachedAnimator = nil
 	_cachedShootTrack = nil
+
+	_cachedReloadAnimObj = nil
+	_cachedReloadAnimator = nil
+	_cachedReloadTrack = nil
 end
 
 local function ensureShootAnimationReady(): boolean
@@ -230,6 +241,17 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
+	-- If we already have a cached reload track with a valid animator, reuse it
+	if _cachedReloadTrack and _cachedReloadAnimator and _cachedReloadAnimator.Parent and _cachedReloadAnimator.Parent.Parent then
+		_cachedReloadTrack:Play()
+		-- Play reload sound alongside the animation if available
+		if _cachedReloadSnd then
+			_cachedReloadSnd.TimePosition = 0
+			_cachedReloadSnd:Play()
+		end
+		return _cachedReloadTrack
+	end
+
 	-- Play the animation on the camera-mounted viewmodel instance (if present)
 	local cam = workspace.CurrentCamera
 	if not cam then
@@ -269,6 +291,7 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
+	-- Attempt to load and cache the reload track
 	local ok, track = pcall(function()
 		return animator:LoadAnimation(animObj :: Animation)
 	end)
@@ -277,6 +300,9 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
+	_cachedReloadAnimator = animator
+	_cachedReloadTrack = track
+
 	track:Play()
 
 	-- Play reload sound alongside the animation
@@ -284,6 +310,8 @@ function GunFxModule.playReloadAnimation()
 		_cachedReloadSnd.TimePosition = 0
 		_cachedReloadSnd:Play()
 	end
+
+	return track
 end
 
 function GunFxModule.drawTracer(origin: Vector3, hitPosition: Vector3, tracerStyle: GunTracerStyle)

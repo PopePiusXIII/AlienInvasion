@@ -117,13 +117,25 @@ local function reload()
 		local shellsNeeded = stats.magSize - getCurrentAmmo()
 		local timePerShell = stats.reloadTime / stats.magSize
 		for _i = 1, shellsNeeded do
-			GunFxModule.playReloadAnimation()
-			task.wait(timePerShell)
+			local track = GunFxModule.playReloadAnimation()
+			local waitTime
+			if track and track.Length and track.Length > 0 then
+				waitTime = track.Length
+			else
+				waitTime = timePerShell
+			end
+			task.wait(waitTime)
 		end
 	else
 		-- Standard gun: single reload animation for the whole mag.
-		GunFxModule.playReloadAnimation()
-		task.wait(stats.reloadTime)
+		local track = GunFxModule.playReloadAnimation()
+		local waitTime
+		if track and track.Length and track.Length > 0 then
+			waitTime = track.Length
+		else
+			waitTime = stats.reloadTime
+		end
+		task.wait(waitTime)
 	end
 
 	if _equippedGun and _equippedGun == reloadingGun then
