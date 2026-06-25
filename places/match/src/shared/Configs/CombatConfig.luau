@@ -118,5 +118,33 @@ return {
 				color     = Color3.fromRGB(255, 180, 130),
 			},
 		},
+		MP5 = {
+			damage         = 25,
+			range          = 600,
+			fireCooldown   = 0.08,
+			magSize        = 30,
+			reloadTime     = 2.2,
+			isAutomatic    = true,
+			knockbackForce = 10,
+			tracer = {
+				lifetime  = 0.05,
+				thickness = 0.06,
+				color     = Color3.fromRGB(180, 235, 255),
+			},
+		},
+		SCAR = {
+			damage         = 35,
+			range          = 1500,
+			fireCooldown   = 0.09,
+			magSize        = 30,
+			reloadTime     = 2.6,
+			isAutomatic    = true,
+			knockbackForce = 20,
+			tracer = {
+				lifetime  = 0.06,
+				thickness = 0.09,
+				color     = Color3.fromRGB(255, 220, 180),
+			},
+		},
 	},
 }
