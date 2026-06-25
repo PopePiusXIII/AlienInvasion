@@ -94,6 +94,49 @@ function GunFxModule.onGunEquipped(gun: Tool)
 	_cachedReloadAnimObj = nil
 	_cachedReloadAnimator = nil
 	_cachedReloadTrack = nil
+
+	-- Attempt to preload the reload animation track into the viewmodel animator so
+	-- the track.Length is available immediately when first played.
+	do
+		local viewModelsFolder = ReplicatedStorage:FindFirstChild("ViewModels")
+		if viewModelsFolder then
+			local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
+			local animObj = template and (template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation"))
+			if animObj and animObj:IsA("Animation") then
+				local cam = workspace.CurrentCamera
+				if cam then
+					local vmInstance = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
+					if vmInstance and vmInstance:IsA("Model") then
+						local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
+						local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
+						local animator: Animator? = nil
+						if animationController then
+							animator = animationController:FindFirstChildWhichIsA("Animator")
+							if not animator then
+								animator = Instance.new("Animator")
+								animator.Parent = animationController
+							end
+						elseif humanoid then
+							animator = humanoid:FindFirstChildWhichIsA("Animator")
+							if not animator then
+								animator = Instance.new("Animator")
+								animator.Parent = humanoid
+							end
+						end
+						if animator then
+							local ok, track = pcall(function()
+								return animator:LoadAnimation(animObj :: Animation)
+							end)
+							if ok and track then
+								_cachedReloadAnimator = animator
+								_cachedReloadTrack = track
+							end
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
 function GunFxModule.onGunUnequipped()
