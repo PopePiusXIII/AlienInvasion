@@ -50,21 +50,7 @@ local _cachedMuzzle:     BasePart?            = nil
 local _cachedHrp:        BasePart?            = nil
 local _camera = workspace.CurrentCamera
 
--- Per-gun reserve ammo pools. Lazily initialized from Config.max_ammo_amount.
 local _reserveAmmoByGun: { [string]: number } = {}
-
-local function getReserveAmmo(gunName: string?): number
-	if not gunName then return 0 end
-	if _reserveAmmoByGun[gunName] == nil then
-		_reserveAmmoByGun[gunName] = (Config.max_ammo_amount or 0)
-	end
-	return _reserveAmmoByGun[gunName]
-end
-
-local function setReserveAmmo(gunName: string?, value: number)
-	if not gunName then return end
-	_reserveAmmoByGun[gunName] = math.max(0, math.floor(value or 0))
-end
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
@@ -86,6 +72,21 @@ end
 
 local function isSupportedGunName(name: string): boolean
 	return GunCatalogModule.isSupportedGunName(Config, name)
+end
+
+local function getReserveAmmo(gunName: string?): number
+	if not gunName then return 0 end
+	if _reserveAmmoByGun[gunName] == nil then
+		local stats = getGunStats(gunName)
+		local value = (stats and stats.max_ammo) or (Config.DEFAULT_GUN_RESERVE or 0)
+		_reserveAmmoByGun[gunName] = math.max(0, math.floor(value or 0))
+	end
+	return _reserveAmmoByGun[gunName]
+end
+
+local function setReserveAmmo(gunName: string?, value: number)
+	if not gunName then return end
+	_reserveAmmoByGun[gunName] = math.max(0, math.floor(value or 0))
 end
 
 local function getCurrentAmmo(): number

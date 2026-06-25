@@ -17,6 +17,7 @@ export type GunStats = {
 	isAutomatic: boolean,
 	isShotgun: boolean,
 	knockbackForce: number,
+	max_ammo: number,
 	tracer: GunTracerStyle,
 }
 
@@ -34,6 +35,7 @@ function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string
 			isAutomatic = gunStats.isAutomatic == true,
 			isShotgun = gunStats.isShotgun == true,
 			knockbackForce = gunStats.knockbackForce or config.GUN_KNOCKBACK_FORCE,
+			max_ammo = gunStats.max_ammo or config.DEFAULT_GUN_RESERVE or 0,
 			tracer = (gunStats.tracer :: GunTracerStyle?) or defaultTracer,
 		}
 	end
@@ -46,6 +48,7 @@ function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string
 		isAutomatic = false,
 		isShotgun = false,
 		knockbackForce = config.GUN_KNOCKBACK_FORCE,
+		max_ammo = config.DEFAULT_GUN_RESERVE or 0,
 		tracer = defaultTracer,
 	}
 end

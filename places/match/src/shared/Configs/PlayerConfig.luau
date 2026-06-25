@@ -5,6 +5,5 @@ return {
 	PLAYER_JUMP_POWER   = 70,
 	PLAYER_MELEE_POWER  = 10,
 	PLAYER_SCALE        = 1,
-	-- Total reserve ammo a player starts with (shared across guns)
-	max_ammo_amount     = 120,
+	-- Player movement and scaling config
 }
