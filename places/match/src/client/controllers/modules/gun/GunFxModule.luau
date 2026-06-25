@@ -27,6 +27,49 @@ type GunTracerStyle = {
 	color: Color3,
 }
 
+-- Helper: find the camera-mounted viewmodel instance for the currently cached gun name.
+local function findViewModelInstance(): Model?
+	if not _currentGunName then return nil end
+	local cam = workspace.CurrentCamera
+	if not cam then return nil end
+	local vm = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
+	return (vm and vm:IsA("Model")) and vm :: Model or nil
+end
+
+-- Helper: obtain or create an Animator for a viewmodel instance.
+local function getAnimatorForVm(vmInstance: Model): Animator?
+	if not vmInstance then return nil end
+	local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
+	local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
+	local animator: Animator? = nil
+	if animationController then
+		animator = animationController:FindFirstChildWhichIsA("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = animationController
+		end
+	elseif humanoid then
+		animator = humanoid:FindFirstChildWhichIsA("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = humanoid
+		end
+	end
+	return animator
+end
+
+-- Helper: attempt to load an Animation into an animator and return the track.
+local function tryLoadAnimationTrack(animator: Animator, animObj: Animation): AnimationTrack?
+	if not animator or not animObj then return nil end
+	local ok, track = pcall(function()
+		return animator:LoadAnimation(animObj)
+	end)
+	if ok and track then
+		return track :: AnimationTrack
+	end
+	return nil
+end
+
 local function spawnTemplateMuzzleFlash(muzzle: BasePart, muzzleDelay: number): boolean
 	if not muzzleFlashTemplate then return false end
 	if not muzzleFlashTemplate:IsA("BasePart") then return false end
@@ -177,40 +220,18 @@ local function ensureShootAnimationReady(): boolean
 		end
 	end
 
-	-- Resolve the camera-mounted viewmodel and obtain an Animator
-	local cam = workspace.CurrentCamera
-	if not cam then return false end
-	local vmInstance = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
-	if not vmInstance or not vmInstance:IsA("Model") then return false end
-
-	local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
-	local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
-
-	local animator: Animator? = nil
-	if animationController then
-		animator = animationController:FindFirstChildWhichIsA("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = animationController
-		end
-	elseif humanoid then
-		animator = humanoid:FindFirstChildWhichIsA("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = humanoid
-		end
-	else
-		return false
-	end
+	-- Resolve the viewmodel instance and animator using shared helpers
+	local vmInstance = findViewModelInstance()
+	if not vmInstance then return false end
+	local animator = getAnimatorForVm(vmInstance)
+	if not animator then return false end
 
 	_cachedAnimator = animator
 
-	-- Load the animation track if we have both animation object and animator
+	-- Load and cache the shoot track if possible
 	if _cachedShootAnimObj and _cachedAnimator then
-		local ok, track = pcall(function()
-			return _cachedAnimator:LoadAnimation(_cachedShootAnimObj)
-		end)
-		if ok and track then
+		local track = tryLoadAnimationTrack(_cachedAnimator, _cachedShootAnimObj)
+		if track then
 			_cachedShootTrack = track
 			return true
 		end
@@ -308,37 +329,21 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
-	local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
-	local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
-
-	local animator: Animator? = nil
-	if animationController then
-		animator = animationController:FindFirstChildWhichIsA("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = animationController
-		end
-	elseif humanoid then
-		animator = humanoid:FindFirstChildWhichIsA("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = humanoid
-		end
-	else
-		warn("GunFxModule.playReloadAnimation: viewmodel instance '" .. tostring(vmInstance.Name) .. "' has neither AnimationController nor Humanoid")
+	-- Use shared helpers to resolve animator and load the reload track
+	local vm = findViewModelInstance()
+	if not vm then
+		warn("GunFxModule.playReloadAnimation: no viewmodel instance named '" .. tostring(_currentGunName) .. "' parented to Camera")
 		return
 	end
 
+	local animator = getAnimatorForVm(vm)
 	if not animator then
-		warn("GunFxModule.playReloadAnimation: failed to obtain Animator for viewmodel '" .. tostring(vmInstance.Name) .. "'")
+		warn("GunFxModule.playReloadAnimation: failed to obtain Animator for viewmodel '" .. tostring(vm.Name) .. "'")
 		return
 	end
 
-	-- Attempt to load and cache the reload track
-	local ok, track = pcall(function()
-		return animator:LoadAnimation(animObj :: Animation)
-	end)
-	if not ok or not track then
+	local track = tryLoadAnimationTrack(animator, animObj)
+	if not track then
 		warn("GunFxModule.playReloadAnimation: failed to load animation track for '" .. tostring(_currentGunName) .. "'")
 		return
 	end
