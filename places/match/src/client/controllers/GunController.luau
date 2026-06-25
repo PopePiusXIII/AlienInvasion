@@ -50,6 +50,22 @@ local _cachedMuzzle:     BasePart?            = nil
 local _cachedHrp:        BasePart?            = nil
 local _camera = workspace.CurrentCamera
 
+-- Per-gun reserve ammo pools. Lazily initialized from Config.max_ammo_amount.
+local _reserveAmmoByGun: { [string]: number } = {}
+
+local function getReserveAmmo(gunName: string?): number
+	if not gunName then return 0 end
+	if _reserveAmmoByGun[gunName] == nil then
+		_reserveAmmoByGun[gunName] = (Config.max_ammo_amount or 0)
+	end
+	return _reserveAmmoByGun[gunName]
+end
+
+local function setReserveAmmo(gunName: string?, value: number)
+	if not gunName then return end
+	_reserveAmmoByGun[gunName] = math.max(0, math.floor(value or 0))
+end
+
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
 type GunStats = {
@@ -101,7 +117,8 @@ local function refreshAmmoDisplay()
 		return
 	end
 	local color = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
-	HudController.setAmmoText(string.format("%d / %d", ammo, stats.magSize), color)
+	local reserve = getReserveAmmo(_equippedGun and _equippedGun.Name or nil)
+	HudController.setAmmoText(string.format("%d / %d", ammo, math.max(0, math.floor(reserve))), color)
 end
 
 local function reload()
@@ -109,6 +126,9 @@ local function reload()
 	local reloadingGun = _equippedGun
 	local stats = getGunStats(reloadingGun.Name)
 	if _isReloading or getCurrentAmmo() == stats.magSize then return end
+	-- Nothing to reload from reserve for this gun
+	local reserve = getReserveAmmo(reloadingGun.Name)
+	if reserve <= 0 then return end
 	_isReloading = true
 	refreshAmmoDisplay()
 
@@ -117,14 +137,17 @@ local function reload()
 		local shellsNeeded = stats.magSize - getCurrentAmmo()
 		local timePerShell = stats.reloadTime / stats.magSize
 		for _i = 1, shellsNeeded do
+			local reserveNow = getReserveAmmo(reloadingGun.Name)
+			if reserveNow <= 0 then break end
 			local track = GunFxModule.playReloadAnimation()
+			-- consume one shell from reserve
+			local loadAmount = math.min(1, reserveNow)
+			setCurrentAmmo(getCurrentAmmo() + loadAmount)
+			setReserveAmmo(reloadingGun.Name, reserveNow - loadAmount)
+			refreshAmmoDisplay()
 			local waitTime
-			if track then
-				if track and track.Length and track.Length > 0 then
-					waitTime = track.Length
-				else
-					waitTime = timePerShell
-				end
+			if track and track.Length and track.Length > 0 then
+				waitTime = track.Length
 			else
 				waitTime = timePerShell
 			end
@@ -132,23 +155,26 @@ local function reload()
 		end
 	else
 		-- Standard gun: single reload animation for the whole mag.
+		local missing = stats.magSize - getCurrentAmmo()
+		local reserveNow = getReserveAmmo(reloadingGun.Name)
+		local amountToLoad = math.min(missing, math.max(0, math.floor(reserveNow)))
+		if amountToLoad <= 0 then
+			_isReloading = false
+			refreshAmmoDisplay()
+			return
+		end
 		local track = GunFxModule.playReloadAnimation()
-		local waitTime
-		if track then
-			if track and track.Length and track.Length > 0 then
-				waitTime = track.Length
-			else
-				waitTime = stats.reloadTime
-			end
-		else
-			waitTime = stats.reloadTime
+		local waitTime = stats.reloadTime
+		if track and track.Length and track.Length > 0 then
+			waitTime = track.Length
 		end
 		task.wait(waitTime)
+		-- apply loaded ammo after animation
+		setCurrentAmmo(getCurrentAmmo() + amountToLoad)
+		setReserveAmmo(reloadingGun.Name, reserveNow - amountToLoad)
+		refreshAmmoDisplay()
 	end
 
-	if _equippedGun and _equippedGun == reloadingGun then
-		setCurrentAmmo(stats.magSize)
-	end
 	_isReloading = false
 	refreshAmmoDisplay()
 end
