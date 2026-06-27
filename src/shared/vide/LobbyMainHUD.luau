@@ -18,6 +18,7 @@ local vide  = require(ReplicatedStorage.Packages.vide)
 local theme = require(script.Parent.VideTheme)
 local ui    = require(script.Parent.UiConfig)
 local DepressedButton = require(script.Parent.DepressedButton)
+local armoryHud = require(script.Parent.Armory)
 
 local create = vide.create
 local source = vide.source
@@ -43,6 +44,9 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         ResetOnSpawn   = false,
         IgnoreGuiInset = true,
     }
+
+    -- Armory panel (created once, returns a toggle function)
+    local toggleArmory = armoryHud.createArmoryHUD(screenGui)
 
     -- Click sound (static, not reactive)
     local clickSound = create "Sound" {
@@ -115,30 +119,28 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         -- Shop button (bottom-center) — reusable DepressedButton component
         DepressedButton({
             parent   = screenGui,
-            position = UDim2.new(0.6, 0, 0.9, 0),
-            image    = ui.images.ShopButton,
+            position = UDim2.new(0.93, 0, 0.3, 0),
+            image    = ui.images.ClassShopButton,
             size     = ui.button.normalSize,
             onActivated = function()
                 -- TODO: open shop UI
             end,
         })
 
-                -- Shop button (bottom-center) — reusable DepressedButton component
+        -- Shop button (bottom-center) — reusable DepressedButton component
         DepressedButton({
             parent   = screenGui,
-            position = UDim2.new(0.5, 0, 0.9, 0),
+            position = UDim2.new(0.93, 0, 0.5, 0),
             image    = ui.images.ShopButton,
             size     = ui.button.normalSize,
-            onActivated = function()
-                -- TODO: open shop UI
-            end,
+            onActivated = toggleArmory
         })
 
                 -- Shop button (bottom-center) — reusable DepressedButton component
         DepressedButton({
             parent   = screenGui,
-            position = UDim2.new(0.4, 0, 0.9, 0),
-            image    = ui.images.ShopButton,
+            position = UDim2.new(0.93, 0, 0.7, 0),
+            image    = ui.images.PlayButton,
             size     = ui.button.normalSize,
             onActivated = function()
                 -- TODO: open shop UI
