@@ -63,23 +63,6 @@ local function mountViewmodel(template: Model)
         activeViewmodel.PrimaryPart = root
     end
 
-    -- Debug: compare muzzle offsets in template vs clone when verbose
-    if Config and Config.DEBUG_VERBOSE then
-        local function debugLogMuzzleState(model: Model, label: string)
-            local m = model:FindFirstChild("Muzzle", true)
-            local r = model:FindFirstChild("HumanoidRootPart")
-            if m and r and m:IsA("BasePart") and r:IsA("BasePart") then
-                local rel = r.CFrame:ToObjectSpace(m.CFrame)
-                Logger.info("GunViewModelModule", label .. " muzzle rel to root: " .. tostring(rel))
-            else
-                Logger.info("GunViewModelModule", label .. " muzzle or root missing for debug")
-            end
-        end
-        -- If we have a template (passed into mountViewmodel), log its muzzle too if possible
-        -- Note: currentTemplate is set elsewhere; just log the clone state here
-        debugLogMuzzleState(activeViewmodel, "activeViewmodel (cloned)")
-    end
-
     -- Immediately hide world tool and real arms while viewmodel is mounted
     setWorldToolVisible(false)
 

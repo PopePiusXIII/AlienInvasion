@@ -14,6 +14,7 @@
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService        = game:GetService("RunService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
@@ -35,6 +36,13 @@ local CharacterController = Framework.CreateController({ Name = TAG })
 
 local _localPlayer = Players.LocalPlayer
 local _isSprinting = false
+local _rotateWithCameraConn: RBXScriptConnection? = nil
+local _inputBeganConn: RBXScriptConnection? = nil
+local _inputEndedConn: RBXScriptConnection? = nil
+
+-- Rotation config
+local SMOOTH_ROTATION = true
+local ROTATION_LERP_SPEED = 12 -- higher = snappier (per second)
 
 -- Mutable stats table — the single source of truth for this controller.
 local _stats: Stats = {
@@ -50,6 +58,17 @@ local _stats: Stats = {
 local function getHumanoid(): Humanoid?
 	local char = _localPlayer.Character
 	return char and char:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
+end
+
+local function getRootPart(character: Model): BasePart?
+	if not character then return nil end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then return root end
+	local primary = character.PrimaryPart
+	if primary and primary:IsA("BasePart") then return primary end
+	local head = character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then return head end
+	return nil
 end
 
 local function applyScale()
@@ -81,6 +100,42 @@ local function onCharacterAdded(character: Model)
 	-- Reset accumulated wave boosts on each respawn.
 	resetStatsTable()
 	applyStats(humanoid)
+	-- Prevent the humanoid from auto-rotating when moving so WASD strafes
+	if humanoid and humanoid:IsA("Humanoid") then
+		pcall(function()
+			humanoid.AutoRotate = false
+		end)
+	end
+end
+
+-- Rotation helpers ---------------------------------------------------------
+local function stopRotateWithCamera()
+	if _rotateWithCameraConn then
+		_rotateWithCameraConn:Disconnect()
+		_rotateWithCameraConn = nil
+	end
+end
+
+local function startRotateWithCamera()
+	stopRotateWithCamera()
+	_rotateWithCameraConn = RunService.RenderStepped:Connect(function(dt)
+		local char = _localPlayer.Character
+		if not char then return end
+		local root = getRootPart(char)
+		local cam = workspace.CurrentCamera
+		if root and cam then
+			local look = cam.CFrame.LookVector
+			local dir = Vector3.new(look.X, 0, look.Z)
+			if dir.Magnitude > 0.001 then
+				local target = CFrame.new(root.Position, root.Position + dir)
+				if SMOOTH_ROTATION then
+					root.CFrame = root.CFrame:Lerp(target, math.clamp(ROTATION_LERP_SPEED * dt, 0, 1))
+				else
+					root.CFrame = target
+				end
+			end
+		end
+	end)
 end
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -91,22 +146,33 @@ function CharacterController:Init()
 		onCharacterAdded(_localPlayer.Character)
 	end
 
-	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
+	local function onInputBegan(input: InputObject, gameProcessed: boolean)
 		if gameProcessed then return end
 		if input.KeyCode == Enum.KeyCode.LeftShift then
 			_isSprinting = true
 			local humanoid = getHumanoid()
 			if humanoid then humanoid.WalkSpeed = _stats.sprintSpeed end
 		end
-	end)
 
-	UserInputService.InputEnded:Connect(function(input: InputObject)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			startRotateWithCamera()
+		end
+	end
+
+	local function onInputEnded(input: InputObject)
 		if input.KeyCode == Enum.KeyCode.LeftShift then
 			_isSprinting = false
 			local humanoid = getHumanoid()
 			if humanoid then humanoid.WalkSpeed = _stats.walkSpeed end
 		end
-	end)
+
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			stopRotateWithCamera()
+		end
+	end
+
+	_inputBeganConn = UserInputService.InputBegan:Connect(onInputBegan)
+	_inputEndedConn = UserInputService.InputEnded:Connect(onInputEnded)
 
 	Logger.info(TAG, "Initialized.")
 end
