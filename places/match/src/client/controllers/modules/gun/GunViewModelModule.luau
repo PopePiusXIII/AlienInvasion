@@ -13,13 +13,13 @@ local camera = workspace.CurrentCamera
 local VIEWMODEL_LAG_ENABLED = true
 local BASE_VIEWMODEL_LAG_RESPONSIVENESS = Config.VIEWMODEL_LAG_RESPONSIVENESS or 10 -- base responsiveness
 local VIEWMODEL_LAG_RESPONSIVENESS_MULTIPLIER = Config.VIEWMODEL_LAG_RESPONSIVENESS_MULTIPLIER or 3 -- 2-3x for a tighter feel
-local VIEWMODEL_LAG_STIFFNESS_SCALE = Config.VIEWMODEL_LAG_STIFFNESS_SCALE or 1.5 -- user requested: cut stiffness in half
+local VIEWMODEL_LAG_STIFFNESS_SCALE = Config.VIEWMODEL_LAG_STIFFNESS_SCALE or .5 -- user requested: cut stiffness in half
 local VIEWMODEL_LAG_RESPONSIVENESS = BASE_VIEWMODEL_LAG_RESPONSIVENESS * VIEWMODEL_LAG_RESPONSIVENESS_MULTIPLIER * VIEWMODEL_LAG_STIFFNESS_SCALE
 local VIEWMODEL_LAG_MAX_ANGLE_DEGREES = Config.VIEWMODEL_LAG_MAX_ANGLE_DEGREES or 20 -- maximum angular offset from camera (degrees)
 -- Input smoothing (smooth raw camera/mouse CFrame before feeding spring)
 local VIEWMODEL_INPUT_SMOOTH_ENABLED = true
 -- Double the apparent smoothing: lower responsiveness = smoother (slower to track).
-local VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS = (Config.VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS or 30) * .2 -- doubled smoothing
+local VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS = (Config.VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS or 30) * 2 -- doubled smoothing
 
 local ViewModels = ReplicatedStorage:WaitForChild("ViewModels")
 
@@ -104,6 +104,10 @@ local function mountViewmodel(template: Model)
                         local kInput = math.max(0.0001, VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS)
                         local alphaInput = 1 - math.exp(-kInput * dt)
                         smoothedCamCFrame = smoothedCamCFrame:Lerp(camera.CFrame, alphaInput)
+                        -- Keep the camera position immediate to remove translation lag,
+                        -- but preserve the smoothed orientation. This prevents the
+                        -- viewmodel from translating while still allowing rotational lag.
+                        smoothedCamCFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + smoothedCamCFrame.LookVector)
                     else
                         smoothedCamCFrame = camera.CFrame
                     end
