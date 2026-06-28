@@ -18,6 +18,7 @@ local Framework     = require(ReplicatedStorage.Shared.Framework)
 local Logger        = require(ReplicatedStorage.Shared.Logger)
 local Config        = require(ReplicatedStorage.Shared.Config)
 local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
+local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
 local HudController = require(script.Parent.HudController)
 local GunCatalogModule = require(script.Parent.modules.gun.GunCatalogModule)
 local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
@@ -41,7 +42,7 @@ local _isAutoFiring:     boolean              = false
 local _equippedGun:      Tool?                = nil
 local _activatedConn:    RBXScriptConnection? = nil
 local _deactivatedConn:  RBXScriptConnection? = nil
-local _aimPitchConn:     RBXScriptConnection? = nil
+local _aimPitchTaskId: string? = nil
 local _cameraModeConn:   RBXScriptConnection? = nil
 local _cameraCFrameConn: RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
@@ -256,9 +257,9 @@ local function onGunActivated(gun: Tool)
 end
 
 local function stopAimPitchTracking()
-	if _aimPitchConn then
-		_aimPitchConn:Disconnect()
-		_aimPitchConn = nil
+	if _aimPitchTaskId then
+		RenderScheduler.unregister(_aimPitchTaskId)
+		_aimPitchTaskId = nil
 	end
 
 	if _equippedGun and _baseGunGrip then
@@ -272,7 +273,7 @@ local function startAimPitchTracking(gun: Tool)
 	stopAimPitchTracking()
 	_baseGunGrip = gun.Grip
 
-	_aimPitchConn = RunService.RenderStepped:Connect(function()
+	_aimPitchTaskId = RenderScheduler.register("aimPitch_" .. gun.Name, function(dt)
 		if _equippedGun ~= gun then return end
 		local hrp = _cachedHrp
 		if not hrp then return end
@@ -285,7 +286,7 @@ local function startAimPitchTracking(gun: Tool)
 		pitch = math.clamp(pitch, -MAX_VERTICAL_AIM_RADIANS, MAX_VERTICAL_AIM_RADIANS)
 
 		gun.Grip = (_baseGunGrip :: CFrame) * CFrame.Angles(-pitch, 0, 0)
-	end)
+	end, { enabled = true })
 end
 
 local function onCharacterAdded(character: Model)

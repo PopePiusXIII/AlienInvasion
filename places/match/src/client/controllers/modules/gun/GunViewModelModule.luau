@@ -1,9 +1,10 @@
 --!strict
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+-- RunService not used directly; scheduler handles per-frame loop
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -22,7 +23,7 @@ local VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS = (Config.VIEWMODEL_INPUT_SMOOTH_RES
 local ViewModels = ReplicatedStorage:WaitForChild("ViewModels")
 
 local activeViewmodel: Model? = nil
-local renderConnection: RBXScriptConnection? = nil
+local renderTaskId: string? = nil
 local currentTool: Tool? = nil
 local currentTemplate: Model? = nil
 local cameraModeConn: RBXScriptConnection? = nil
@@ -112,9 +113,9 @@ local function setWorldToolVisible(visible: boolean)
 end
 
 local function destroyActiveViewmodel()
-    if renderConnection then
-        renderConnection:Disconnect()
-        renderConnection = nil
+    if renderTaskId then
+        RenderScheduler.unregister(renderTaskId)
+        renderTaskId = nil
     end
     if activeViewmodel then
         activeViewmodel:Destroy()
@@ -143,11 +144,11 @@ local function mountViewmodel(template: Model)
     -- Initialize smoothed camera CFrame and look vector + velocity for 2nd-order spring
     local smoothedCamCFrame, smoothedLook, smoothedLookVel = initSmoothedState()
 
-    renderConnection = RunService.RenderStepped:Connect(function(dt)
+    renderTaskId = RenderScheduler.register("viewmodel_" .. (activeViewmodel and activeViewmodel.Name or "vm"), function(dt)
         if not activeViewmodel or not activeViewmodel.Parent then
-            if renderConnection then
-                renderConnection:Disconnect()
-                renderConnection = nil
+            if renderTaskId then
+                RenderScheduler.unregister(renderTaskId)
+                renderTaskId = nil
             end
             return
         end
@@ -155,12 +156,11 @@ local function mountViewmodel(template: Model)
         local rootPart = activeViewmodel:FindFirstChild("HumanoidRootPart")
         local fakeCam = activeViewmodel:FindFirstChild("FakeCamera")
         if rootPart and fakeCam and activeViewmodel.PrimaryPart then
-                local viewmodelOffset = rootPart.CFrame:ToObjectSpace(fakeCam.CFrame)
-                -- Use SetPrimaryPartCFrame for more robust model transforms (always-enabled)
-                smoothedCamCFrame = updateSmoothedCamCFrame(smoothedCamCFrame, dt)
-                local camCFrame = smoothedCamCFrame
-                smoothedLook, smoothedLookVel = computeSmoothedLook(dt, camCFrame, smoothedLook, smoothedLookVel)
-                applyViewmodelTransform(camCFrame, smoothedLook, viewmodelOffset)
+            local viewmodelOffset = rootPart.CFrame:ToObjectSpace(fakeCam.CFrame)
+            smoothedCamCFrame = updateSmoothedCamCFrame(smoothedCamCFrame, dt)
+            local camCFrame = smoothedCamCFrame
+            smoothedLook, smoothedLookVel = computeSmoothedLook(dt, camCFrame, smoothedLook, smoothedLookVel)
+            applyViewmodelTransform(camCFrame, smoothedLook, viewmodelOffset)
             setWorldToolVisible(false)
         end
     end)

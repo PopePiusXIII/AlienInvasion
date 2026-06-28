@@ -15,6 +15,7 @@ local RunService = game:GetService("RunService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger = require(ReplicatedStorage.Shared.Logger)
+local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
 
 local TAG = "ZombieController"
 local ZombieController = Framework.CreateController({ Name = TAG })
@@ -32,6 +33,7 @@ type ZombieSmoothEntry = {
 
 local _smoothedZombies: { ZombieSmoothEntry } = {}
 local _zombieMap: { [Instance]: ZombieSmoothEntry } = {}
+local _zombieTaskId: string? = nil
 
 --- Find or create a smoothing entry for a zombie model.
 local function getOrCreateEntry(zombie: Model): ZombieSmoothEntry?
@@ -54,6 +56,9 @@ local function getOrCreateEntry(zombie: Model): ZombieSmoothEntry?
 
 	_zombieMap[zombie] = entry
 	table.insert(_smoothedZombies, entry)
+	if _zombieTaskId then
+		RenderScheduler.setEnabled(_zombieTaskId, true)
+	end
 	return entry
 end
 
@@ -66,6 +71,9 @@ local function removeEntry(zombie: Model): nil
 	for i = #_smoothedZombies, 1, -1 do
 		if _smoothedZombies[i] == entry then
 			table.remove(_smoothedZombies, i)
+			if #_smoothedZombies == 0 and _zombieTaskId then
+				RenderScheduler.setEnabled(_zombieTaskId, false)
+			end
 			return
 		end
 	end
@@ -78,28 +86,8 @@ end
 function ZombieController:Start()
 	local workspace = game:GetService("Workspace")
 
-	-- Register any existing zombies at startup.
-	for _, child in ipairs(workspace:GetChildren()) do
-		if child.Name == "Zombie" and child:IsA("Model") then
-			getOrCreateEntry(child :: Model)
-		end
-	end
-
-	-- Watch for future spawns/despawns.
-	workspace.ChildAdded:Connect(function(child)
-		if child.Name == "Zombie" and child:IsA("Model") then
-			getOrCreateEntry(child :: Model)
-		end
-	end)
-
-	workspace.ChildRemoved:Connect(function(child)
-		if _zombieMap[child] then
-			removeEntry(child :: Model)
-		end
-	end)
-
-	-- Smooth interpolation loop runs every frame on the client.
-	RunService.RenderStepped:Connect(function()
+	-- Register smoothing task (disabled until entries exist)
+	_zombieTaskId = RenderScheduler.register("zombie_smoothing", function(_dt)
 		for i = #_smoothedZombies, 1, -1 do
 			local entry = _smoothedZombies[i]
 
@@ -125,6 +113,26 @@ function ZombieController:Start()
 				entry.trackedCFrame = entry.trackedCFrame:Lerp(realCFrame, SMOOTH_FACTOR)
 				entry.rootPart.CFrame = entry.trackedCFrame
 			end
+		end
+	end, { enabled = false })
+
+	-- Register any existing zombies at startup.
+	for _, child in ipairs(workspace:GetChildren()) do
+		if child.Name == "Zombie" and child:IsA("Model") then
+			getOrCreateEntry(child :: Model)
+		end
+	end
+
+	-- Watch for future spawns/despawns.
+	workspace.ChildAdded:Connect(function(child)
+		if child.Name == "Zombie" and child:IsA("Model") then
+			getOrCreateEntry(child :: Model)
+		end
+	end)
+
+	workspace.ChildRemoved:Connect(function(child)
+		if _zombieMap[child] then
+			removeEntry(child :: Model)
 		end
 	end)
 
