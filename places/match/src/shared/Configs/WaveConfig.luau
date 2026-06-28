@@ -1,6 +1,6 @@
 --!strict
 return {
-	STARTING_WAVE          = 10,
+	STARTING_WAVE          = 1,
 	WAVE_START_DELAY       = 3,
 	WAVE_BETWEEN_DELAY     = 5,
 	WAVE_SPAWN_INTERVAL    = .2,
