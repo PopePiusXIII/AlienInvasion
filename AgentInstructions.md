@@ -45,7 +45,7 @@ You must adhere to the principles outlined in Robert C. Martin’s *Clean Code*.
 
 ### The Single Responsibility Principle (SRP)
 *   Every Service and Controller must have **one, and only one, reason to change**. 
-    *   `DataService` is solely responsible for database reading/writing and server caching.
+    *   `ProfileService` is solely responsible for player data persistence, profile management, and server caching.
     *   `CombatService` is solely responsible for handling hitboxes and validation. It must *never* directly contain code managing a player's cash economy.
 
 ### Code Visuals & "No Comments" Rule

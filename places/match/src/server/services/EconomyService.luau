@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework      = require(ReplicatedStorage.Shared.Framework)
 local Logger         = require(ReplicatedStorage.Shared.Logger)
-local DataService    = require(script.Parent.DataService)
 local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 local Config         = require(ReplicatedStorage.Shared.Config)
 local RemoteNames    = require(ReplicatedStorage.Shared.RemoteNames)
@@ -212,10 +211,13 @@ function EconomyService:Start()
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player: Player)
-		-- Flush gold earned this run to the persistent profile via DataService.
+		-- Flush gold earned this run to the persistent profile.
 		local wallet = _walletByPlayer[player]
 		if wallet and wallet.goldEarned > 0 then
-			DataService.saveGoldEarned(player, wallet.goldEarned)
+			local profile = ProfileService:GetProfile(player)
+			if profile then
+				profile.goldStuds += wallet.goldEarned
+			end
 		end
 
 		_walletByPlayer[player] = nil
@@ -231,7 +233,7 @@ end
 
 function EconomyService.beginRun(player: Player)
 	-- Snapshot the persistent gold once at run start so syncWalletToClient
-	-- doesn't block on DataService/ProfileService during the wave loop.
+	-- doesn't block on ProfileService during the wave loop.
 	local profile = ProfileService:GetProfile(player)
 	local persistentGold = profile and profile.goldStuds or 0
 

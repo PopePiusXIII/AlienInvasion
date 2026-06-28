@@ -34,9 +34,12 @@ export type LobbyMainHUDProps = {
 --- Returns the ScreenGui instance and a control table for updating reactive fields.
 function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
     setSilver: (number) -> (),
+    setGold: (number) -> (),
     setHint:   (string) -> (),
+
 })
     local silverAmount = source(0)
+    local goldAmount = source(0)
     local hintMsg      = source(props.hintText)
 
     local screenGui = create "ScreenGui" {
@@ -101,6 +104,22 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             }
         end)
 
+                -- Silver balance (top-left, below player name) — reactive
+        derive(function()
+            return create "TextLabel" {
+                Name                   = "GoldLabel",
+                Parent                 = screenGui,
+                Size                 = UDim2.new(0.3, 0, 0.06, 0),
+                Position             = UDim2.new(0.02, 0, 0.15, 0),
+                BackgroundTransparency = 1,
+                TextColor3           = theme.SILVER,
+                TextScaled           = true,
+                Font                 = theme.FONT_REGULAR,
+                TextXAlignment       = Enum.TextXAlignment.Left,
+                Text                 = "GOLD: " .. tostring(math.max(0, math.floor(goldAmount()))),
+            }
+        end)
+
         -- Navigation hint (bottom-center) — reactive
         derive(function()
             return create "TextLabel" {
@@ -152,6 +171,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
 
     local controls = {
         setSilver = function(amount: number) silverAmount(amount) end,
+        setGold = function(amount: number) goldAmount(amount) end,
         setHint   = function(msg: string) hintMsg(msg) end,
     }
 

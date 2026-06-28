@@ -14,16 +14,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework  = require(ReplicatedStorage.Shared.Framework)
 local Logger     = require(ReplicatedStorage.Shared.Logger)
+local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
 local LobbyMainHUD = require(ReplicatedStorage.Shared.vide.LobbyMainHUD)
 local MatchmakingHUDModule     = require(ReplicatedStorage.Shared.vide.MatchmakingHUD)
+local LobbyHudController = Framework.CreateController({ Name = "LobbyHudController" })
 
 local TAG = "LobbyHudController"
 
-local LobbyHudController = Framework.CreateController({ Name = TAG })
-
 -- Main HUD (always visible)
 local _mainScreenGui: Instance
-local _mainControls:  { setSilver: (number) -> (), setHint: (string) -> () }
+local _mainControls:  { setSilver: (number) -> (), setGold: (number) -> (), setHint: (string) -> () }
 
 -- Matchmaking panel (lazily created when player enters matchmaking area)
 local _matchScreenGui:   Instance?
@@ -42,6 +42,15 @@ function LobbyHudController:Init()
 		title    = "ALIEN INVASION",
 	})
 	_mainScreenGui.Parent = Players.LocalPlayer.PlayerGui
+end
+
+function LobbyHudController:Start()
+	local syncProfileRemote = Framework.GetRemote(RemoteNames.SYNC_PROFILE)
+	syncProfileRemote.OnClientEvent:Connect(function(gold: number, silver: number)
+		Logger.info(TAG, "Profile synced — gold=%d, silver=%d.", gold, silver)
+		LobbyHudController.setGold(gold)
+		LobbyHudController.setSilver(silver)
+	end)
 end
 
 -- ── Matchmaking panel lifecycle ───────────────────────────────────────────────
@@ -127,6 +136,10 @@ end
 --- Update silver balance on the main HUD.
 function LobbyHudController.setSilver(amount: number)
 	_mainControls.setSilver(amount)
+end
+
+function LobbyHudController.setGold(amount: number)
+	_mainControls.setGold(amount)
 end
 
 --- Update the navigation hint text.

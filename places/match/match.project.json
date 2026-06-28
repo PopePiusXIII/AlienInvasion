@@ -6,10 +6,7 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared",
-        "Framework": { "$path": "../../packages/shared/Framework.luau" },
-        "Logger":    { "$path": "../../packages/shared/Logger.luau" },
-        "ProfileService": { "$path": "../../packages/shared/ProfileService.luau" },
-        "vide":      { "$path": "../../src/shared/vide" }
+        "vide":  { "$path": "vide" }
       },
       "Packages": {
         "$className": "Folder",

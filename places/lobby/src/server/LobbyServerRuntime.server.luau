@@ -23,7 +23,8 @@ require(services.TeleportHelperService)    -- no deps
 require(services.MatchmakingService)       -- requires MatchQueueService, TeleportHelperService
 require(services.LightShowService)         -- no deps
 require(services.FlyoverService)           -- no deps
+require(services.PlayerInitService)        -- requires ProfileService
 
-Logger.info("LobbyServerRuntime", "Booting — 5 services registered.")
+Logger.info("LobbyServerRuntime", "Booting — 6 services registered.")
 Framework.Start()
 Logger.info("LobbyServerRuntime", "Framework started. All services live.")

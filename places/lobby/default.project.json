@@ -6,13 +6,13 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "Config":       { "$path": "src/shared/Config.luau" },
+        "Config":         { "$path": "src/shared/Config.luau" },
         "LightShowConfig": { "$path": "src/shared/LightShowConfig.luau" },
-        "RemoteNames":  { "$path": "src/shared/RemoteNames.luau" },
-        "Framework":    { "$path": "../../packages/shared/Framework.luau" },
-        "Logger":       { "$path": "../../packages/shared/Logger.luau" },
-        "ProfileService": { "$path": "../../packages/shared/ProfileService.luau" },
-        "vide":         { "$path": "../../src/shared/vide" }
+        "RemoteNames":    { "$path": "src/shared/RemoteNames.luau" },
+        "Framework":      { "$path": "../../src/shared/Framework.luau" },
+        "Logger":         { "$path": "../../src/shared/Logger.luau" },
+        "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
+        "vide":           { "$path": "../../src/shared/vide" }
       },
       "Packages": {
         "$className": "Folder",

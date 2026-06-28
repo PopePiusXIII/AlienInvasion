@@ -16,9 +16,9 @@ local Framework    = require(ReplicatedStorage.Shared.Framework)
 local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
+local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
-local DataService = require(script.Parent.DataService)
 local ClerkInteractionModule = require(script.Parent.modules.wave.ClerkInteractionModule)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
@@ -120,7 +120,7 @@ local function giveGuns(player: Player)
 	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B", "BushMaster"}
 	local unlockedGunNames: { string } = {}
 	for _, gunName in ipairs(allGunNames) do
-		if DataService.isWeaponUnlocked(player, gunName) then
+		if ProfileService.isWeaponUnlocked(player, gunName) then
 			table.insert(unlockedGunNames, gunName)
 		end
 	end

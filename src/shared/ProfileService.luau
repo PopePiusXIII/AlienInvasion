@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- ProfileService.luau  (packages/shared → ReplicatedStorage.Shared.ProfileService)
+-- ProfileService.luau  (src/shared → ReplicatedStorage.Shared.ProfileService)
 -- Wraps ProfileStore for cross-place player data persistence.
 -- Used by both Lobby and Match places — DRY profile session management.
 --
@@ -20,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
+local Config    = require(ReplicatedStorage.Shared.Config)
 
 local TAG = "ProfileService"
 
@@ -34,6 +35,12 @@ export type PlayerProfile = {
 	lifetimeSilverEarned: number,
 	lifetimeSilverSpent: number,
 	unlockedWeapons: { [string]: boolean },
+}
+
+export type EconomySummary = {
+	silverEarned: number,
+	silverSpent: number,
+	goldEarned: number,
 }
 
 -- Note: PROFILE_TEMPLATE uses defaults; unlockedWeapons is filled at runtime
@@ -74,6 +81,7 @@ local function onPlayerAdded(player: Player)
 
 	while not profile and attempts < maxAttempts do
 		attempts += 1
+		Logger.info(TAG, "StartSessionAsync attempt %d/%d for %s.", attempts, maxAttempts, player.DisplayName)
 		profile = PlayerStore:StartSessionAsync(tostring(player.UserId), {
 			Cancel = function()
 				return player.Parent == nil
@@ -81,6 +89,7 @@ local function onPlayerAdded(player: Player)
 		})
 
 		if not profile and attempts < maxAttempts then
+			Logger.warn(TAG, "Attempt %d failed for %s — retrying in %ds.", attempts, player.DisplayName, 2 ^ (attempts - 1))
 			task.wait(2 ^ (attempts - 1)) -- Exponential backoff: 1s, 2s, 4s...
 		end
 	end
@@ -107,10 +116,19 @@ local function onPlayerAdded(player: Player)
 	end
 end
 
+-- ── Starter weapons ───────────────────────────────────────────────────────────
+
+local function grantStarterWeapons(profile: PlayerProfile)
+	for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
+		profile.unlockedWeapons[weaponName] = true
+	end
+end
+
 -- ── Service lifecycle ────────────────────────────────────────────────────────
 
 function ProfileService:Init()
 	initProfileStore()
+	Logger.info(TAG, "ProfileService initialized (ProfileStore backend).")
 end
 
 function ProfileService:Start()
@@ -121,6 +139,20 @@ function ProfileService:Start()
 	end
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
+
+	-- Grant starter weapons on first load (async, non-blocking)
+	local function ensureStarterWeapons(player: Player)
+		local profile = ProfileService.WaitForProfile(player)
+		if profile then
+			grantStarterWeapons(profile)
+		end
+	end
+
+	for _, player in Players:GetPlayers() do
+		task.spawn(ensureStarterWeapons, player)
+	end
+
+	Players.PlayerAdded:Connect(ensureStarterWeapons)
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local profile = Profiles[player]
@@ -161,11 +193,93 @@ function ProfileService:GetProfile(player: Player): PlayerProfile?
 end
 
 --- Blocks until the profile session is ready, then returns the profile data.
-function ProfileService:WaitForProfile(player: Player): PlayerProfile
+--- Returns nil if the timeout (default 30 s) elapses.
+function ProfileService:WaitForProfile(player: Player): PlayerProfile?
+	local deadline = os.clock() + 30
 	repeat
 		task.wait(0.1)
+		if os.clock() > deadline then
+			Logger.warn(TAG, "WaitForProfile timed out for %s.", player.DisplayName)
+			return nil
+		end
 	until Profiles[player]
 	return Profiles[player].Data :: PlayerProfile
+end
+
+--- Sends current gold/silver balance to the client HUD.
+function ProfileService:SyncToClient(player: Player)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot sync profile for %s — not loaded.", player.Name)
+		return
+	end
+
+	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+	local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+	local remote = Remotes:WaitForChild(RemoteNames.SYNC_PROFILE) :: RemoteEvent
+	remote:FireClient(player, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
+	Logger.info(TAG, "Synced profile to %s — gold=%d, silver=%d.", player.Name, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
+end
+
+-- ── Data operations (merged from DataService) ────────────────────────────────
+
+--- Update a player's stats. ProfileStore auto-saves periodically.
+function ProfileService.saveStats(player: Player, waveReached: number, economy: EconomySummary?)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot save stats for %s — profile not loaded.", player.Name)
+		return
+	end
+
+	local silverEarned = economy and economy.silverEarned or 0
+	local silverSpent  = economy and economy.silverSpent or 0
+	local goldEarned   = economy and economy.goldEarned or 0
+
+	profile.bestWave             = math.max(profile.bestWave, waveReached)
+	profile.totalGames           = profile.totalGames + 1
+	profile.lifetimeSilverEarned += silverEarned
+	profile.lifetimeSilverSpent  += silverSpent
+	profile.goldStuds            += goldEarned
+
+	Logger.info(TAG, "Saved stats for %s — wave %d.", player.Name, waveReached)
+end
+
+--- Checks if a weapon is unlocked for the given player.
+function ProfileService.isWeaponUnlocked(player: Player, weaponName: string): boolean
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		return false
+	end
+	return profile.unlockedWeapons[weaponName] == true
+end
+
+--- Attempts to unlock a weapon using gold. Returns (success, errorCode).
+function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
+	local priceTable = Config.GOLD_WEAPON_UNLOCK_PRICES :: { [string]: number }
+	local goldCost   = priceTable[weaponName]
+	if goldCost == nil then
+		return false, "UNKNOWN_WEAPON"
+	end
+
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot unlock %s for %s — profile not loaded.", weaponName, player.Name)
+		return false, "PROFILE_NOT_LOADED"
+	end
+
+	if profile.unlockedWeapons[weaponName] == true then
+		return false, "ALREADY_UNLOCKED"
+	end
+
+	if profile.goldStuds < goldCost then
+		return false, "INSUFFICIENT_GOLD"
+	end
+
+	profile.goldStuds -= goldCost
+	profile.unlockedWeapons[weaponName] = true
+
+	Logger.info(TAG, "%s unlocked %s for %d gold.", player.Name, weaponName, goldCost)
+	return true, "OK"
 end
 
 return ProfileService
