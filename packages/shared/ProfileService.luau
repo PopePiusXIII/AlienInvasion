@@ -68,11 +68,22 @@ local Profiles: { [Player]: any } = {}
 -- ── Session lifecycle ────────────────────────────────────────────────────────
 
 local function onPlayerAdded(player: Player)
-	local profile = PlayerStore:StartSessionAsync(tostring(player.UserId), {
-		Cancel = function()
-			return player.Parent == nil
-		end,
-	})
+	local profile = nil
+	local attempts = 0
+	local maxAttempts = 5
+
+	while not profile and attempts < maxAttempts do
+		attempts += 1
+		profile = PlayerStore:StartSessionAsync(tostring(player.UserId), {
+			Cancel = function()
+				return player.Parent == nil
+			end,
+		})
+
+		if not profile and attempts < maxAttempts then
+			task.wait(2 ^ (attempts - 1)) -- Exponential backoff: 1s, 2s, 4s...
+		end
+	end
 
 	if not profile then
 		-- Only happens when the server is shutting down
@@ -127,6 +138,8 @@ function ProfileService:Start()
 				CleanupOnNonRecovery = true,
 			})
 		end
+		-- Give DataStore time to actually write before shutdown
+		task.wait(1)
 		Logger.info(TAG, "All profile sessions flushed on shutdown.")
 	end)
 end
