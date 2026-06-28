@@ -1,36 +1,39 @@
 --!strict
 --------------------------------------------------------------------------------
 -- DataService.luau  (src/server/services)
--- Handles all DataStore I/O. No game logic lives here.
--- Single Responsibility: persistent player data read/write.
+-- Sole owner of all player profile read/write for the Match place.
+-- No raw DataStore I/O — ProfileService handles session lifecycle & persistence.
+-- All profile mutations flow through this service to avoid double-saves.
 --
 -- Public API:
---   DataService.saveStats(player, waveReached)
---     Atomically updates bestWave and totalGames via UpdateAsync.
+--   DataService.saveStats(player, waveReached, economy?)
+--     Updates bestWave, totalGames, lifetime silver, and gold from run summary.
+--   DataService.getProfile(player)
+--     Returns the current player profile (blocks until loaded).
+--   DataService.getGold(player)
+--     Returns the player's persistent gold balance.
+--   DataService.isWeaponUnlocked(player, weaponName)
+--     Checks if a weapon is unlocked.
+--   DataService.tryUnlockWeapon(player, weaponName)
+--     Attempts to unlock a weapon using gold.
+--   DataService.saveGoldEarned(player, amount)
+--     Adds gold earned during a run to the persistent profile.
+--     Called by EconomyService on disconnect to flush unsaved gold.
 --------------------------------------------------------------------------------
 
-local DataStoreService  = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
+local Framework      = require(ReplicatedStorage.Shared.Framework)
+local Logger         = require(ReplicatedStorage.Shared.Logger)
+local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local Config         = require(ReplicatedStorage.Shared.Config)
 
 local TAG = "DataService"
 
 local DataService = Framework.CreateService({ Name = TAG })
 
-local _statsStore: DataStore = DataStoreService:GetDataStore("AlienInvasion_Profiles")
-local _profileCache: { [Player]: { [string]: any } } = {}
-
-type PlayerProfile = {
-	bestWave: number,
-	totalGames: number,
-	goldStuds: number,
-	lifetimeSilverEarned: number,
-	lifetimeSilverSpent: number,
-	unlockedWeapons: { [string]: boolean },
-}
+-- Re-export the PlayerProfile type from ProfileService to avoid duplication.
+export type PlayerProfile = ProfileService.PlayerProfile
 
 type EconomySummary = {
 	silverEarned: number,
@@ -38,179 +41,111 @@ type EconomySummary = {
 	goldEarned: number,
 }
 
-local function defaultUnlockedWeapons(): { [string]: boolean }
-	local unlocked: { [string]: boolean } = {}
+local function grantStarterWeapons(profile: PlayerProfile)
 	for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
-		unlocked[weaponName] = true
+		profile.unlockedWeapons[weaponName] = true
 	end
-	return unlocked
-end
-
-local function createDefaultProfile(): PlayerProfile
-	return {
-		bestWave = 0,
-		totalGames = 0,
-		goldStuds = 0,
-		lifetimeSilverEarned = 0,
-		lifetimeSilverSpent = 0,
-		unlockedWeapons = defaultUnlockedWeapons(),
-	}
-end
-
-local function normalizeProfile(existing: any?): PlayerProfile
-	local base = createDefaultProfile()
-	if type(existing) ~= "table" then
-		return base
-	end
-
-	local profile = existing :: { [string]: any }
-	base.bestWave = tonumber(profile.bestWave) or base.bestWave
-	base.totalGames = tonumber(profile.totalGames) or base.totalGames
-	base.goldStuds = tonumber(profile.goldStuds) or base.goldStuds
-	base.lifetimeSilverEarned = tonumber(profile.lifetimeSilverEarned) or base.lifetimeSilverEarned
-	base.lifetimeSilverSpent = tonumber(profile.lifetimeSilverSpent) or base.lifetimeSilverSpent
-
-	if type(profile.unlockedWeapons) == "table" then
-		for weaponName, isUnlocked in pairs(profile.unlockedWeapons :: { [string]: any }) do
-			if isUnlocked == true then
-				base.unlockedWeapons[tostring(weaponName)] = true
-			end
-		end
-	end
-
-	return base
-end
-
-local function getPlayerKey(player: Player): string
-	return "player_" .. tostring(player.UserId)
-end
-
-local function cacheProfile(player: Player, profile: PlayerProfile): PlayerProfile
-	_profileCache[player] = profile
-	return profile
-end
-
-local function loadProfile(player: Player): PlayerProfile
-	local cached = _profileCache[player]
-	if cached then
-		return cached :: PlayerProfile
-	end
-
-	local key = getPlayerKey(player)
-	local loaded: any = nil
-	local ok, err = pcall(function()
-		loaded = _statsStore:GetAsync(key)
-	end)
-	if not ok then
-		Logger.warn(TAG, "Load failed for %s: %s", player.Name, tostring(err))
-		return cacheProfile(player, createDefaultProfile())
-	end
-
-	return cacheProfile(player, normalizeProfile(loaded))
 end
 
 function DataService:Init()
-	_statsStore = DataStoreService:GetDataStore(Config.DATA_STORE_NAME)
-	Logger.info(TAG, "DataStore '%s' initialized.", Config.DATA_STORE_NAME)
+	Logger.info(TAG, "DataService initialized (ProfileStore backend).")
 end
 
 function DataService:Start()
-	game:GetService("Players").PlayerAdded:Connect(function(player: Player)
-		loadProfile(player)
-	end)
+	-- Grant starter weapons on first load via ProfileService profiles
+	local Players = game:GetService("Players")
 
-	game:GetService("Players").PlayerRemoving:Connect(function(player: Player)
-		_profileCache[player] = nil
-	end)
-
-	for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
-		loadProfile(player)
+	local function ensureStarterWeapons(player: Player)
+		local profile = ProfileService.WaitForProfile(player)
+		if profile then
+			grantStarterWeapons(profile)
+		end
 	end
+
+	for _, player in Players:GetPlayers() do
+		task.spawn(ensureStarterWeapons, player)
+	end
+
+	Players.PlayerAdded:Connect(ensureStarterWeapons)
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
 
---- Persist the wave reached for a player.
---- Uses UpdateAsync for atomic read-modify-write — safe for concurrent callers.
+--- Update a player's stats. ProfileStore auto-saves periodically.
 function DataService.saveStats(player: Player, waveReached: number, economy: EconomySummary?)
-	local key = getPlayerKey(player)
-	local silverEarned = economy and economy.silverEarned or 0
-	local silverSpent = economy and economy.silverSpent or 0
-	local goldEarned = economy and economy.goldEarned or 0
-	local ok, err = pcall(function()
-		_statsStore:UpdateAsync(key, function(existing: any?)
-			local data = normalizeProfile(existing)
-			data.bestWave   = math.max(data.bestWave, waveReached)
-			data.totalGames = data.totalGames + 1
-			data.lifetimeSilverEarned += silverEarned
-			data.lifetimeSilverSpent += silverSpent
-			data.goldStuds += goldEarned
-			return data
-		end)
-	end)
-	if not ok then
-		Logger.warn(TAG, "Save failed for %s (wave %d): %s", player.Name, waveReached, tostring(err))
-	else
-		local profile = loadProfile(player)
-		profile.bestWave = math.max(profile.bestWave, waveReached)
-		profile.totalGames += 1
-		profile.lifetimeSilverEarned += silverEarned
-		profile.lifetimeSilverSpent += silverSpent
-		profile.goldStuds += goldEarned
-		Logger.info(TAG, "Saved stats for %s — wave %d.", player.Name, waveReached)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot save stats for %s — profile not loaded.", player.Name)
+		return
 	end
+
+	local silverEarned = economy and economy.silverEarned or 0
+	local silverSpent  = economy and economy.silverSpent or 0
+	local goldEarned   = economy and economy.goldEarned or 0
+
+	profile.bestWave             = math.max(profile.bestWave, waveReached)
+	profile.totalGames           = profile.totalGames + 1
+	profile.lifetimeSilverEarned += silverEarned
+	profile.lifetimeSilverSpent  += silverSpent
+	profile.goldStuds            += goldEarned
+
+	Logger.info(TAG, "Saved stats for %s — wave %d.", player.Name, waveReached)
+end
+
+--- Flush gold earned during a run to the persistent profile.
+--- Called by EconomyService on PlayerRemoving to save unsaved gold.
+function DataService.saveGoldEarned(player: Player, amount: number)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot flush gold for %s — profile not loaded.", player.Name)
+		return
+	end
+
+	profile.goldStuds += amount
+	Logger.info(TAG, "Flushed %d gold to profile for %s.", amount, player.Name)
 end
 
 function DataService.getProfile(player: Player): PlayerProfile
-	return loadProfile(player)
+	return ProfileService.WaitForProfile(player) :: PlayerProfile
 end
 
 function DataService.getGold(player: Player): number
-	return loadProfile(player).goldStuds
+	return ProfileService.WaitForProfile(player).goldStuds
 end
 
 function DataService.isWeaponUnlocked(player: Player, weaponName: string): boolean
-	local profile = loadProfile(player)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		return false
+	end
 	return profile.unlockedWeapons[weaponName] == true
 end
 
 function DataService.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
 	local priceTable = Config.GOLD_WEAPON_UNLOCK_PRICES :: { [string]: number }
-	local goldCost = priceTable[weaponName]
+	local goldCost   = priceTable[weaponName]
 	if goldCost == nil then
 		return false, "UNKNOWN_WEAPON"
 	end
 
-	local profile = loadProfile(player)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot unlock %s for %s — profile not loaded.", weaponName, player.Name)
+		return false, "PROFILE_NOT_LOADED"
+	end
+
 	if profile.unlockedWeapons[weaponName] == true then
 		return false, "ALREADY_UNLOCKED"
 	end
+
 	if profile.goldStuds < goldCost then
 		return false, "INSUFFICIENT_GOLD"
 	end
 
-	local key = getPlayerKey(player)
-	local ok, err = pcall(function()
-		_statsStore:UpdateAsync(key, function(existing: any?)
-			local data = normalizeProfile(existing)
-			if data.unlockedWeapons[weaponName] == true then
-				return data
-			end
-			if data.goldStuds < goldCost then
-				return data
-			end
-			data.goldStuds -= goldCost
-			data.unlockedWeapons[weaponName] = true
-			return data
-		end)
-	end)
-	if not ok then
-		Logger.warn(TAG, "Unlock failed for %s (%s): %s", player.Name, weaponName, tostring(err))
-		return false, "DATASTORE_ERROR"
-	end
-
 	profile.goldStuds -= goldCost
 	profile.unlockedWeapons[weaponName] = true
+
+	Logger.info(TAG, "%s unlocked %s for %d gold.", player.Name, weaponName, goldCost)
 	return true, "OK"
 end
 

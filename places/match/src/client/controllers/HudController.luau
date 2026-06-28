@@ -73,8 +73,9 @@ function HudController:Start()
 		)
 	end)
 
-	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number)
+	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number, goldEarned: number)
 		_controls.setSilverAmount(silverStuds)
+		_controls.setGoldAmount(goldEarned or 0)
 	end)
 
 	Logger.info(TAG, "Wave event listeners connected.")

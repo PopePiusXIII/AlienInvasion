@@ -37,11 +37,13 @@ function createMatchHUD(props: MatchHUDProps): ({
     clearWaveText:   () -> (),
     setAmmoText:     (string, Color3) -> (),
     setSilverAmount: (number) -> (),
+    setGoldAmount:   (number) -> (),
 }, () -> ())
     local waveText     = source("")
     local ammoText     = source("")
     local ammoColor    = source(Color3.new(1, 1, 1))
     local silverAmount = source(0)
+    local goldAmount   = source(0)
 
     -- Create or use existing ScreenGui
     local screenGui: Instance
@@ -58,50 +60,72 @@ function createMatchHUD(props: MatchHUDProps): ({
 
     -- Define the reactive component
     local function renderHUD()
-        -- Wave announcement label (top-center, only visible when text is non-empty)
-        derive({ waveText }, function(text: string)
-            if text == "" then return nil end
-            return create "TextLabel" {
-                Name                   = "WaveLabel",
-                Size                 = UDim2.new(0.4, 0, 0.1, 0),
-                Position             = UDim2.new(0.3, 0, 0.1, 0),
-                BackgroundTransparency = 1,
-                TextColor3           = theme.TEXT_HIGHLIGHT,
-                TextScaled           = true,
-                Font                 = theme.FONT_BOLD,
-                Text                 = text,
-            }
-        end)
+        return {
+            -- Wave announcement label (top-center, only visible when text is non-empty)
+            derive(function()
+                local text = waveText()
+                if text == "" then return nil end
+                return create "TextLabel" {
+                    Name                   = "WaveLabel",
+                    Size                 = UDim2.new(0.4, 0, 0.1, 0),
+                    Position             = UDim2.new(0.3, 0, 0.1, 0),
+                    BackgroundTransparency = 1,
+                    TextColor3           = theme.TEXT_HIGHLIGHT,
+                    TextScaled           = true,
+                    Font                 = theme.FONT_BOLD,
+                    Text                 = text,
+                }
+            end),
 
-        -- Ammo counter (bottom-right)
-        derive({ ammoText, ammoColor }, function(text: string, color: Color3)
-            if text == "" then return nil end
-            return create "TextLabel" {
-                Name                   = "AmmoLabel",
-                Size                 = UDim2.new(0.18, 0, 0.07, 0),
-                Position             = UDim2.new(0.80, 0, 0.88, 0),
-                BackgroundTransparency = 1,
-                TextColor3           = color,
-                TextScaled           = true,
-                Font                 = theme.FONT_BOLD,
-                Text                 = text,
-            }
-        end)
+            -- Ammo counter (bottom-right)
+            derive(function()
+                local text  = ammoText()
+                local color = ammoColor()
+                if text == "" then return nil end
+                return create "TextLabel" {
+                    Name                   = "AmmoLabel",
+                    Size                 = UDim2.new(0.18, 0, 0.07, 0),
+                    Position             = UDim2.new(0.80, 0, 0.88, 0),
+                    BackgroundTransparency = 1,
+                    TextColor3           = color,
+                    TextScaled           = true,
+                    Font                 = theme.FONT_BOLD,
+                    Text                 = text,
+                }
+            end),
 
-        -- Silver currency display (bottom-left) — always visible
-        derive({ silverAmount }, function(amount: number)
-            return create "TextLabel" {
-                Name                   = "SilverLabel",
-                Size                 = UDim2.new(0.24, 0, 0.06, 0),
-                Position             = UDim2.new(0.02, 0, 0.88, 0),
-                BackgroundTransparency = 1,
-                TextColor3           = theme.SILVER,
-                TextScaled           = true,
-                Font                 = theme.FONT_BOLD,
-                TextXAlignment       = Enum.TextXAlignment.Left,
-                Text                 = "SILVER: " .. tostring(math.max(0, math.floor(amount))),
-            }
-        end)
+            -- Silver currency display (bottom-left) — always visible
+            derive(function()
+                local amount = silverAmount()
+                return create "TextLabel" {
+                    Name                   = "SilverLabel",
+                    Size                 = UDim2.new(0.24, 0, 0.06, 0),
+                    Position             = UDim2.new(0.02, 0, 0.88, 0),
+                    BackgroundTransparency = 1,
+                    TextColor3           = theme.SILVER,
+                    TextScaled           = true,
+                    Font                 = theme.FONT_BOLD,
+                    TextXAlignment       = Enum.TextXAlignment.Left,
+                    Text                 = "SILVER: " .. tostring(math.max(0, math.floor(amount))),
+                }
+            end),
+
+            -- Gold currency display (bottom-left, above silver) — always visible
+            derive(function()
+                local amount = goldAmount()
+                return create "TextLabel" {
+                    Name                   = "GoldLabel",
+                    Size                 = UDim2.new(0.24, 0, 0.06, 0),
+                    Position             = UDim2.new(0.02, 0, 0.81, 0),
+                    BackgroundTransparency = 1,
+                    TextColor3           = theme.GOLD,
+                    TextScaled           = true,
+                    Font                 = theme.FONT_BOLD,
+                    TextXAlignment       = Enum.TextXAlignment.Left,
+                    Text                 = "GOLD: " .. tostring(math.max(0, math.floor(amount))),
+                }
+            end),
+        }
     end
 
     -- Mount the component into the ScreenGui
@@ -116,6 +140,7 @@ function createMatchHUD(props: MatchHUDProps): ({
             ammoColor(color)
         end,
         setSilverAmount = function(amount: number) silverAmount(amount) end,
+        setGoldAmount   = function(amount: number) goldAmount(amount) end,
     }
 
     return controls, unmount

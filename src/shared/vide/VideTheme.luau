@@ -23,6 +23,7 @@ theme.TEXT_PRIMARY     = Color3.new(1, 1, 1)             -- White text
 theme.TEXT_SECONDARY   = Color3.fromRGB(195, 195, 195)   -- Muted gray text
 theme.TEXT_HIGHLIGHT   = Color3.fromRGB(255, 80, 80)     -- Bright red for highlights
 theme.SILVER           = Color3.fromRGB(230, 230, 230)   -- Silver currency color
+theme.GOLD             = Color3.fromRGB(255, 215, 0)      -- Gold currency color
 
 -- ── Typography ────────────────────────────────────────────────────────────────
 

@@ -196,12 +196,16 @@ end
 --- Run the full solo battle for one player. YIELDS until they die or disconnect.
 --- Returns the last wave number reached (0 if the map or humanoid was unavailable).
 function WaveService.startBattle(player: Player): number
+	Logger.info(TAG, "startBattle: beginning run for %s.", player.Name)
 	EconomyService.beginRun(player)
 	player:SetAttribute("CurrentWave", Config.STARTING_WAVE)
 
 	-- Wait for the player's character and humanoid to be ready before proceeding.
+	Logger.info(TAG, "startBattle: waiting for character (%s).", player.Name)
 	local character = player.Character or player.CharacterAdded:Wait()
+	Logger.info(TAG, "startBattle: character ready, waiting for humanoid (%s).", player.Name)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+	Logger.info(TAG, "startBattle: humanoid ready, starting waves (%s).", player.Name)
 
 	local attached = ClerkInteractionModule.attach(player, function()
 		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))

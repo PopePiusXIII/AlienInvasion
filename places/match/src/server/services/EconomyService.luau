@@ -3,10 +3,12 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger = require(ReplicatedStorage.Shared.Logger)
-local Config = require(ReplicatedStorage.Shared.Config)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local Framework      = require(ReplicatedStorage.Shared.Framework)
+local Logger         = require(ReplicatedStorage.Shared.Logger)
+local DataService    = require(script.Parent.DataService)
+local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local Config         = require(ReplicatedStorage.Shared.Config)
+local RemoteNames    = require(ReplicatedStorage.Shared.RemoteNames)
 
 local TAG = "EconomyService"
 local EconomyService = Framework.CreateService({ Name = TAG })
@@ -29,6 +31,7 @@ export type RunWallet = {
 	silverEarned: number,
 	silverSpent: number,
 	goldEarned: number,
+	persistentGold: number, -- Snapshot of profile gold at run start.
 }
 
 local _walletByPlayer: { [Player]: RunWallet } = {}
@@ -53,13 +56,17 @@ local function getWallet(player: Player): RunWallet
 			silverEarned = 0,
 			silverSpent  = 0,
 			goldEarned   = 0,
+			persistentGold = 0,
 		}
 	end
 	return _walletByPlayer[player]
 end
 
 local function syncWalletToClient(player: Player)
-	Logger.fireClient(_runCurrencyUpdatedRemote, player, getWallet(player).silverStuds)
+	local wallet = getWallet(player)
+	-- Total gold = cached persistent balance + newly earned this run.
+	local totalGold = wallet.persistentGold + wallet.goldEarned
+	Logger.fireClient(_runCurrencyUpdatedRemote, player, wallet.silverStuds, totalGold)
 end
 
 local function awardSilver(player: Player, amount: number)
@@ -75,6 +82,7 @@ local function awardGold(player: Player, amount: number)
 	local gain = math.max(0, math.floor(amount))
 	if gain <= 0 then return end
 	getWallet(player).goldEarned += gain
+	syncWalletToClient(player)
 end
 
 local function distributeIntoBolts(total: number, boltCount: number): { number }
@@ -200,10 +208,16 @@ function EconomyService:Start()
 	local function onPlayerAdded(player: Player)
 		_boltsByPlayer[player] = {}
 		_nextBoltId[player] = 0
-	end
+	end	
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player: Player)
+		-- Flush gold earned this run to the persistent profile via DataService.
+		local wallet = _walletByPlayer[player]
+		if wallet and wallet.goldEarned > 0 then
+			DataService.saveGoldEarned(player, wallet.goldEarned)
+		end
+
 		_walletByPlayer[player] = nil
 		_boltsByPlayer[player] = nil
 		_nextBoltId[player] = nil
@@ -216,11 +230,17 @@ function EconomyService:Start()
 end
 
 function EconomyService.beginRun(player: Player)
+	-- Snapshot the persistent gold once at run start so syncWalletToClient
+	-- doesn't block on DataService/ProfileService during the wave loop.
+	local profile = ProfileService:GetProfile(player)
+	local persistentGold = profile and profile.goldStuds or 0
+
 	_walletByPlayer[player] = {
 		silverStuds  = math.max(0, math.floor(Config.SILVER_START_BALANCE)),
 		silverEarned = 0,
 		silverSpent  = 0,
-		goldEarned   = 0,
+		goldEarned   = 0, -- Only tracks gold earned during this run.
+		persistentGold = persistentGold,
 	}
 	-- Clear any leftover bolt records from a previous run.
 	_boltsByPlayer[player] = {}
@@ -238,6 +258,8 @@ function EconomyService.grantKillRewards(player: Player, zombieType: string, wav
 
 	local silverAmount = calculateSilverReward(zombieType, waveNumber)
 	local goldAmount   = rollGoldReward(zombieType, waveNumber)
+
+	Logger.info(TAG, "Kill reward — type=%s wave=%d silver=%d gold=%d", zombieType, waveNumber, silverAmount, goldAmount)
 
 	-- Every active player gets their own bolt copy to collect — shared kill reward.
 	for _, recipient in ipairs(Players:GetPlayers()) do

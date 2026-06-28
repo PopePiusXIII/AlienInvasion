@@ -11,6 +11,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 
+-- ── Shared services (cross-place) ────────────────────────────────────────────
+require(ReplicatedStorage.Shared.ProfileService)
+
+-- ── Lobby services ───────────────────────────────────────────────────────────
+
 local services = script.Parent.services
 
 require(services.MatchQueueService)        -- no deps

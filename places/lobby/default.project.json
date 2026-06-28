@@ -11,11 +11,13 @@
         "RemoteNames":  { "$path": "src/shared/RemoteNames.luau" },
         "Framework":    { "$path": "../../packages/shared/Framework.luau" },
         "Logger":       { "$path": "../../packages/shared/Logger.luau" },
+        "ProfileService": { "$path": "../../packages/shared/ProfileService.luau" },
         "vide":         { "$path": "../../src/shared/vide" }
       },
       "Packages": {
         "$className": "Folder",
-        "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" }
+        "vide":         { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "../../Packages/_Index/vyon_profilestore@1.0.3/profilestore" }
       }
     },
 
