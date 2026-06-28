@@ -32,7 +32,9 @@ return {
 		MG42   = 120,
 		HandCannon = 160,
 		MP5 = 0,
-		SCAR = 0
+		SCAR = 0,
+		M870 = 120,
+		BAR  = 150,
 	},
 	SHOP_SILVER_PRICES = {
 		ammoRefill  = 30,
@@ -43,11 +45,13 @@ return {
 	SHOP_GUN_PRICES = {
 		Deagle = 0,
 		M82    = 0,
-		M60    = 80,
-		M240B  = 100,
-		MG42   = 80,
+		M60    = 0,
+		M240B  = 0,
+		MG42   = 0,
 		HandCannon = 0,
 		MP5 = 0,
-		SCAR = 0
+		SCAR = 0,
+		M870 = 0,
+		BAR  = 0,
 	},
 }
