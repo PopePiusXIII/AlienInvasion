@@ -72,6 +72,14 @@ end
 
 local Profiles: { [Player]: any } = {}
 
+-- ── Profile loaded callback (for services that need to react) ─────────────────
+
+local ProfileLoadedCallbacks: { (player: Player, profile: PlayerProfile) -> () } = {}
+
+function ProfileService.OnProfileLoaded(callback: (player: Player, profile: PlayerProfile) -> ())
+	table.insert(ProfileLoadedCallbacks, callback)
+end
+
 -- ── Session lifecycle ────────────────────────────────────────────────────────
 
 local function onPlayerAdded(player: Player)
@@ -111,6 +119,16 @@ local function onPlayerAdded(player: Player)
 	if player.Parent then
 		Profiles[player] = profile
 		Logger.info(TAG, "Profile loaded for %s.", player.DisplayName)
+
+		-- Fire callbacks so other services can react (e.g. sync to client HUD)
+		for _, cb in ProfileLoadedCallbacks do
+			task.spawn(function()
+				local ok, err = pcall(cb, player, profile.Data :: PlayerProfile)
+				if not ok then
+					Logger.warn(TAG, "ProfileLoaded callback crashed: %s", tostring(err))
+				end
+			end)
+		end
 	else
 		profile:EndSession()
 	end
@@ -193,13 +211,17 @@ function ProfileService:GetProfile(player: Player): PlayerProfile?
 end
 
 --- Blocks until the profile session is ready, then returns the profile data.
---- Returns nil if the timeout (default 30 s) elapses.
+--- Returns nil if the timeout (default 30 s) elapses or player left.
 function ProfileService:WaitForProfile(player: Player): PlayerProfile?
 	local deadline = os.clock() + 30
 	repeat
 		task.wait(0.1)
+		if not player.Parent then
+			Logger.info(TAG, "WaitForProfile aborted — %s left.", player.Name)
+			return nil
+		end
 		if os.clock() > deadline then
-			Logger.warn(TAG, "WaitForProfile timed out for %s.", player.DisplayName)
+			Logger.warn(TAG, "WaitForProfile timed out for %s.", player.Name)
 			return nil
 		end
 	until Profiles[player]

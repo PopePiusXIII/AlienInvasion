@@ -22,7 +22,7 @@ local armoryHud = require(script.Parent.Armory)
 
 local create = vide.create
 local source = vide.source
-local derive = vide.derive
+local effect = vide.effect
 local root   = vide.root
 
 export type LobbyMainHUDProps = {
@@ -40,7 +40,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
 })
     local silverAmount = source(0)
     local goldAmount = source(0)
-    local hintMsg      = source(props.hintText)
+    local hintMsg      = source(props.hintText or "")
 
     local screenGui = create "ScreenGui" {
         Name           = "LobbyMainHud",
@@ -89,51 +89,57 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         }
 
         -- Silver balance (top-left, below player name) — reactive
-        derive(function()
-            return create "TextLabel" {
-                Name                   = "SilverLabel",
-                Parent                 = screenGui,
-                Size                 = UDim2.new(0.3, 0, 0.06, 0),
-                Position             = UDim2.new(0.02, 0, 0.09, 0),
-                BackgroundTransparency = 1,
-                TextColor3           = theme.SILVER,
-                TextScaled           = true,
-                Font                 = theme.FONT_REGULAR,
-                TextXAlignment       = Enum.TextXAlignment.Left,
-                Text                 = "SILVER: " .. tostring(math.max(0, math.floor(silverAmount()))),
-            }
-        end)
+        local silverLabel = create "TextLabel" {
+            Name                   = "SilverLabel",
+            Parent                 = screenGui,
+            Size                 = UDim2.new(0.3, 0, 0.06, 0),
+            Position             = UDim2.new(0.02, 0, 0.09, 0),
+            BackgroundTransparency = 1,
+            TextColor3           = theme.SILVER,
+            TextScaled           = true,
+            Font                 = theme.FONT_REGULAR,
+            TextXAlignment       = Enum.TextXAlignment.Left,
+            Text                 = "SILVER: 0",
+        }
 
-                -- Silver balance (top-left, below player name) — reactive
-        derive(function()
-            return create "TextLabel" {
-                Name                   = "GoldLabel",
-                Parent                 = screenGui,
-                Size                 = UDim2.new(0.3, 0, 0.06, 0),
-                Position             = UDim2.new(0.02, 0, 0.15, 0),
-                BackgroundTransparency = 1,
-                TextColor3           = theme.SILVER,
-                TextScaled           = true,
-                Font                 = theme.FONT_REGULAR,
-                TextXAlignment       = Enum.TextXAlignment.Left,
-                Text                 = "GOLD: " .. tostring(math.max(0, math.floor(goldAmount()))),
-            }
-        end)
+	effect(function()
+		silverLabel.Text = "SILVER: " .. tostring(math.max(0, math.floor(silverAmount())))
+	end)
 
-        -- Navigation hint (bottom-center) — reactive
-        derive(function()
-            return create "TextLabel" {
-                Name                   = "Hint",
-                Parent                 = screenGui,
-                Size                 = UDim2.new(0.5, 0, 0.06, 0),
-                Position             = UDim2.new(0.25, 0, 0.90, 0),
-                BackgroundTransparency = 1,
-                TextColor3           = theme.TEXT_SECONDARY,
-                TextScaled           = true,
-                Font                 = theme.FONT_REGULAR,
-                Text                 = hintMsg(),
-            }
-        end)
+	-- Gold balance — reactive
+	local goldLabel = create "TextLabel" {
+		Name                   = "GoldLabel",
+		Parent                 = screenGui,
+		Size                 = UDim2.new(0.3, 0, 0.06, 0),
+		Position             = UDim2.new(0.02, 0, 0.15, 0),
+		BackgroundTransparency = 1,
+		TextColor3           = theme.GOLD,
+		TextScaled           = true,
+		Font                 = theme.FONT_REGULAR,
+		TextXAlignment       = Enum.TextXAlignment.Left,
+		Text                 = "GOLD: 0",
+	}
+
+	effect(function()
+		goldLabel.Text = "GOLD: " .. tostring(math.max(0, math.floor(goldAmount())))
+	end)
+
+	-- Navigation hint (bottom-center) — reactive
+	local hintLabel = create "TextLabel" {
+		Name                   = "Hint",
+		Parent                 = screenGui,
+		Size                 = UDim2.new(0.5, 0, 0.06, 0),
+		Position             = UDim2.new(0.25, 0, 0.90, 0),
+		BackgroundTransparency = 1,
+		TextColor3           = theme.TEXT_SECONDARY,
+		TextScaled           = true,
+		Font                 = theme.FONT_REGULAR,
+		Text                 = hintMsg(),
+	}
+
+	effect(function()
+		hintLabel.Text = hintMsg()
+	end)
 
         -- Shop button (bottom-center) — reusable DepressedButton component
         DepressedButton({
@@ -155,7 +161,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             onActivated = toggleArmory
         })
 
-                -- Shop button (bottom-center) — reusable DepressedButton component
+        -- Shop button (bottom-center) — reusable DepressedButton component
         DepressedButton({
             parent   = screenGui,
             position = UDim2.new(0.93, 0, 0.7, 0),

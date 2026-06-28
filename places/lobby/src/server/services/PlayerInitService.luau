@@ -49,6 +49,19 @@ function PlayerInitService:Start()
 		Logger.info(TAG, "Sync fired for %s.", player.DisplayName)
 	end
 
+	-- Register callback so we react immediately when ProfileService loads a profile.
+	ProfileService.OnProfileLoaded(function(player: Player, profile: any)
+		Logger.info(TAG, "ProfileLoaded callback for %s — gold=%d, silver=%d.", player.DisplayName, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
+		local success, err = pcall(function()
+			ProfileService:SyncToClient(player)
+		end)
+		if not success then
+			Logger.warn(TAG, "SyncToClient CRASHED for %s: %s", player.DisplayName, tostring(err))
+			return
+		end
+		Logger.info(TAG, "Sync fired for %s.", player.DisplayName)
+	end)
+
 	-- Handle players who joined before Start() ran (e.g. in Studio)
 	local existingPlayers = Players:GetPlayers()
 	Logger.info(TAG, "Found %d existing player(s).", #existingPlayers)
@@ -56,12 +69,7 @@ function PlayerInitService:Start()
 		task.spawn(syncProfile, player)
 	end
 
-	-- Handle future joins
-	Players.PlayerAdded:Connect(function(player)
-		Logger.info(TAG, "PlayerAdded fired for %s.", player.DisplayName)
-		syncProfile(player)
-	end)
-
+	-- Future joins are handled by the OnProfileLoaded callback above.
 	Logger.info(TAG, "Start complete.")
 end
 
