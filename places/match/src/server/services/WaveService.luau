@@ -19,7 +19,6 @@ local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
-local ClerkInteractionModule = require(script.Parent.modules.wave.ClerkInteractionModule)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
 local TAG = "WaveService"
@@ -28,20 +27,12 @@ local WaveService = Framework.CreateService({ Name = TAG })
 
 local _waveAnnounceRemote:       RemoteEvent
 local _waveClearRemote:          RemoteEvent
-local _openGunShopRemote:        RemoteEvent
-local _requestGunPurchaseRemote: RemoteEvent
-local _gunPurchaseResultRemote:  RemoteEvent
-local _requestFreeLoadoutRemote: RemoteEvent
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function WaveService:Init()
 	_waveAnnounceRemote       = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
 	_waveClearRemote          = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
-	_openGunShopRemote        = Framework.CreateRemote(RemoteNames.OPEN_GUN_SHOP)
-	_requestGunPurchaseRemote = Framework.CreateRemote(RemoteNames.REQUEST_GUN_PURCHASE)
-	_gunPurchaseResultRemote  = Framework.CreateRemote(RemoteNames.GUN_PURCHASE_RESULT)
-	_requestFreeLoadoutRemote = Framework.CreateRemote(RemoteNames.REQUEST_FREE_LOADOUT)
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
@@ -206,12 +197,7 @@ function WaveService.startBattle(player: Player): number
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	Logger.info(TAG, "startBattle: humanoid ready, starting waves (%s).", player.Name)
 
-	local attached = ClerkInteractionModule.attach(player, function()
-		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))
-	end)
-	if not attached then
-		Logger.warn(TAG, "shopClerk part not found in workspace '%s'.")
-	end
+	-- Shop clerk/Proximity prompt removed.
 
 	giveGuns(player, Config.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
@@ -241,42 +227,7 @@ function WaveService.startBattle(player: Player): number
 end
 
 function WaveService:Start()
-	Logger.wrapServerEvent(_requestFreeLoadoutRemote, TAG, function(player: Player)
-		giveGuns(player)
-	end)
-
-	Logger.wrapServerEvent(_requestGunPurchaseRemote, TAG, function(player: Player, buyGunName: any, replaceGunName: any)
-		if type(buyGunName) ~= "string" then return end
-		local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
-		local price = prices[buyGunName]
-		if price == nil then
-			Logger.fireClient(_gunPurchaseResultRemote, player, false, "UNKNOWN_GUN", EconomyService.getRunSilver(player))
-			return
-		end
-		local currentGuns = getPlayerGunNames(player)
-		if table.find(currentGuns, buyGunName) then
-			Logger.fireClient(_gunPurchaseResultRemote, player, false, "ALREADY_OWNED", EconomyService.getRunSilver(player))
-			return
-		end
-		local currentSilver = EconomyService.getRunSilver(player)
-		if currentSilver < price then
-			Logger.fireClient(_gunPurchaseResultRemote, player, false, "INSUFFICIENT_SILVER", currentSilver)
-			return
-		end
-		if #currentGuns >= 2 then
-			if type(replaceGunName) ~= "string" or not table.find(currentGuns, replaceGunName) then
-				Logger.fireClient(_gunPurchaseResultRemote, player, false, "REPLACE_REQUIRED", currentSilver)
-				return
-			end
-			removeGunFromPlayer(player, replaceGunName)
-		end
-		local _, newBalance = EconomyService.spendSilver(player, price)
-		LoadoutGrantModule.grant(player, { buyGunName }, function(msg: string, ...: any)
-			Logger.warn(TAG, msg, ...)
-		end)
-		Logger.info(TAG, "[GunShop] %s bought %s for %d Silver.", player.Name, buyGunName, price)
-		Logger.fireClient(_gunPurchaseResultRemote, player, true, buyGunName, newBalance)
-	end)
+	-- Shop purchase and free-loadout remotes removed.
 end
 
 return WaveService

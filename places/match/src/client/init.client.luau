@@ -28,7 +28,7 @@ local controllers = script.controllers
 require(controllers.CharacterController)      -- no deps
 require(controllers.HudController)            -- requires CharacterController
 require(controllers.GunController)            -- requires HudController
-require(controllers.ShopController)           -- no deps
+-- ShopController removed
 require(controllers.BoltController)           -- no deps
 require(controllers.ZombieAnimationController) -- no deps
 

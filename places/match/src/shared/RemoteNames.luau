@@ -16,10 +16,7 @@ return {
 	LOBBY_ECONOMY_SYNC    = "LobbyEconomySync",
 	REQUEST_WEAPON_UNLOCK = "RequestWeaponUnlock",
 	WEAPON_UNLOCK_RESULT  = "WeaponUnlockResult",
-	OPEN_GUN_SHOP          = "OpenGunShop",
-	REQUEST_GUN_PURCHASE   = "RequestGunPurchase",
-	GUN_PURCHASE_RESULT    = "GunPurchaseResult",
-	REQUEST_FREE_LOADOUT   = "RequestFreeLoadout",
+	-- Gun shop remotes removed
 	BOLT_SPAWNED           = "BoltSpawned",
 	CLAIM_BOLT             = "ClaimBolt",
 	ZOMBIE_HIT_SOUND       = "ZombieHitSound",
