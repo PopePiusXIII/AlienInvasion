@@ -17,12 +17,12 @@ return {
 	SILVER_WAVE_MULTIPLIER_STEP = 0.06,
 
 	GOLD_DROP_BY_ZOMBIE_TYPE = {
-		Normal = { chance = 0.15, min = 1, max = 3 },
-		Fast   = { chance = 0.25, min = 1, max = 4 },
-		Tank   = { chance = 0.35, min = 2, max = 6 },
+		Normal = { chance = 0.035, min = 1, max = 3 },
+		Fast   = { chance = 0.06,  min = 1, max = 4 },
+		Tank   = { chance = 0.1,   min = 2, max = 6 },
 	},
-	GOLD_WAVE_CHANCE_STEP = 1,
-	GOLD_WAVE_REWARD_STEP = 1,
+	GOLD_WAVE_CHANCE_STEP = 0.015,
+	GOLD_WAVE_REWARD_STEP = 0.04,
 	SHOP_SILVER_PRICES = {
 		ammoRefill  = 30,
 		healthPack  = 55,
@@ -32,12 +32,14 @@ return {
 	SHOP_GUN_PRICES = {
 		Deagle = 0,
 		M82    = 0,
+		["1911"] = 0,
 		M60    = 0,
 		M240B  = 0,
 		MG42   = 0,
 		HandCannon = 0,
 		MP5 = 0,
 		SCAR = 0,
+		AA12 = 0,
 		M870 = 0,
 		BAR  = 0,
 	},
