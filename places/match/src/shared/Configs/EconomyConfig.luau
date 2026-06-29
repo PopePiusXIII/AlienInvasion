@@ -23,32 +23,22 @@ return {
 	},
 	GOLD_WAVE_CHANCE_STEP = 1,
 	GOLD_WAVE_REWARD_STEP = 1,
-
-	GOLD_WEAPON_UNLOCK_PRICES = {
-		Deagle = 0,
-		M82    = 0,
-		M60    = 120,
-		M240B  = 180,
-		MG42   = 120,
-		HandCannon = 160,
-		MP5 = 0,
-		SCAR = 0
-	},
-	SHOP_GUN_PRICES = {
-		Deagle = 0,
-		M82    = 0,
-		M60    = 80,
-		M240B  = 100,
-		MG42   = 80,
-		HandCannon = 0,
-		MP5 = 0,
-		SCAR = 0
-	},
 	SHOP_SILVER_PRICES = {
 		ammoRefill  = 30,
 		healthPack  = 55,
 		damageBoost = 75,
 		speedBoost  = 60,
 	},
-
+	SHOP_GUN_PRICES = {
+		Deagle = 0,
+		M82    = 0,
+		M60    = 0,
+		M240B  = 0,
+		MG42   = 0,
+		HandCannon = 0,
+		MP5 = 0,
+		SCAR = 0,
+		M870 = 0,
+		BAR  = 0,
+	},
 }
