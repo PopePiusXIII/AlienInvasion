@@ -21,6 +21,7 @@ return {
 	RNG_ACTIVATE           = "RNGActivate",
 	RNG_UNLOCKED_LIST      = "RNGUnlockedList",
 	RNG_REQUEST_GIVE       = "RNGRequestGive",
+	RNG_TOPUP_AMMO         = "RNGTopupAmmo",
 	BOLT_SPAWNED           = "BoltSpawned",
 	CLAIM_BOLT             = "ClaimBolt",
 	ZOMBIE_HIT_SOUND       = "ZombieHitSound",

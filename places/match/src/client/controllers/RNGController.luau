@@ -47,7 +47,7 @@ local function buildGui()
     label.TextColor3 = Color3.new(1,1,1)
     label.Font = Enum.Font.GothamBold
     label.TextSize = 18
-    label.Text = "Press F to unlock weapons"
+    label.Text = "Press F to roll"
     label.Parent = frame
 
     local sel = Instance.new("TextLabel")
@@ -87,9 +87,37 @@ local function onSelectWeapon()
     local choice = _state.unlocked[idx]
     _state.selected = choice
     Logger.info(TAG, "Rolled RNG choice: %s", choice)
+
+    -- Compute ownership: equipped or in Backpack
+    local equippedName: string? = nil
+    local character = _localPlayer.Character
+    if character then
+        local equippedTool = character:FindFirstChildWhichIsA("Tool")
+        if equippedTool then equippedName = equippedTool.Name end
+    end
+
+    local backpackTools: { string } = {}
+    local bp = _localPlayer:FindFirstChildOfClass("Backpack")
+    if bp then
+        for _, item in ipairs(bp:GetChildren()) do
+            if item:IsA("Tool") then table.insert(backpackTools, item.Name) end
+        end
+    end
+
+    local owned = (equippedName == choice) or table.find(backpackTools, choice) ~= nil
     if _selectedLabel then
-        _selectedLabel.Text = ("Selected: %s — Press 1/2 to take, X to skip"):format(choice)
-        _selectedLabel.Visible = true
+        if owned then
+            _selectedLabel.Text = ("Selected: %s — Max ammo"):format(choice)
+            _selectedLabel.Visible = true
+            -- If already owned, auto-request top-up (server will handle equipped-case)
+            Logger.info(TAG, "Rolled weapon already owned by player: %s — auto-requesting top-up/grant", choice)
+            _rngRequestGiveRemote:FireServer(choice, 0, nil)
+            -- Hide the prompt shortly after showing the message
+            task.delay(1.5, hidePrompt)
+        else
+            _selectedLabel.Text = ("Selected: %s — Press F/G to take, X to skip"):format(choice)
+            _selectedLabel.Visible = true
+        end
     end
 end
 
@@ -155,16 +183,65 @@ function RNGController:Start()
         if gameProcessed then return end
         if not _state.visible then return end
         if input.KeyCode == Enum.KeyCode.F then
-            Logger.info(TAG, "F pressed while prompt visible")
-            onSelectWeapon()
-        elseif input.KeyCode == Enum.KeyCode.One then
             if _state.selected then
-                _rngRequestGiveRemote:FireServer(_state.selected, 1)
+                -- If already selected, treat F as slot1 selection
+                local equippedName: string? = nil
+                local character = _localPlayer.Character
+                if character then
+                    local equippedTool = character:FindFirstChildWhichIsA("Tool")
+                    if equippedTool then equippedName = equippedTool.Name end
+                end
+
+                local backpackTools: { string } = {}
+                local bp = _localPlayer:FindFirstChildOfClass("Backpack")
+                if bp then
+                    for _, item in ipairs(bp:GetChildren()) do
+                        if item:IsA("Tool") then table.insert(backpackTools, item.Name) end
+                    end
+                end
+
+                Logger.info(TAG, "Client current tools — equipped=%s backpack=%s", tostring(equippedName), table.concat(backpackTools, ", "))
+
+                local toRemove: string? = nil
+                toRemove = equippedName or backpackTools[1]
+                Logger.info(TAG, "Requesting give: %s (slot=1) remove=%s", _state.selected, tostring(toRemove))
+                _rngRequestGiveRemote:FireServer(_state.selected, 1, toRemove)
                 hidePrompt()
+            else
+                Logger.info(TAG, "F pressed while prompt visible")
+                onSelectWeapon()
             end
-        elseif input.KeyCode == Enum.KeyCode.Two then
+        elseif input.KeyCode == Enum.KeyCode.G then
             if _state.selected then
-                _rngRequestGiveRemote:FireServer(_state.selected, 2)
+                local equippedName: string? = nil
+                local character = _localPlayer.Character
+                if character then
+                    local equippedTool = character:FindFirstChildWhichIsA("Tool")
+                    if equippedTool then equippedName = equippedTool.Name end
+                end
+
+                local backpackTools: { string } = {}
+                local bp = _localPlayer:FindFirstChildOfClass("Backpack")
+                if bp then
+                    for _, item in ipairs(bp:GetChildren()) do
+                        if item:IsA("Tool") then table.insert(backpackTools, item.Name) end
+                    end
+                end
+
+                Logger.info(TAG, "Client current tools — equipped=%s backpack=%s", tostring(equippedName), table.concat(backpackTools, ", "))
+
+                local toRemove: string? = nil
+                -- Slot 2: prefer first backpack tool that isn't the equipped tool
+                if #backpackTools > 0 then
+                    if backpackTools[1] ~= equippedName then
+                        toRemove = backpackTools[1]
+                    elseif #backpackTools >= 2 then
+                        toRemove = backpackTools[2]
+                    end
+                end
+
+                Logger.info(TAG, "Requesting give: %s (slot=2) remove=%s", _state.selected, tostring(toRemove))
+                _rngRequestGiveRemote:FireServer(_state.selected, 2, toRemove)
                 hidePrompt()
             end
         elseif input.KeyCode == Enum.KeyCode.X then

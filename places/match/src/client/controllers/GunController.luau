@@ -438,6 +438,21 @@ function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
 	_shootRemote = Framework.GetRemote(RemoteNames.SHOOT_GUN)
 
+	-- Top-up ammo remote for RNG hits where player rolled an already-equipped weapon
+	local _rngTopupRemote: RemoteEvent = Framework.GetRemote(RemoteNames.RNG_TOPUP_AMMO)
+	_rngTopupRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number?, maxAmmo: number?)
+		if type(weaponName) ~= "string" then return end
+		local stats = getGunStats(weaponName)
+		local mag = magSize or (stats and stats.magSize) or 0
+		local reserve = maxAmmo or (stats and stats.max_ammo) or getReserveAmmo(weaponName)
+		setReserveAmmo(weaponName, reserve)
+		if _equippedGun and _equippedGun.Name == weaponName then
+			setCurrentAmmo(mag)
+			refreshAmmoDisplay()
+		end
+		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, mag, reserve)
+	end)
+
 	_localPlayer.CharacterAdded:Connect(function(character: Model)
 		onCharacterAdded(character)
 		watchCharacter(character)
