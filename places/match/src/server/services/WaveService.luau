@@ -37,75 +37,8 @@ end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
--- local function cloneMap(player: Player): Model?
--- 	local template = ServerStorage:FindFirstChild(Config.MAP_NAME)
--- 	if not template or not template:IsA("Model") then
--- 		Logger.warn(TAG, "Map template '%s' not found in ServerStorage.", Config.MAP_NAME)
--- 		return nil
--- 	end
--- 	local slot     = _nextMapSlot
--- 	_nextMapSlot  += 1
--- 	local map: Model = (template :: Model):Clone() :: Model
--- 	map.Name   = Config.MAP_NAME .. "_" .. player.Name
--- 	-- Space maps 4000 studs apart on the X axis to avoid overlap.
--- 	map:PivotTo(CFrame.new(slot * 4000, 0, 5000))
--- 	map.Parent = workspace
--- 	return map
--- end
 
--- local function teleportToMap(player: Player, map: Model)
--- 	local character = player.Character
--- 	if not character then return end
--- 	local spawnPart = map:FindFirstChild("Spawn_In", true)
--- 	if spawnPart and spawnPart:IsA("BasePart") then
--- 		character:PivotTo((spawnPart :: BasePart).CFrame * CFrame.new(0, 5, 0))
--- 	else
--- 		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
--- 	end
--- end
 
-local function getPlayerGunNames(player: Player): { string }
-	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
-	local guns: { string } = {}
-	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
-		if container then
-			for _, item in ipairs(container:GetChildren()) do
-				if item:IsA("Tool") and prices[item.Name] ~= nil then
-					table.insert(guns, item.Name)
-				end
-			end
-		end
-	end
-	return guns
-end
-
-local function removeGunFromPlayer(player: Player, gunName: string)
-	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
-		if container then
-			local item = container:FindFirstChild(gunName)
-			if item and item:IsA("Tool") then
-				item:Destroy()
-				return
-			end
-		end
-	end
-end
-
-local function buildShopData(player: Player)
-	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
-	local available: { { name: string, price: number } } = {}
-	for gunName, price in prices do
-		table.insert(available, { name = gunName, price = price })
-	end
-	table.sort(available, function(a, b)
-		return if a.price == b.price then a.name < b.name else a.price < b.price
-	end)
-	return {
-		available     = available,
-		currentGuns   = getPlayerGunNames(player),
-		silverBalance = EconomyService.getRunSilver(player),
-	}
-end
 
 local function giveGuns(player: Player, gunNames: { string }?)
 	local unlockedGunNames: { string } = {Config.STARTER_GUNS[1], Config.STARTER_GUNS[2]}
@@ -129,10 +62,7 @@ local function findZombieSpawnPosition(): Vector3
 	return Vector3.new(0, 0, 0)
 end
 
-local function getBattleHumanoid(player: Player): Humanoid?
-	local character = player.Character
-	return character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
-end
+
 
 local function pickZombieType(waveNumber: number): string
 	if waveNumber >= 30 then
@@ -198,17 +128,6 @@ function WaveService.startBattle(player: Player): number
 	Logger.info(TAG, "startBattle: humanoid ready, starting waves (%s).", player.Name)
 
 	-- Shop clerk/Proximity prompt removed.
-
-	-- Ensure the player's profile includes the configured starter unlocked weapons
-	local profile = ProfileService:WaitForProfile(player)
-	if profile then
-		for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
-			if not profile.unlockedWeapons[weaponName] then
-				profile.unlockedWeapons[weaponName] = true
-				Logger.info(TAG, "Granted starter unlocked weapon '%s' to %s on wave start.", weaponName, player.Name)
-			end
-		end
-	end
 
 	giveGuns(player, Config.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
