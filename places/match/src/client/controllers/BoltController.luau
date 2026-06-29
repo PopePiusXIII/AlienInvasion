@@ -7,13 +7,13 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local Framework = require(Shared.Framework)
+local Logger    = require(Shared.Logger)
+local Config    = require(Shared.Config)
+local RemoteNames = require(Shared.RemoteNames)
 
 local TAG = "BoltController"
 local BoltController = Framework.CreateController({ Name = TAG })

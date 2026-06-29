@@ -11,11 +11,11 @@
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger = require(ReplicatedStorage.Shared.Logger)
-local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
+local Framework = require(Shared.Framework)
+local Logger = require(Shared.Logger)
 
 local TAG = "ZombieController"
 local ZombieController = Framework.CreateController({ Name = TAG })

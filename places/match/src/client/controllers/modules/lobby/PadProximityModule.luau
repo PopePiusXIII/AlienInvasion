@@ -1,6 +1,8 @@
 --!strict
 
-local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
 local PadProximityModule = {}
 
@@ -41,7 +43,7 @@ function PadProximityModule.start(playPrompt: Frame, localPlayer: Player, padNam
 		end)
 	end
 
-	RunService.Heartbeat:Connect(function()
+	local _taskId = RenderScheduler.register("padProximity_" .. padName, function()
 		if playing then
 			playPrompt.Visible = false
 			return
@@ -51,7 +53,7 @@ function PadProximityModule.start(playPrompt: Frame, localPlayer: Player, padNam
 		playPrompt.Visible = root ~= nil
 			and root.Position.X ~= math.huge
 			and (root.Position - pad.Position).Magnitude <= threshold
-	end)
+	end, { enabled = true })
 end
 
 return PadProximityModule

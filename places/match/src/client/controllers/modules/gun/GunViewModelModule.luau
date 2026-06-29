@@ -3,8 +3,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- RunService not used directly; scheduler handles per-frame loop
 
-local Config = require(ReplicatedStorage.Shared.Config)
-local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
+local Config = require(Shared.Config)
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera

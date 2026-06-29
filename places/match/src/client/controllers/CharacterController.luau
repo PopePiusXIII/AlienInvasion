@@ -14,12 +14,12 @@
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService        = game:GetService("RunService")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
-local RenderScheduler = require(ReplicatedStorage.Shared.RenderScheduler)
+local Framework = require(Shared.Framework)
+local Logger    = require(Shared.Logger)
+local Config    = require(Shared.Config)
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
 local TAG = "CharacterController"
 
