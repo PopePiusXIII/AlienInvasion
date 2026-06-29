@@ -160,6 +160,9 @@ function ProfileService:Start()
 
 	-- Grant starter weapons on first load (async, non-blocking)
 	local function ensureStarterWeapons(player: Player)
+		if not player or not player.Parent then
+			return
+		end
 		local profile = ProfileService.WaitForProfile(player)
 		if profile then
 			grantStarterWeapons(profile)
@@ -216,8 +219,8 @@ function ProfileService:WaitForProfile(player: Player): PlayerProfile?
 	local deadline = os.clock() + 30
 	repeat
 		task.wait(0.1)
-		if not player.Parent then
-			Logger.info(TAG, "WaitForProfile aborted — %s left.", player.Name)
+		if not player or not player.Parent then
+			Logger.info(TAG, "WaitForProfile aborted — player left.")
 			return nil
 		end
 		if os.clock() > deadline then
