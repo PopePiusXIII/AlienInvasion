@@ -116,10 +116,9 @@ local function buildShopData(player: Player)
 	}
 end
 
-local function giveGuns(player: Player)
-	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B", "BushMaster"}
-	local unlockedGunNames: { string } = {}
-	for _, gunName in ipairs(allGunNames) do
+local function giveGuns(player: Player, gunNames: { string }?)
+	local unlockedGunNames: { string } = {Config.STARTER_GUNS[1], Config.STARTER_GUNS[2]}
+	for _, gunName in ipairs(gunNames) do
 		if ProfileService.isWeaponUnlocked(player, gunName) then
 			table.insert(unlockedGunNames, gunName)
 		end
@@ -214,6 +213,7 @@ function WaveService.startBattle(player: Player): number
 		Logger.warn(TAG, "shopClerk part not found in workspace '%s'.")
 	end
 
+	giveGuns(player, Config.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = Config.STARTING_WAVE
 

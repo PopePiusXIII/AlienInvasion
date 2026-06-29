@@ -1,24 +1,15 @@
 --!strict
 return {
-	GUN_NAME          = "M82",
-	GUN_DAMAGE        = 34,
-	GUN_RANGE         = 1000,
-	GUN_FIRE_COOLDOWN = 0.15,
-	GUN_MAG_SIZE      = 7,
-	GUN_RELOAD_TIME   = 2.0,
-	GUN_MUZZLE_DELAY  = 0.05,
-	-- Default max_ammo value used when a gun doesn't specify `max_ammo` in its stats
-	DEFAULT_GUN_RESERVE = 200,
-	GUN_KNOCKBACK_FORCE = 20,
 	HEADSHOT_MULTIPLIER = 2.0,
-	GUN_TRACER_DEFAULT = {
-		lifetime  = 0.06,
-		thickness = 0.08,
-		color     = Color3.fromRGB(255, 235, 170),
+	STARTER_GUNS = {
+		"M82",
+		"1911",
 	},
 	STARTER_UNLOCKED_WEAPONS = {
-		"BushMaster",
-		"M82",
+		"1911",
+		"HandCannon",
+		"MP5",
+		"SCAR",
 	},
 	GUN_STATS = {
 		Deagle = {
@@ -170,6 +161,41 @@ return {
 				lifetime  = 0.06,
 				thickness = 0.14,
 				color     = Color3.fromRGB(255, 180, 130),
+			},
+		},
+		BAR = {
+			damage         = 45,
+			gold_cost      = 1200,
+			image          = "rbxassetid://0",
+			range          = 600,
+			fireCooldown   = 0.1,
+			magSize        = 20,
+			max_ammo       = 200,
+			reloadTime     = 4.0,
+			isAutomatic    = true,
+			knockbackForce = 22,
+			tracer = {
+				lifetime  = 0.06,
+				thickness = 0.09,
+				color     = Color3.fromRGB(255, 210, 140),
+			},
+		},
+			M870 = {
+			damage         = 120,
+			gold_cost      = 1200,
+			image          = "rbxassetid://0",
+			range          = 300,
+			fireCooldown   = 0.9,
+			magSize        = 8,
+			max_ammo       = 200,
+			reloadTime     = 3.0,
+			isAutomatic    = false,
+			isShotgun      = true,
+			knockbackForce = 60,
+			tracer = {
+				lifetime  = 0.06,
+				thickness = 0.12,
+				color     = Color3.fromRGB(255, 200, 140),
 			},
 		},
 		MP5 = {

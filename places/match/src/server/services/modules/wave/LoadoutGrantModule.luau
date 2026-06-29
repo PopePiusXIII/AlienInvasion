@@ -82,8 +82,14 @@ function LoadoutGrantModule.grant(player: Player, desiredGunNames: { string }, o
 		return 0
 	end
 
+	if typeof(desiredGunNames) ~= "table" or #desiredGunNames == 0 then
+    onWarn("No desired gun names provided for %s; nothing to grant.", player.Name)
+    return 0
+end
+
 	local granted = 0
 	for _, gunName in ipairs(desiredGunNames) do
+		onWarn("give '%s' to '%s'", gunName, player.Name)
 		local weaponTool = cloneWeaponAsTool(gunName)
 		if weaponTool then
 			local hasInBackpack = backpack:FindFirstChild(weaponTool.Name) ~= nil

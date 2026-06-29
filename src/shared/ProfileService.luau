@@ -273,6 +273,7 @@ end
 function ProfileService.isWeaponUnlocked(player: Player, weaponName: string): boolean
 	local profile = ProfileService:GetProfile(player)
 	if not profile then
+		-- Logger.warn(TAG, "Cannot unlock %s for %s — profile not loaded.", weaponName, player.Name)
 		return false
 	end
 	return profile.unlockedWeapons[weaponName] == true
