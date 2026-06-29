@@ -5,9 +5,15 @@
 
     "ReplicatedStorage": {
       "Shared": {
-        "$path": "src/shared",
-        "vide":  { "$path": "vide" },
-        "CombatConfig": { "$path": "../../src/shared/configs/CombatConfig.luau" }
+        "$className": "Folder",
+        "Config":         { "$path": "src/shared/Config.luau" },
+        "Configs":        { "$path": "src/shared/Configs" },
+        "RemoteNames":    { "$path": "src/shared/RemoteNames.luau" },
+        "Framework":      { "$path": "../../src/shared/Framework.luau" },
+        "Logger":         { "$path": "../../src/shared/Logger.luau" },
+        "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
+        "vide":           { "$path": "../../src/shared/vide" },
+        "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" }
       },
       "Packages": {
         "$className": "Folder",
