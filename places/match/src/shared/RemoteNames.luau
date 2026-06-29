@@ -17,6 +17,10 @@ return {
 	REQUEST_WEAPON_UNLOCK = "RequestWeaponUnlock",
 	WEAPON_UNLOCK_RESULT  = "WeaponUnlockResult",
 	-- Gun shop remotes removed
+	-- RNG Block remotes
+	RNG_ACTIVATE           = "RNGActivate",
+	RNG_UNLOCKED_LIST      = "RNGUnlockedList",
+	RNG_REQUEST_GIVE       = "RNGRequestGive",
 	BOLT_SPAWNED           = "BoltSpawned",
 	CLAIM_BOLT             = "ClaimBolt",
 	ZOMBIE_HIT_SOUND       = "ZombieHitSound",

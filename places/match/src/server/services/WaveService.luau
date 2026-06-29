@@ -199,6 +199,17 @@ function WaveService.startBattle(player: Player): number
 
 	-- Shop clerk/Proximity prompt removed.
 
+	-- Ensure the player's profile includes the configured starter unlocked weapons
+	local profile = ProfileService:WaitForProfile(player)
+	if profile then
+		for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
+			if not profile.unlockedWeapons[weaponName] then
+				profile.unlockedWeapons[weaponName] = true
+				Logger.info(TAG, "Granted starter unlocked weapon '%s' to %s on wave start.", weaponName, player.Name)
+			end
+		end
+	end
+
 	giveGuns(player, Config.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = Config.STARTING_WAVE

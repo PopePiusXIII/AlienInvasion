@@ -30,6 +30,7 @@ require(controllers.HudController)            -- requires CharacterController
 require(controllers.GunController)            -- requires HudController
 -- ShopController removed
 require(controllers.BoltController)           -- no deps
+require(controllers.RNGController)           -- RNG block controller
 require(controllers.ZombieAnimationController) -- no deps
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
