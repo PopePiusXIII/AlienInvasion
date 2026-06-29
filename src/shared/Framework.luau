@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- Framework.luau  (packages/shared → ReplicatedStorage.Shared.Framework)
+-- Framework.luau  (src/shared → ReplicatedStorage.Shared.Framework)
 -- Lightweight Service/Controller bootstrapper for AlienInvasion.
 --
 -- SERVER usage:

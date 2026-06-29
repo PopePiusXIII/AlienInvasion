@@ -146,7 +146,7 @@ local function setupZombie(model: Model)
     table.insert(state.conns, parentConn)
 
     _tracked[model] = state
-    Logger.info(TAG, "Animations set up for zombie %q (type=%s)", model:GetFullName(), tostring(typeName))
+    -- Logger.info(TAG, "Animations set up for zombie %q (type=%s)", model:GetFullName(), tostring(typeName))
 end
 
 function ZombieAnimationManager.Start()

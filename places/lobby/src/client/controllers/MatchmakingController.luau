@@ -1,9 +1,11 @@
 --!strict
 --------------------------------------------------------------------------------
 -- MatchmakingController.luau  (places/lobby/src/client/controllers)
--- Owns all Lobby UI: Find Match / Cancel panel and Match Found countdown.
--- Listens to MatchFound; fires JoinQueue / LeaveQueue via Logger.fireServer.
--- Single Responsibility: lobby matchmaking UI and client-side queue state.
+-- Owns all lobby matchmaking queue state: join, cancel, match found countdown.
+-- Fires JoinQueue / LeaveQueue via Logger.fireServer.
+-- Listens to MatchFound.
+-- Single Responsibility: queue logic and client-side state only.
+-- All UI is delegated to LobbyHudController (reactive vide components).
 --------------------------------------------------------------------------------
 
 local Players           = game:GetService("Players")
@@ -14,6 +16,7 @@ local Framework   = require(ReplicatedStorage.Shared.Framework)
 local Logger      = require(ReplicatedStorage.Shared.Logger)
 local Config      = require(ReplicatedStorage.Shared.Config)
 local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local LobbyHudController = require(script.Parent.LobbyHudController)
 
 local TAG = "MatchmakingController"
 
@@ -24,103 +27,27 @@ local _joinQueueRemote:  RemoteEvent
 local _leaveQueueRemote: RemoteEvent
 local _matchFoundRemote: RemoteEvent
 
--- UI references, populated during Init.
-local _panel:        Frame
-local _statusLabel:  TextLabel
-local _matchButton:  TextButton
-
 -- Client-side queue state.
 local _isQueued    = false
 local _matchLocked = false  -- true once a match is found; prevents further input
-
--- ── UI builder ────────────────────────────────────────────────────────────────
-
-local function buildLobbyUi(): (Frame, TextLabel, TextButton)
-	local screenGui             = Instance.new("ScreenGui")
-	screenGui.Name              = "LobbyMatchmakingGui"
-	screenGui.ResetOnSpawn      = false
-	screenGui.IgnoreGuiInset    = true
-	screenGui.Parent            = _localPlayer.PlayerGui
-
-	-- Centred panel (hidden until player is near the GoToGame pad)
-	local frame                      = Instance.new("Frame")
-	frame.Name                       = "Panel"
-	frame.Size                       = UDim2.new(0.34, 0, 0.28, 0)
-	frame.Position                   = UDim2.new(0.33, 0, 0.36, 0)
-	frame.BackgroundColor3           = Color3.fromRGB(12, 12, 22)
-	frame.BackgroundTransparency     = 0.15
-	frame.BorderSizePixel            = 0
-	frame.Visible                    = false
-	frame.Parent                     = screenGui
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 18)
-
-	-- Red accent bar at top
-	local accent                 = Instance.new("Frame")
-	accent.Name                  = "Accent"
-	accent.Size                  = UDim2.new(1, 0, 0.07, 0)
-	accent.BackgroundColor3      = Color3.fromRGB(220, 60, 60)
-	accent.BorderSizePixel       = 0
-	accent.Parent                = frame
-	Instance.new("UICorner", accent).CornerRadius = UDim.new(0, 18)
-
-	local titleLabel                    = Instance.new("TextLabel")
-	titleLabel.Name                     = "Title"
-	titleLabel.Size                     = UDim2.new(1, 0, 0.28, 0)
-	titleLabel.Position                 = UDim2.new(0, 0, 0.08, 0)
-	titleLabel.BackgroundTransparency   = 1
-	titleLabel.TextColor3               = Color3.new(1, 1, 1)
-	titleLabel.TextScaled               = true
-	titleLabel.Font                     = Enum.Font.GothamBold
-	titleLabel.Text                     = "ALIEN INVASION"
-	titleLabel.Parent                   = frame
-
-	local statusLabel                   = Instance.new("TextLabel")
-	statusLabel.Name                    = "Status"
-	statusLabel.Size                    = UDim2.new(0.88, 0, 0.2, 0)
-	statusLabel.Position                = UDim2.new(0.06, 0, 0.38, 0)
-	statusLabel.BackgroundTransparency  = 1
-	statusLabel.TextColor3              = Color3.fromRGB(195, 195, 195)
-	statusLabel.TextScaled              = true
-	statusLabel.Font                    = Enum.Font.Gotham
-	statusLabel.Text                    = "Click FIND MATCH to enter the queue."
-	statusLabel.Parent                  = frame
-
-	local matchButton                   = Instance.new("TextButton")
-	matchButton.Name                    = "MatchButton"
-	matchButton.Size                    = UDim2.new(0.58, 0, 0.24, 0)
-	matchButton.Position                = UDim2.new(0.21, 0, 0.66, 0)
-	matchButton.BackgroundColor3        = Color3.fromRGB(30, 155, 70)
-	matchButton.BorderSizePixel         = 0
-	matchButton.TextColor3              = Color3.new(1, 1, 1)
-	matchButton.TextScaled              = true
-	matchButton.Font                    = Enum.Font.GothamBold
-	matchButton.Text                    = "FIND MATCH"
-	matchButton.Parent                  = frame
-	Instance.new("UICorner", matchButton).CornerRadius = UDim.new(0, 10)
-
-	return frame, statusLabel, matchButton
-end
 
 -- ── Private state helpers ─────────────────────────────────────────────────────
 
 local function setQueued(queued: boolean)
 	_isQueued = queued
 	if queued then
-		_matchButton.Text             = "CANCEL"
-		_matchButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-		_statusLabel.Text             = "Searching for players..."
+		LobbyHudController.setButtonText("CANCEL", true)
+		LobbyHudController.setStatus("Searching for players...")
 	else
-		_matchButton.Text             = "FIND MATCH"
-		_matchButton.BackgroundColor3 = Color3.fromRGB(30, 155, 70)
-		_statusLabel.Text             = "Click FIND MATCH to enter the queue."
+		LobbyHudController.setButtonText("FIND MATCH", true)
+		LobbyHudController.setStatus("Click FIND MATCH to enter the queue.")
 	end
 end
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function MatchmakingController:Init()
-	_panel, _statusLabel, _matchButton = buildLobbyUi()
-	Logger.info(TAG, "Lobby UI created.")
+	Logger.info(TAG, "Initialized.")
 end
 
 function MatchmakingController:Start()
@@ -128,7 +55,8 @@ function MatchmakingController:Start()
 	_leaveQueueRemote = Framework.GetRemote(RemoteNames.LEAVE_QUEUE)
 	_matchFoundRemote = Framework.GetRemote(RemoteNames.MATCH_FOUND)
 
-	_matchButton.MouseButton1Click:Connect(function()
+	-- Register the button click handler with LobbyHudController.
+	LobbyHudController.setFindMatchCallback(function()
 		if _matchLocked then return end
 		if _isQueued then
 			Logger.fireServer(_leaveQueueRemote)
@@ -140,19 +68,18 @@ function MatchmakingController:Start()
 	end)
 
 	Logger.wrapClientEvent(_matchFoundRemote, TAG, function()
-		_matchLocked        = true
-		_matchButton.Visible = false
+		_matchLocked = true
+		LobbyHudController.setButtonText("", false)  -- disable button
 
 		-- 3-second countdown, then "Teleporting…" — mirrors the server's task.delay(3).
 		for i = 3, 1, -1 do
-			_statusLabel.Text      = string.format("Match found!  Starting in  %d…", i)
-			_statusLabel.TextColor3 = Color3.fromRGB(80, 220, 100)
+			LobbyHudController.setStatus(string.format("Match found!  Starting in  %d…", i))
 			task.wait(1)
 		end
-		_statusLabel.Text = "Teleporting…"
+		LobbyHudController.setStatus("Teleporting…")
 	end)
 
-	-- Proximity gate: show the panel only when the player is near the GoToGame pad.
+	-- Proximity gate: create the panel only when the player is near the GoToGame pad.
 	task.spawn(function()
 		local pad: BasePart? = nil
 		while not pad do
@@ -169,15 +96,15 @@ function MatchmakingController:Start()
 			local char = _localPlayer.Character
 			local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if not root then
-				_panel.Visible = false
+				LobbyHudController.setPanelVisible(false)
 				return
 			end
 			local inRange = (root.Position - (pad :: BasePart).Position).Magnitude <= PAD_THRESHOLD
 			if inRange then
-				_panel.Visible = true
+				LobbyHudController.setPanelVisible(true)
 			elseif not _isQueued then
-				-- Not near pad and not queued → hide.
-				_panel.Visible = false
+				-- Not near pad and not queued → hide and destroy.
+				LobbyHudController.hidePanel()
 			end
 		end)
 	end)

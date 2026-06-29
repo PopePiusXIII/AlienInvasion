@@ -23,21 +23,6 @@ return {
 	},
 	GOLD_WAVE_CHANCE_STEP = 0.015,
 	GOLD_WAVE_REWARD_STEP = 0.04,
-
-	GOLD_WEAPON_UNLOCK_PRICES = {
-		Deagle = 0,
-		M82    = 0,
-		["1911"] = 0,
-		M60    = 120,
-		M240B  = 180,
-		MG42   = 120,
-		HandCannon = 160,
-		MP5 = 0,
-		SCAR = 0,
-		AA12 = 120,
-		M870 = 120,
-		BAR  = 150,
-	},
 	SHOP_SILVER_PRICES = {
 		ammoRefill  = 30,
 		healthPack  = 55,

@@ -28,7 +28,7 @@ These features were fully built but are not covered by the phases below.
 - [x] Physical bolt pickup models scatter at zombie death positions. Bolts rise (CFrame animation — no physics), hover, then accelerate toward the player within `BOLT_ATTRACT_RADIUS` studs.
 
 ### 🔓 Weapon Unlock System
-- [x] Gold-gated permanent unlocks: Deagle/M82 free, M60 120g, M240B 180g — persisted via `DataService`.
+- [x] Gold-gated permanent unlocks: Deagle/M82 free, M60 120g, M240B 180g — persisted via `ProfileService`.
 - [x] `REQUEST_WEAPON_UNLOCK` / `WEAPON_UNLOCK_RESULT` remotes with server-side gold validation, deduction, and DataStore write.
 
 ### 🔫 Multiple Gun Types Catalog
@@ -72,8 +72,8 @@ These features were fully built but are not covered by the phases below.
 
 ### 💾 Task 1.3: Secure Data Lifecycle Management (ProfileService)
 - [ ] **Library Integration:** Integrate the open-source **ProfileService** library into `ServerScriptService` (currently using raw `DataStoreService`).
-- [x] **Data Template:** `DataService` profile contains `gold` (number) and `unlockedWeapons` (dict). Starter weapons seeded from `CombatConfig.STARTER_UNLOCKED_WEAPONS`.
-- [x] **Session Management:** `DataService` loads profile on `PlayerAdded` and saves/releases on `PlayerRemoving`.
+- [x] **Data Template:** `ProfileService` profile contains `gold` (number) and `unlockedWeapons` (dict). Starter weapons seeded from `CombatConfig.STARTER_UNLOCKED_WEAPONS`.
+- [x] **Session Management:** `ProfileService` loads profile on `PlayerAdded` and saves/releases on `PlayerRemoving`.
 - [ ] **Error Handling:** Implement a safe auto-retry/fallback system if the Roblox DataStore service experiences outages.
 - [ ] **DoD Check:** A player can join a game, earn cash, leave, join a completely separate server instantly, and their data updates flawlessly with zero session-lock issues.
 

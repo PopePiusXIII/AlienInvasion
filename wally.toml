@@ -1,0 +1,10 @@
+[package]
+name = "hoyt/alieninvasion"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+license = "MIT"
+realm = "shared"
+
+[dependencies]
+vide = "centau/vide@0.4.0"
+ProfileStore = "vyon/profilestore@1.0.3"

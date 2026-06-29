@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- Logger.luau  (packages/shared → ReplicatedStorage.Shared.Logger)
+-- Logger.luau  (src/shared → ReplicatedStorage.Shared.Logger)
 -- Centralized structured logging with a network middleware pipeline.
 --
 -- NETWORK MIDDLEWARE — the key observability tool:

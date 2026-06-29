@@ -6,20 +6,11 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
-      }
-    },
-
-    "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      }
-    },
-
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Client": {
-          "$path": "src/client"
-        }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide":         { "$path": "Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "Packages/_Index/vyon_profilestore@1.0.3/profilestore" }
       }
     },
 

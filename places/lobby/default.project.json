@@ -6,11 +6,19 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "Config":       { "$path": "src/shared/Config.luau" },
+        "Config":         { "$path": "src/shared/Config.luau" },
         "LightShowConfig": { "$path": "src/shared/LightShowConfig.luau" },
-        "RemoteNames":  { "$path": "src/shared/RemoteNames.luau" },
-        "Framework":    { "$path": "../../packages/shared/Framework.luau" },
-        "Logger":       { "$path": "../../packages/shared/Logger.luau" }
+        "RemoteNames":    { "$path": "src/shared/RemoteNames.luau" },
+        "Framework":      { "$path": "../../src/shared/Framework.luau" },
+        "Logger":         { "$path": "../../src/shared/Logger.luau" },
+        "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
+        "vide":           { "$path": "../../src/shared/vide" },
+        "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide":         { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "../../Packages/_Index/vyon_profilestore@1.0.3/profilestore" }
       }
     },
 

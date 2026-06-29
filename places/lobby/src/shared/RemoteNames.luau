@@ -8,4 +8,5 @@ return {
 	JOIN_QUEUE  = "JoinQueue",
 	LEAVE_QUEUE = "LeaveQueue",
 	MATCH_FOUND = "MatchFound",
+	SYNC_PROFILE = "SyncProfile",
 }

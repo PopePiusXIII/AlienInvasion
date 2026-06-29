@@ -62,7 +62,7 @@ function LightShowService:Init()
 						local index = tonumber(indexMatch)
 						if index then
 							_lightGroups[groupId][index] = lightItem
-							Logger.info(TAG, "  Registered housing: %s (Index: %d)", lightItem.Name, index)
+							-- Logger.info(TAG, "  Registered housing: %s (Index: %d)", lightItem.Name, index)
 							self:_setLightState(groupId, index, false)
 						end
 					end

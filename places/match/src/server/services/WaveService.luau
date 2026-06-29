@@ -16,9 +16,9 @@ local Framework    = require(ReplicatedStorage.Shared.Framework)
 local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
+local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
-local DataService = require(script.Parent.DataService)
 local ClerkInteractionModule = require(script.Parent.modules.wave.ClerkInteractionModule)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
@@ -120,7 +120,7 @@ local function giveGuns(player: Player)
 	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B", "BushMaster"}
 	local unlockedGunNames: { string } = {}
 	for _, gunName in ipairs(allGunNames) do
-		if DataService.isWeaponUnlocked(player, gunName) then
+		if ProfileService.isWeaponUnlocked(player, gunName) then
 			table.insert(unlockedGunNames, gunName)
 		end
 	end
@@ -196,12 +196,16 @@ end
 --- Run the full solo battle for one player. YIELDS until they die or disconnect.
 --- Returns the last wave number reached (0 if the map or humanoid was unavailable).
 function WaveService.startBattle(player: Player): number
+	Logger.info(TAG, "startBattle: beginning run for %s.", player.Name)
 	EconomyService.beginRun(player)
 	player:SetAttribute("CurrentWave", Config.STARTING_WAVE)
 
 	-- Wait for the player's character and humanoid to be ready before proceeding.
+	Logger.info(TAG, "startBattle: waiting for character (%s).", player.Name)
 	local character = player.Character or player.CharacterAdded:Wait()
+	Logger.info(TAG, "startBattle: character ready, waiting for humanoid (%s).", player.Name)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+	Logger.info(TAG, "startBattle: humanoid ready, starting waves (%s).", player.Name)
 
 	local attached = ClerkInteractionModule.attach(player, function()
 		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))

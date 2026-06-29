@@ -9,7 +9,7 @@ local function absorb(t: { [string]: any })
 end
 
 absorb(require(Configs.ZombieConfig)  :: { [string]: any })
-absorb(require(Configs.CombatConfig)  :: { [string]: any })
+absorb(require(script.Parent.CombatConfig)  :: { [string]: any })
 absorb(require(Configs.EconomyConfig) :: { [string]: any })
 absorb(require(Configs.WaveConfig)    :: { [string]: any })
 absorb(require(Configs.PlayerConfig)  :: { [string]: any })

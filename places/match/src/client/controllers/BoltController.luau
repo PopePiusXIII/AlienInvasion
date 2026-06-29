@@ -10,7 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
-local Config = require(ReplicatedStorage.Shared.Config)
+local Logger    = require(ReplicatedStorage.Shared.Logger)
+local Config    = require(ReplicatedStorage.Shared.Config)
 local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
 
 local TAG = "BoltController"
@@ -121,6 +122,12 @@ function BoltController:Init()
 	if templates then
 		_silverTemplate = templates:FindFirstChild("SilverBolt")
 		_goldTemplate   = templates:FindFirstChild("GoldBolt")
+	end
+
+	-- Fallback: if GoldBolt template is missing, reuse SilverBolt so gold bolts still appear.
+	if not _goldTemplate and _silverTemplate then
+		Logger.warn(TAG, "GoldBolt template missing — falling back to SilverBolt.")
+		_goldTemplate = _silverTemplate
 	end
 
 	_boltSpawnedRemote = Framework.GetRemote(RemoteNames.BOLT_SPAWNED)

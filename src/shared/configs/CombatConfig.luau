@@ -23,6 +23,8 @@ return {
 	GUN_STATS = {
 		Deagle = {
 			damage         = 34,
+			gold_cost      = 500,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 0.15,
 			magSize        = 7,
@@ -69,6 +71,8 @@ return {
 		},
 		M82 = {
 			damage         = 250,
+			gold_cost      = 1000,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 0.1,
 			magSize        = 100,
@@ -84,6 +88,8 @@ return {
 		},
 		M60 = {
 			damage         = 42,
+			gold_cost      = 800,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 0.08,
 			magSize        = 100,
@@ -97,23 +103,10 @@ return {
 				color     = Color3.fromRGB(255, 226, 140),
 			},
 		},
-		BAR = {
-			damage         = 45,
-			range          = 600,
-			fireCooldown   = 0.1,
-			magSize        = 20,
-			max_ammo       = 200,
-			reloadTime     = 4.0,
-			isAutomatic    = true,
-			knockbackForce = 22,
-			tracer = {
-				lifetime  = 0.06,
-				thickness = 0.09,
-				color     = Color3.fromRGB(255, 210, 140),
-			},
-		},
 		MG42 = {
 			damage         = 42,
+			gold_cost      = 750,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 0.04,
 			magSize        = 100,
@@ -129,6 +122,8 @@ return {
 		},
 		M240B = {
 			damage         = 46,
+			gold_cost      = 900,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 0.09,
 			magSize        = 100,
@@ -144,6 +139,8 @@ return {
 		},
 		BushMaster = {
 			damage         = 100,
+			gold_cost      = 600,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 0.5,
 			magSize        = 12,
@@ -158,24 +155,10 @@ return {
 				color     = Color3.fromRGB(255, 214, 128),
 			},
 		},
-		M870 = {
-			damage         = 120,
-			range          = 300,
-			fireCooldown   = 0.9,
-			magSize        = 8,
-			max_ammo       = 200,
-			reloadTime     = 3.0,
-			isAutomatic    = false,
-			isShotgun      = true,
-			knockbackForce = 60,
-			tracer = {
-				lifetime  = 0.06,
-				thickness = 0.12,
-				color     = Color3.fromRGB(255, 200, 140),
-			},
-		},
 		HandCannon = {
 			damage         = 180,
+			gold_cost      = 1200,
+			image          = "rbxassetid://0",
 			range          = 500,
 			fireCooldown   = 1.2,
 			magSize        = 6,
@@ -191,6 +174,8 @@ return {
 		},
 		MP5 = {
 			damage         = 25,
+			gold_cost      = 400,
+			image          = "rbxassetid://120069135047702",
 			range          = 600,
 			fireCooldown   = 0.08,
 			magSize        = 30,
@@ -206,6 +191,8 @@ return {
 		},
 		SCAR = {
 			damage         = 35,
+			gold_cost      = 550,
+			image          = "rbxassetid://85630207697247",
 			range          = 1500,
 			fireCooldown   = 0.09,
 			magSize        = 30,
@@ -219,5 +206,23 @@ return {
 				color     = Color3.fromRGB(255, 220, 180),
 			},
 		},
+		["1911"] = {
+			damage         = 28,
+			gold_cost      = 550,
+			image          = "rbxassetid://85630207697247",
+			range          = 400,
+			fireCooldown   = 0.2,
+			magSize        = 8,
+			max_ammo       = 200,
+			reloadTime     = 1.8,
+			isAutomatic    = false,
+			knockbackForce = 12,
+			tracer = {
+				lifetime  = 0.04,
+				thickness = 0.045,
+				color     = Color3.fromRGB(255, 244, 200),
+			},
+		},
+
 	},
 }
