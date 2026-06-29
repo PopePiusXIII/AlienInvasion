@@ -140,22 +140,6 @@ function createArmoryHUD(screenGui: Instance): () -> ()
         end)
     end
 
-    -- Build category labels above each column (static, outside scroll area)
-    -- for col = 1, COLS do
-    --     create "TextLabel" {
-    --         Name                   = "Label_Col" .. col,
-    --         Parent                 = armoryPanel,
-    --         Size                 = UDim2.new(0.22, 0, 0.1, 0),
-    --         Position             = UDim2.new(colX(col - 1) + 0.01, 0, 0.12, 0),
-    --         BackgroundTransparency = 1,
-    --         TextColor3           = theme.TEXT_SECONDARY,
-    --         TextScaled           = true,
-    --         Font                 = theme.FONT_REGULAR,
-    --         TextXAlignment       = Enum.TextXAlignment.Center,
-    --         Text                 = categoryNames[col] or "",
-    --     }
-    -- end
-
     -- ScrollingFrame container for the weapon grid
     local scrollFrame = create "ScrollingFrame" {
         Name                   = "WeaponGrid",

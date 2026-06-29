@@ -12,7 +12,8 @@
         "Framework":      { "$path": "../../src/shared/Framework.luau" },
         "Logger":         { "$path": "../../src/shared/Logger.luau" },
         "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
-        "vide":           { "$path": "../../src/shared/vide" }
+        "vide":           { "$path": "../../src/shared/vide" },
+        "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" }
       },
       "Packages": {
         "$className": "Folder",

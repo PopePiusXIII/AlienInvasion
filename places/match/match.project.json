@@ -6,7 +6,8 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared",
-        "vide":  { "$path": "vide" }
+        "vide":  { "$path": "vide" },
+        "CombatConfig": { "$path": "../../src/shared/configs/CombatConfig.luau" }
       },
       "Packages": {
         "$className": "Folder",

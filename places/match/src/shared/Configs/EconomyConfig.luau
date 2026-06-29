@@ -34,12 +34,6 @@ return {
 		MP5 = 0,
 		SCAR = 0
 	},
-	SHOP_SILVER_PRICES = {
-		ammoRefill  = 30,
-		healthPack  = 55,
-		damageBoost = 75,
-		speedBoost  = 60,
-	},
 	SHOP_GUN_PRICES = {
 		Deagle = 0,
 		M82    = 0,
@@ -50,4 +44,11 @@ return {
 		MP5 = 0,
 		SCAR = 0
 	},
+	SHOP_SILVER_PRICES = {
+		ammoRefill  = 30,
+		healthPack  = 55,
+		damageBoost = 75,
+		speedBoost  = 60,
+	},
+
 }
