@@ -25,4 +25,7 @@ return {
 	BOLT_SPAWNED           = "BoltSpawned",
 	CLAIM_BOLT             = "ClaimBolt",
 	ZOMBIE_HIT_SOUND       = "ZombieHitSound",
+	-- Custom inventory system remotes
+	INVENTORY_SYNC         = "InventorySync",
+	INVENTORY_EQUIP        = "InventoryEquip",
 }

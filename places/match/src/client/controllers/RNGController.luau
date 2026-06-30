@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local InventoryController = require(script.Parent.InventoryController)
 
 local TAG = "RNGController"
 local RNGController = Framework.CreateController({ Name = TAG })
@@ -88,23 +89,10 @@ local function onSelectWeapon()
     _state.selected = choice
     Logger.info(TAG, "Rolled RNG choice: %s", choice)
 
-    -- Compute ownership: equipped or in Backpack
-    local equippedName: string? = nil
-    local character = _localPlayer.Character
-    if character then
-        local equippedTool = character:FindFirstChildWhichIsA("Tool")
-        if equippedTool then equippedName = equippedTool.Name end
-    end
-
-    local backpackTools: { string } = {}
-    local bp = _localPlayer:FindFirstChildOfClass("Backpack")
-    if bp then
-        for _, item in ipairs(bp:GetChildren()) do
-            if item:IsA("Tool") then table.insert(backpackTools, item.Name) end
-        end
-    end
-
-    local owned = (equippedName == choice) or table.find(backpackTools, choice) ~= nil
+    -- Check if weapon is already in inventory
+    local currentWeapons = InventoryController.getWeapons()
+    local owned = table.find(currentWeapons, choice) ~= nil
+    
     if _selectedLabel then
         if owned then
             _selectedLabel.Text = ("Selected: %s — Max ammo"):format(choice)
@@ -126,10 +114,11 @@ function RNGController:Init()
     _rngActivateRemote = Framework.GetRemote(RemoteNames.RNG_ACTIVATE)
     _rngUnlockedListRemote = Framework.GetRemote(RemoteNames.RNG_UNLOCKED_LIST)
     _rngRequestGiveRemote = Framework.GetRemote(RemoteNames.RNG_REQUEST_GIVE)
-    buildGui()
+
 end
 
 function RNGController:Start()
+        buildGui()
     -- Listen for unlocked list from server
     _rngUnlockedListRemote.OnClientEvent:Connect(function(unlocked: { string })
         _state.unlocked = unlocked or {}
@@ -185,25 +174,13 @@ function RNGController:Start()
         if input.KeyCode == Enum.KeyCode.F then
             if _state.selected then
                 -- If already selected, treat F as slot1 selection
-                local equippedName: string? = nil
-                local character = _localPlayer.Character
-                if character then
-                    local equippedTool = character:FindFirstChildWhichIsA("Tool")
-                    if equippedTool then equippedName = equippedTool.Name end
-                end
-
-                local backpackTools: { string } = {}
-                local bp = _localPlayer:FindFirstChildOfClass("Backpack")
-                if bp then
-                    for _, item in ipairs(bp:GetChildren()) do
-                        if item:IsA("Tool") then table.insert(backpackTools, item.Name) end
-                    end
-                end
-
-                Logger.info(TAG, "Client current tools — equipped=%s backpack=%s", tostring(equippedName), table.concat(backpackTools, ", "))
-
+                local currentWeapons = InventoryController.getWeapons()
                 local toRemove: string? = nil
-                toRemove = equippedName or backpackTools[1]
+                if #currentWeapons >= 1 then
+                    toRemove = currentWeapons[1]
+                end
+                
+                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(currentWeapons, ", "))
                 Logger.info(TAG, "Requesting give: %s (slot=1) remove=%s", _state.selected, tostring(toRemove))
                 _rngRequestGiveRemote:FireServer(_state.selected, 1, toRemove)
                 hidePrompt()
@@ -213,33 +190,15 @@ function RNGController:Start()
             end
         elseif input.KeyCode == Enum.KeyCode.G then
             if _state.selected then
-                local equippedName: string? = nil
-                local character = _localPlayer.Character
-                if character then
-                    local equippedTool = character:FindFirstChildWhichIsA("Tool")
-                    if equippedTool then equippedName = equippedTool.Name end
-                end
-
-                local backpackTools: { string } = {}
-                local bp = _localPlayer:FindFirstChildOfClass("Backpack")
-                if bp then
-                    for _, item in ipairs(bp:GetChildren()) do
-                        if item:IsA("Tool") then table.insert(backpackTools, item.Name) end
-                    end
-                end
-
-                Logger.info(TAG, "Client current tools — equipped=%s backpack=%s", tostring(equippedName), table.concat(backpackTools, ", "))
-
+                local currentWeapons = InventoryController.getWeapons()
                 local toRemove: string? = nil
-                -- Slot 2: prefer first backpack tool that isn't the equipped tool
-                if #backpackTools > 0 then
-                    if backpackTools[1] ~= equippedName then
-                        toRemove = backpackTools[1]
-                    elseif #backpackTools >= 2 then
-                        toRemove = backpackTools[2]
-                    end
+                if #currentWeapons >= 2 then
+                    toRemove = currentWeapons[2]
+                elseif #currentWeapons >= 1 then
+                    toRemove = currentWeapons[1]
                 end
 
+                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(currentWeapons, ", "))
                 Logger.info(TAG, "Requesting give: %s (slot=2) remove=%s", _state.selected, tostring(toRemove))
                 _rngRequestGiveRemote:FireServer(_state.selected, 2, toRemove)
                 hidePrompt()

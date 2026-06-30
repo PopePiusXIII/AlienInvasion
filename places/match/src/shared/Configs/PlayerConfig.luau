@@ -6,4 +6,5 @@ return {
 	PLAYER_MELEE_POWER  = 10,
 	PLAYER_SCALE        = 1,
 	-- Player movement and scaling config
+	INVENTORY_SIZE      = 2, -- Custom inventory system size
 }

@@ -62,6 +62,7 @@ local function getRemoteFolder(): Folder
 	else
 		_remoteFolder = RS:WaitForChild("Remotes", 10) :: Folder
 	end
+
 	return _remoteFolder :: Folder
 end
 
@@ -76,9 +77,17 @@ function Framework.CreateRemote(name: string): RemoteEvent
 	if existing and existing:IsA("RemoteEvent") then
 		return existing :: RemoteEvent
 	end
+
 	local event  = Instance.new("RemoteEvent")
 	event.Name   = name
 	event.Parent = folder
+
+	if not _remoteFolder then
+		error("[Framework] Failed to get Remote folder under ReplicatedStorage")
+	else
+		warn("[Framework] Created RemoteEvent '" .. name .. "' under ReplicatedStorage.Remotes")
+	end
+
 	return event
 end
 
@@ -86,6 +95,7 @@ end
 --- Call during Start() after all server Inits have run.
 function Framework.GetRemote(name: string): RemoteEvent
 	assert(not IS_SERVER, "[Framework] GetRemote must be called on the client")
+	warning("[Framework] GetRemote called for '" .. name .. "'; waiting for RemoteEvent under ReplicatedStorage.Remotes")
 	return getRemoteFolder():WaitForChild(name) :: RemoteEvent
 end
 
@@ -151,6 +161,7 @@ Framework.GetController = Framework.GetService
 function Framework.Start()
 	-- Phase 1: synchronous Init — no yielding.
 	for name, mod in pairs(_registry) do
+		warn(string.format("[Framework] Init %s", name))
 		if mod.Init then
 			local ok, err = pcall(mod.Init, mod)
 			if not ok then

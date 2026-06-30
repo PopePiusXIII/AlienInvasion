@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local vide  = require(ReplicatedStorage.Packages.vide)
 local theme = require(script.Parent.VideTheme)
+local Hotbar = require(script.Parent.Hotbar)
 
 local create = vide.create
 local source = vide.source
@@ -27,6 +28,8 @@ export type MatchHUDProps = {
     -- Optional: parent ScreenGui if you want to share with other UI.
     -- If nil, a new ScreenGui is created and parented to PlayerGui.
     parentGui: Instance?,
+    -- Inventory state for hotbar
+    inventorySize: number?,
 }
 
 --- Creates the Match HUD.
@@ -38,12 +41,18 @@ function createMatchHUD(props: MatchHUDProps): ({
     setAmmoText:     (string, Color3) -> (),
     setSilverAmount: (number) -> (),
     setGoldAmount:   (number) -> (),
+    setInventory:    (weapons: { string }, equippedSlot: number?) -> (),
 }, () -> ())
     local waveText     = source("")
     local ammoText     = source("")
     local ammoColor    = source(Color3.new(1, 1, 1))
     local silverAmount = source(0)
     local goldAmount   = source(0)
+    
+    -- Inventory state for hotbar
+    local inventoryWeapons = source({})
+    local inventoryEquippedSlot = source(nil :: number?)
+    local inventorySize = props.inventorySize or 2
 
     -- Create or use existing ScreenGui
     local screenGui: Instance
@@ -125,6 +134,13 @@ function createMatchHUD(props: MatchHUDProps): ({
                     Text                 = "GOLD: " .. tostring(math.max(0, math.floor(amount))),
                 }
             end),
+            
+            -- Hotbar (bottom-center)
+            Hotbar.createHotbar({
+                weapons = inventoryWeapons,
+                equippedSlot = inventoryEquippedSlot,
+                inventorySize = inventorySize,
+            }),
         }
     end
 
@@ -134,6 +150,10 @@ function createMatchHUD(props: MatchHUDProps): ({
     -- Control table for imperative updates from controllers
     local controls = {
         setWaveText = function(text: string) waveText(text) end,
+        setInventory = function(weapons: { string }, equippedSlot: number?)
+            inventoryWeapons(weapons)
+            inventoryEquippedSlot(equippedSlot)
+        end,
         clearWaveText = function() waveText("") end,
         setAmmoText = function(text: string, color: Color3)
             ammoText(text)

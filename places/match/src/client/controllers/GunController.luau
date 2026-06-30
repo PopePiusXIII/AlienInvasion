@@ -12,6 +12,7 @@
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Framework     = require(Shared.Framework)
@@ -20,6 +21,7 @@ local Config        = require(Shared.Config)
 local RemoteNames   = require(Shared.RemoteNames)
 local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 local HudController = require(script.Parent.HudController)
+local InventoryController = require(script.Parent.InventoryController)
 local GunCatalogModule = require(script.Parent.modules.gun.GunCatalogModule)
 local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
 local GunViewModelModule = require(script.Parent.modules.gun.GunViewModelModule)
@@ -405,28 +407,95 @@ local function onGunUnequipped()
 	refreshAmmoDisplay()
 end
 
--- Watch a character model for the gun being equipped (moved into character)
--- or unequipped (moved out). Uses ChildAdded/ChildRemoved on the character
--- so it catches both initial equip and hotswap.
-local function watchCharacter(character: Model)
-	-- Check if gun is already equipped (e.g. character respawned mid-session).
-	for _, child in ipairs(character:GetChildren()) do
-		if child:IsA("Tool") and isSupportedGunName(child.Name) then
-			onGunEquipped(child :: Tool)
+-- ── Custom Inventory Integration ──────────────────────────────────────────────
+
+--- Creates a Tool instance from ServerStorage/ReplicatedStorage
+local function createToolForWeapon(weaponName: string): Tool?
+	-- First check ReplicatedStorage for the weapon
+	local weaponSource = ReplicatedStorage:FindFirstChild(weaponName, true)
+	if not weaponSource then
+		Logger.warn(TAG, "Could not find weapon %s in ReplicatedStorage", weaponName)
+		return nil
+	end
+	
+	if weaponSource:IsA("Tool") then
+		local toolClone = (weaponSource :: Tool):Clone()
+		return toolClone
+	end
+	
+	if weaponSource:IsA("Model") then
+		local tool = Instance.new("Tool")
+		tool.Name = weaponName
+		tool.RequiresHandle = true
+		
+		local modelClone = (weaponSource :: Model):Clone()
+		modelClone.Parent = tool
+		
+		-- Find or create a handle
+		local handle = modelClone:FindFirstChild("Handle")
+		if not handle or not handle:IsA("BasePart") then
+			for _, desc in ipairs(modelClone:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					desc.Name = "Handle"
+					desc.Parent = tool
+					handle = desc
+					break
+				end
+			end
+		end
+		
+		return tool
+	end
+	
+	return nil
+end
+
+--- Called when inventory changes - equips/unequips weapons accordingly
+local function onInventoryChanged(weapons: { string }, equippedSlot: number?)
+	Logger.info(TAG, "Inventory changed: weapons=%s, equipped slot=%s", 
+		table.concat(weapons, ", "), tostring(equippedSlot))
+	
+	local character = _localPlayer.Character
+	if not character then return end
+	
+	-- Determine which weapon should be equipped
+	local shouldEquipWeapon: string? = nil
+	if equippedSlot and weapons[equippedSlot] then
+		shouldEquipWeapon = weapons[equippedSlot]
+	end
+	
+	-- Check current equipped weapon
+	local currentEquippedWeapon: string? = _equippedGun and _equippedGun.Name or nil
+	
+	-- If the weapon hasn't changed, do nothing
+	if currentEquippedWeapon == shouldEquipWeapon then
+		return
+	end
+	
+	-- Unequip current weapon if any
+	if _equippedGun then
+		onGunUnequipped()
+		if _equippedGun.Parent then
+			_equippedGun:Destroy()
 		end
 	end
-
-	character.ChildAdded:Connect(function(child: Instance)
-		if child:IsA("Tool") and isSupportedGunName(child.Name) then
-			onGunEquipped(child :: Tool)
+	
+	-- Equip new weapon if any
+	if shouldEquipWeapon then
+		local tool = createToolForWeapon(shouldEquipWeapon)
+		if tool then
+			tool.Parent = character
+			onGunEquipped(tool)
+			
+			-- Try to auto-equip via Humanoid
+			local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+			if humanoid then
+				humanoid:EquipTool(tool)
+			end
+		else
+			Logger.warn(TAG, "Failed to create tool for weapon: %s", shouldEquipWeapon)
 		end
-	end)
-
-	character.ChildRemoved:Connect(function(child: Instance)
-		if child:IsA("Tool") and isSupportedGunName(child.Name) then
-			onGunUnequipped()
-		end
-	end)
+	end
 end
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -456,19 +525,40 @@ function GunController:Start()
 
 	_localPlayer.CharacterAdded:Connect(function(character: Model)
 		onCharacterAdded(character)
-		watchCharacter(character)
+		-- Sync with current inventory state when character respawns
+		local weapons = InventoryController.getWeapons()
+		local equippedSlot = InventoryController.getEquippedSlot()
+		onInventoryChanged(weapons, equippedSlot)
 	end)
 	_localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 	if _localPlayer.Character then
 		onCharacterAdded(_localPlayer.Character)
-		watchCharacter(_localPlayer.Character)
 	end
-
-	-- R key manual reload.
+	
+	-- Watch for inventory changes
+	InventoryController.onInventoryChanged(onInventoryChanged)
+	
+	-- Handle number key input for weapon switching
 	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
 		if gameProcessed then return end
+		
+		-- R key manual reload
 		if input.KeyCode == Enum.KeyCode.R then
 			task.spawn(reload)
+			return
+		end
+		
+		-- Number keys for weapon switching (1, 2, etc.)
+		if input.KeyCode == Enum.KeyCode.One then
+			InventoryController.equipSlot(1)
+		elseif input.KeyCode == Enum.KeyCode.Two then
+			InventoryController.equipSlot(2)
+		elseif input.KeyCode == Enum.KeyCode.Three then
+			InventoryController.equipSlot(3)
+		elseif input.KeyCode == Enum.KeyCode.Four then
+			InventoryController.equipSlot(4)
+		elseif input.KeyCode == Enum.KeyCode.Five then
+			InventoryController.equipSlot(5)
 		end
 	end)
 
