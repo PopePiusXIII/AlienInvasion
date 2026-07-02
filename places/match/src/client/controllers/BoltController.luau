@@ -134,12 +134,12 @@ function BoltController:Init()
 		Logger.warn(TAG, "GoldBolt template missing — falling back to SilverBolt.")
 		_goldTemplate = _silverTemplate
 	end
-
-	_boltSpawnedRemote = Framework.GetRemote(RemoteNames.BOLT_SPAWNED)
-	_claimBoltRemote   = Framework.GetRemote(RemoteNames.CLAIM_BOLT)
 end
 
 function BoltController:Start()
+	_boltSpawnedRemote = Framework.GetRemote(RemoteNames.BOLT_SPAWNED)
+	_claimBoltRemote   = Framework.GetRemote(RemoteNames.CLAIM_BOLT)
+
 	_boltSpawnedRemote.OnClientEvent:Connect(function(id: number, currencyName: string, amount: number, spawnPosition: Vector3)
 		onBoltSpawned(id, currencyName, amount, spawnPosition)
 	end)

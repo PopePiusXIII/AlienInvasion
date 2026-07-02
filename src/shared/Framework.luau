@@ -95,7 +95,7 @@ end
 --- Call during Start() after all server Inits have run.
 function Framework.GetRemote(name: string): RemoteEvent
 	assert(not IS_SERVER, "[Framework] GetRemote must be called on the client")
-	warning("[Framework] GetRemote called for '" .. name .. "'; waiting for RemoteEvent under ReplicatedStorage.Remotes")
+	warn("[Framework] GetRemote called for '" .. name .. "'; waiting for RemoteEvent under ReplicatedStorage.Remotes")
 	return getRemoteFolder():WaitForChild(name) :: RemoteEvent
 end
 

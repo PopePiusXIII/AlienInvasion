@@ -74,13 +74,13 @@ end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function InventoryController:Init()
-	_inventorySyncRemote  = Framework.GetRemote(RemoteNames.INVENTORY_SYNC)
-	_inventoryEquipRemote = Framework.GetRemote(RemoteNames.INVENTORY_EQUIP)
-
 	Logger.info(TAG, "Initialized.")
 end
 
 function InventoryController:Start()
+	_inventorySyncRemote  = Framework.GetRemote(RemoteNames.INVENTORY_SYNC)
+	_inventoryEquipRemote = Framework.GetRemote(RemoteNames.INVENTORY_EQUIP)
+
 	-- Listen for inventory sync from server
     warn(TAG, "INVETORY SYNC REMOTE STARTED")
 	Logger.wrapClientEvent(_inventorySyncRemote, TAG, function(weapons: { string }, equippedSlot: number?)
@@ -89,9 +89,7 @@ function InventoryController:Start()
 
 	-- Input listener for equipping weapons
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		Logger.info(TAG, "11111111111111111111111111111111111111111")
         if gameProcessed then return end
-		Logger.info(TAG, "222222222222222222222222222222222222222")
 		if input.KeyCode == Enum.KeyCode.One then
 			InventoryController.equipSlot(1)
 		elseif input.KeyCode == Enum.KeyCode.Two then

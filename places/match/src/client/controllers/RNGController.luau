@@ -111,13 +111,13 @@ end
 
 function RNGController:Init()
     _localPlayer = Players.LocalPlayer
+end
+
+function RNGController:Start()
     _rngActivateRemote = Framework.GetRemote(RemoteNames.RNG_ACTIVATE)
     _rngUnlockedListRemote = Framework.GetRemote(RemoteNames.RNG_UNLOCKED_LIST)
     _rngRequestGiveRemote = Framework.GetRemote(RemoteNames.RNG_REQUEST_GIVE)
 
-end
-
-function RNGController:Start()
         buildGui()
     -- Listen for unlocked list from server
     _rngUnlockedListRemote.OnClientEvent:Connect(function(unlocked: { string })
