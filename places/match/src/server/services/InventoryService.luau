@@ -149,31 +149,38 @@ function InventoryService.removeWeapon(player: Player, weaponName: string): bool
 end
 
 function InventoryService.setEquippedSlot(player: Player, slot: number?)
-	local inventory = getInventory(player) -- [cite: 6]
-	local character = player.Character
-	
-	-- Clear current tool
-	if character then
-		local currentTool = character:FindFirstChildOfClass("Tool")
-		if currentTool then currentTool:Destroy() end
-	end
+    local inventory = getInventory(player)
+    local character = player.Character
+    
+    -- Clear current tool from character
+    if character then
+        local currentTool = character:FindFirstChildOfClass("Tool")
+        if currentTool then currentTool:Destroy() end
+    end
 
-	if slot == nil or slot < 1 or slot > #inventory.weapons then
-		inventory.equippedSlot = nil -- [cite: 6]
-		syncToClient(player) -- [cite: 6]
-		return
-	end
+    -- Clear all tools from backpack (we manage inventory ourselves)
+    for _, tool in ipairs(player.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            tool:Destroy()
+        end
+    end
 
-	inventory.equippedSlot = slot -- [cite: 6]
-	
-	-- Equip new tool
-	local weaponName = inventory.weapons[slot]
-	if character and weaponName then
-		local tool = cloneWeaponAsTool(weaponName)
-		if tool then tool.Parent = character end
-	end
+    if slot == nil or slot < 1 or slot > #inventory.weapons then
+        inventory.equippedSlot = nil
+        syncToClient(player)
+        return
+    end
 
-	syncToClient(player) -- [cite: 6]
+    inventory.equippedSlot = slot
+    
+    -- Equip new tool
+    local weaponName = inventory.weapons[slot]
+    if character and weaponName then
+        local tool = cloneWeaponAsTool(weaponName)
+        if tool then tool.Parent = character end
+    end
+
+    syncToClient(player)
 end
 
 function InventoryService.getEquippedWeapon(player: Player): string?
