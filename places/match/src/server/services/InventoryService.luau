@@ -109,7 +109,9 @@ end
 
 local function syncToClient(player: Player)
 	local inventory = getInventory(player) -- [cite: 4]
-	_inventorySyncRemote:FireClient(player, inventory.weapons, inventory.equippedSlot) -- [cite: 4]
+	Logger.fireClient(_inventorySyncRemote, player, inventory.weapons, inventory.equippedSlot)
+	Logger.info(TAG, "syncToClient %s — weapons=%s, equippedSlot=%s",
+		player.Name, table.concat(inventory.weapons, ", "), tostring(inventory.equippedSlot))
 end
 
 function InventoryService.addWeapon(player: Player, weaponName: string): boolean

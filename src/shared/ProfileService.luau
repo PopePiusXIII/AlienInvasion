@@ -84,7 +84,7 @@ end
 
 local function grantStarterWeapons(profile: PlayerProfile)
 	for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
-		profile.unlockedWeapons[weaponName] = true
+		profile.Data.unlockedWeapons[weaponName] = true
 	end
 end
 
@@ -129,12 +129,12 @@ local function onPlayerAdded(player: Player)
 		-- before marking the session as "ready" to other services.
 		grantStarterWeapons(profile:: PlayerProfile)
 
-		Logger.info(TAG, "Profile loaded for %s.", player.DisplayName)
+		Logger.info(TAG, "Profile loaded for %s.", player.UserId)
 
 		-- Fire callbacks so other services can react (e.g. sync to client HUD)
 		for _, cb in ProfileLoadedCallbacks do
 			task.spawn(function()
-				local ok, err = pcall(cb, player, profile.Data :: PlayerProfile)
+				local ok, err = pcall(cb, player, profile :: PlayerProfile)
 				if not ok then
 					Logger.warn(TAG, "ProfileLoaded callback crashed: %s", tostring(err))
 				end

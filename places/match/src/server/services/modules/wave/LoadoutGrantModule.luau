@@ -4,6 +4,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
+local Logger        = require(ReplicatedStorage.Shared.Logger)
 local InventoryService = nil -- Will be lazy-loaded to avoid circular dependency
 
 local LoadoutGrantModule = {}
@@ -63,20 +64,7 @@ local function cloneWeaponAsTool(gunName: string): Tool?
 		normalizeToolPhysics(toolClone)
 		return toolClone
 	end
-
-	if source:IsA("Model") then
-		local tool = Instance.new("Tool")
-		tool.Name = gunName
-		tool.RequiresHandle = true
-
-		local modelClone = (source :: Model):Clone()
-		modelClone.Parent = tool
-
-		normalizeToolPhysics(tool)
-		return tool
-	end
-
-	return nil
+	Logger.warn("No %s tool found in server storage", gunName)
 end
 
 function LoadoutGrantModule.grant(player: Player, desiredGunNames: { string }, onWarn: (message: string, ...any) -> ()): number
