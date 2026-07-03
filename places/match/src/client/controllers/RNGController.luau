@@ -176,9 +176,6 @@ function RNGController:Start()
                 -- If already selected, treat F as slot1 selection
                 local currentWeapons = InventoryController.getWeapons()
                 local toRemove: string? = nil
-                if #currentWeapons >= 1 then
-                    toRemove = currentWeapons[1]
-                end
                 
                 Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(currentWeapons, ", "))
                 Logger.info(TAG, "Requesting give: %s (slot=1) remove=%s", _state.selected, tostring(toRemove))
@@ -192,11 +189,7 @@ function RNGController:Start()
             if _state.selected then
                 local currentWeapons = InventoryController.getWeapons()
                 local toRemove: string? = nil
-                if #currentWeapons >= 2 then
-                    toRemove = currentWeapons[2]
-                elseif #currentWeapons >= 1 then
-                    toRemove = currentWeapons[1]
-                end
+
 
                 Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(currentWeapons, ", "))
                 Logger.info(TAG, "Requesting give: %s (slot=2) remove=%s", _state.selected, tostring(toRemove))

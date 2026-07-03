@@ -74,15 +74,15 @@ local function removeWeaponForSwap(player: Player, slotIndex: number, toRemoveNa
 	end
 end
 
-local function grantAndEquipWeapon(player: Player, weaponName: string)
-	local success = InventoryService.addWeapon(player, weaponName)
+local function grantAndEquipWeapon(player: Player, weaponName: string, slotIndex: number)
+	local success = InventoryService.addWeaponAtSlot(player, weaponName, slotIndex)
 	if not success then
 		Logger.warn(TAG, "Failed to add %s to inventory for %s", weaponName, player.Name)
 		return
 	end
-	Logger.info(TAG, "Added %s to inventory for %s via RNG", weaponName, player.Name)
+	Logger.info(TAG, "Added %s to inventory for %s via RNG at slot %d", weaponName, player.Name, slotIndex)
 
-	-- Auto-equip the newly added weapon.
+	-- Find the actual index of the newly added weapon and equip it.
 	local newWeapons = InventoryService.getWeapons(player)
 	for i, w in ipairs(newWeapons) do
 		if w == weaponName then
@@ -121,7 +121,7 @@ local function handleRngActivate(player: Player)
 	local uid = player.UserId
 	local now = tick()
 	local last = _lastActivateTime[uid]
-	if last and now - last < 0.5 then
+	if last and now - last < 0.000001 then
 		Logger.info(TAG, "Ignoring duplicate RNG_ACTIVATE from %s (cooldown)", player.Name)
 		return
 	end
@@ -153,7 +153,7 @@ local function handleRngRequestGive(player: Player, weaponName: string, slotInde
 		return
 	end
 
-	ensureInventoryService()
+	ensureInventoryService() --need to fix this FIX!!!
 
 	local uid = player.UserId
 	withPlayerLock(uid, function()
@@ -169,7 +169,7 @@ local function handleRngRequestGive(player: Player, weaponName: string, slotInde
 		end
 
 		removeWeaponForSwap(player, slotIndex, toRemoveName)
-		grantAndEquipWeapon(player, weaponName)
+		grantAndEquipWeapon(player, weaponName, slotIndex)
 	end)
 end
 

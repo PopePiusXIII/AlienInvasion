@@ -115,19 +115,50 @@ local function syncToClient(player: Player)
 end
 
 function InventoryService.addWeapon(player: Player, weaponName: string): boolean
-	local inventory = getInventory(player) -- [cite: 4]
-	local maxSize = getInventorySize() -- [cite: 3]
-	
-	for _, w in ipairs(inventory.weapons) do -- [cite: 5]
+	local inventory = getInventory(player)
+	local maxSize = getInventorySize()
+
+	for _, w in ipairs(inventory.weapons) do
 		if w == weaponName then return false end
 	end
-	
-	if #inventory.weapons >= maxSize then return false end -- [cite: 5]
-	
-	table.insert(inventory.weapons, weaponName) -- [cite: 5]
-	if #inventory.weapons == 1 then inventory.equippedSlot = 1 end -- [cite: 5]
-	
-	syncToClient(player) -- [cite: 5]
+
+	if #inventory.weapons >= maxSize then return false end
+
+	table.insert(inventory.weapons, weaponName)
+	if #inventory.weapons == 1 then inventory.equippedSlot = 1 end
+
+	syncToClient(player)
+	return true
+end
+
+--- Add a weapon at a specific slot. Use -1 to append to the end.
+function InventoryService.addWeaponAtSlot(player: Player, weaponName: string, slot: number): boolean
+	local inventory = getInventory(player)
+	local maxSize = getInventorySize()
+
+	for _, w in ipairs(inventory.weapons) do
+		if w == weaponName then return false end
+	end
+
+	if #inventory.weapons >= maxSize then return false end
+
+	if slot == -1 then
+		table.insert(inventory.weapons, weaponName)
+	else
+		if slot < 1 or slot > #inventory.weapons + 1 then return false end
+		table.insert(inventory.weapons, slot, weaponName)
+	end
+
+	-- Adjust equippedSlot if insertion shifted indices
+	if inventory.equippedSlot and slot ~= -1 then
+		if inventory.equippedSlot >= slot then
+			inventory.equippedSlot = inventory.equippedSlot + 1
+		end
+	elseif #inventory.weapons == 1 then
+		inventory.equippedSlot = 1
+	end
+
+	syncToClient(player)
 	return true
 end
 
