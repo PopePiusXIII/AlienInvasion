@@ -7,6 +7,7 @@
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui        = game:GetService("StarterGui")
 
 local Framework     = require(ReplicatedStorage.Shared.Framework)
 local Logger        = require(ReplicatedStorage.Shared.Logger)
@@ -16,6 +17,9 @@ local TAG = "InventoryController"
 
 local UserInputService = game:GetService("UserInputService")
 local InventoryController = Framework.CreateController({ Name = TAG })
+
+-- Disable default Roblox backpack UI (we use our custom inventory system)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 
 local _localPlayer = Players.LocalPlayer
 

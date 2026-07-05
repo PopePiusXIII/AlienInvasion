@@ -9,10 +9,21 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local vide  = require(ReplicatedStorage.Packages.vide)
 local theme = require(script.Parent.VideTheme)
+local ui    = require(script.Parent.UiConfig)
 
 local create = vide.create
 local source = vide.source
 local derive = vide.derive
+
+--- Maps weapon names to their image asset IDs from UiConfig
+local WEAPON_IMAGE_MAP = {}
+for name, assetId in pairs(ui.images) do
+	if string.match(assetId, "^rbxassetid://") and name ~= "MatchButton" and name ~= "ShopButton" 
+		and name ~= "ClassShopButton" and name ~= "PlayButton" and name ~= "SilverIcon" 
+		and name ~= "PlayerAvatar" and name ~= "PanelBackground" and name ~= "AccentBar" then
+		WEAPON_IMAGE_MAP[name:lower()] = assetId
+	end
+end
 
 export type HotbarProps = {
 	-- Reactive sources for weapons and equipped slot
@@ -22,15 +33,24 @@ export type HotbarProps = {
 	inventorySize: number,
 }
 
+--- Gets the image asset ID for a weapon name (returns nil if not found)
+local function getWeaponImage(weaponName: string?): string?
+	if not weaponName then
+		return nil
+	end
+	return WEAPON_IMAGE_MAP[weaponName:lower()]
+end
+
 --- Creates a single hotbar slot
 local function createSlot(index: number, weaponName: () -> string?, isEquipped: () -> boolean)
 	return derive(function()
 		local name = weaponName()
 		local equipped = isEquipped()
 		
-		local backgroundColor = equipped and theme.ACCENT or theme.BACKGROUND_DARK
+		local backgroundColor = equipped and theme.ACCENT or Color3.fromRGB(0, 0, 0)
 		local borderColor = equipped and theme.TEXT_HIGHLIGHT or theme.BORDER
 		local textColor = name and theme.TEXT or theme.TEXT_DIM
+		local weaponImage = getWeaponImage(name)
 		
 		return create "Frame" {
 			Name = "Slot" .. tostring(index),
@@ -39,23 +59,27 @@ local function createSlot(index: number, weaponName: () -> string?, isEquipped: 
 			BorderColor3 = borderColor,
 			BorderSizePixel = equipped and 3 or 2,
 			
-			create "TextLabel" {
-				Name = "SlotNumber",
-				Size = UDim2.new(0, 20, 0, 20),
-				Position = UDim2.new(0, 2, 0, 2),
+			create "UICorner" {
+				CornerRadius = UDim.new(0, 8),
+			},
+			
+			create "ImageLabel" {
+				Name = "WeaponIcon",
+				Size = UDim2.new(0.95, 0, 0.95, 0),
+				Position = UDim2.new(0.025, 0, 0.025, 0),
 				BackgroundTransparency = 1,
-				Text = tostring(index),
-				TextColor3 = theme.TEXT_DIM,
-				TextSize = 14,
-				Font = theme.FONT_REGULAR,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				TextYAlignment = Enum.TextYAlignment.Top,
+				Image = weaponImage or "",
+				ScaleType = Enum.ScaleType.Fit,
+				
+				create "UICorner" {
+					CornerRadius = UDim.new(0, 6),
+				},
 			},
 			
 			create "TextLabel" {
 				Name = "WeaponName",
-				Size = UDim2.new(1, -8, 1, -8),
-				Position = UDim2.new(0, 4, 0, 4),
+				Size = UDim2.new(1, -8, 0.35, 0),
+				Position = UDim2.new(0, 4, 0.65, 0),
 				BackgroundTransparency = 1,
 				Text = name or "",
 				TextColor3 = textColor,

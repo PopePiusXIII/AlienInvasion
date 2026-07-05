@@ -30,7 +30,8 @@ ui.images = {
     AccentBar       = "rbxassetid://0",             -- Accent bar graphic
     -- GUNS
     Scar            = "rbxassetid://85630207697247",
-    Mp5             = "rbxassetid://120069135047702"
+    Mp5             = "rbxassetid://120069135047702",
+    M82             = "rbxassetid://100661199344163"
 }
 
 -- ── Sounds ────────────────────────────────────────────────────────────────────
