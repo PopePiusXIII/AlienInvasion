@@ -82,6 +82,12 @@ end
 
 -- ── Session lifecycle ────────────────────────────────────────────────────────
 
+local function grantStarterWeapons(profile: PlayerProfile)
+	for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
+		profile.Data.unlockedWeapons[weaponName] = true
+	end
+end
+
 local function onPlayerAdded(player: Player)
 	local profile = nil
 	local attempts = 0
@@ -118,12 +124,17 @@ local function onPlayerAdded(player: Player)
 
 	if player.Parent then
 		Profiles[player] = profile
-		Logger.info(TAG, "Profile loaded for %s.", player.DisplayName)
+
+		-- Grant starter weapons immediately while we have the profile,
+		-- before marking the session as "ready" to other services.
+		grantStarterWeapons(profile:: PlayerProfile)
+
+		Logger.info(TAG, "Profile loaded for %s.", player.UserId)
 
 		-- Fire callbacks so other services can react (e.g. sync to client HUD)
 		for _, cb in ProfileLoadedCallbacks do
 			task.spawn(function()
-				local ok, err = pcall(cb, player, profile.Data :: PlayerProfile)
+				local ok, err = pcall(cb, player, profile :: PlayerProfile)
 				if not ok then
 					Logger.warn(TAG, "ProfileLoaded callback crashed: %s", tostring(err))
 				end
@@ -131,14 +142,6 @@ local function onPlayerAdded(player: Player)
 		end
 	else
 		profile:EndSession()
-	end
-end
-
--- ── Starter weapons ───────────────────────────────────────────────────────────
-
-local function grantStarterWeapons(profile: PlayerProfile)
-	for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
-		profile.unlockedWeapons[weaponName] = true
 	end
 end
 
@@ -157,20 +160,6 @@ function ProfileService:Start()
 	end
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
-
-	-- Grant starter weapons on first load (async, non-blocking)
-	local function ensureStarterWeapons(player: Player)
-		local profile = ProfileService.WaitForProfile(player)
-		if profile then
-			grantStarterWeapons(profile)
-		end
-	end
-
-	for _, player in Players:GetPlayers() do
-		task.spawn(ensureStarterWeapons, player)
-	end
-
-	Players.PlayerAdded:Connect(ensureStarterWeapons)
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local profile = Profiles[player]
@@ -216,8 +205,8 @@ function ProfileService:WaitForProfile(player: Player): PlayerProfile?
 	local deadline = os.clock() + 30
 	repeat
 		task.wait(0.1)
-		if not player.Parent then
-			Logger.info(TAG, "WaitForProfile aborted — %s left.", player.Name)
+		if not player or not player.Parent then
+			Logger.info(TAG, "WaitForProfile aborted — player left.")
 			return nil
 		end
 		if os.clock() > deadline then
@@ -270,9 +259,10 @@ end
 function ProfileService.isWeaponUnlocked(player: Player, weaponName: string): boolean
 	local profile = ProfileService:GetProfile(player)
 	if not profile then
+		Logger.warn(TAG, "Cannot unlock %s for %s — profile not loaded.", weaponName, player.Name)
 		return false
 	end
-	return profile.unlockedWeapons[weaponName] == true
+	return profile.unlockedWeapons[weaponName]
 end
 
 --- Attempts to unlock a weapon using gold. Returns (success, errorCode).

@@ -32,6 +32,7 @@ local services = script.Parent.services
 require(services.PhysicsSetupService)
 require(services.ZombieService)
 require(services.EconomyService)
+require(services.InventoryService)
 require(services.WaveService)
 require(services.CombatService)
 require(services.PlayerService)
@@ -39,6 +40,6 @@ require(services.GameService)
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
-Logger.info("ServerRuntime", "Booting — 9 services registered.")
+Logger.info("ServerRuntime", "Booting — 10 services registered.")
 Framework.Start()
 Logger.info("ServerRuntime", "Framework started. All services live.")

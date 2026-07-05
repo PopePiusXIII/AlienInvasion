@@ -19,7 +19,6 @@ local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
-local ClerkInteractionModule = require(script.Parent.modules.wave.ClerkInteractionModule)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
 local TAG = "WaveService"
@@ -28,98 +27,20 @@ local WaveService = Framework.CreateService({ Name = TAG })
 
 local _waveAnnounceRemote:       RemoteEvent
 local _waveClearRemote:          RemoteEvent
-local _openGunShopRemote:        RemoteEvent
-local _requestGunPurchaseRemote: RemoteEvent
-local _gunPurchaseResultRemote:  RemoteEvent
-local _requestFreeLoadoutRemote: RemoteEvent
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function WaveService:Init()
 	_waveAnnounceRemote       = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
 	_waveClearRemote          = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
-	_openGunShopRemote        = Framework.CreateRemote(RemoteNames.OPEN_GUN_SHOP)
-	_requestGunPurchaseRemote = Framework.CreateRemote(RemoteNames.REQUEST_GUN_PURCHASE)
-	_gunPurchaseResultRemote  = Framework.CreateRemote(RemoteNames.GUN_PURCHASE_RESULT)
-	_requestFreeLoadoutRemote = Framework.CreateRemote(RemoteNames.REQUEST_FREE_LOADOUT)
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
--- local function cloneMap(player: Player): Model?
--- 	local template = ServerStorage:FindFirstChild(Config.MAP_NAME)
--- 	if not template or not template:IsA("Model") then
--- 		Logger.warn(TAG, "Map template '%s' not found in ServerStorage.", Config.MAP_NAME)
--- 		return nil
--- 	end
--- 	local slot     = _nextMapSlot
--- 	_nextMapSlot  += 1
--- 	local map: Model = (template :: Model):Clone() :: Model
--- 	map.Name   = Config.MAP_NAME .. "_" .. player.Name
--- 	-- Space maps 4000 studs apart on the X axis to avoid overlap.
--- 	map:PivotTo(CFrame.new(slot * 4000, 0, 5000))
--- 	map.Parent = workspace
--- 	return map
--- end
 
--- local function teleportToMap(player: Player, map: Model)
--- 	local character = player.Character
--- 	if not character then return end
--- 	local spawnPart = map:FindFirstChild("Spawn_In", true)
--- 	if spawnPart and spawnPart:IsA("BasePart") then
--- 		character:PivotTo((spawnPart :: BasePart).CFrame * CFrame.new(0, 5, 0))
--- 	else
--- 		character:PivotTo(map:GetPivot() * CFrame.new(0, 5, 0))
--- 	end
--- end
-
-local function getPlayerGunNames(player: Player): { string }
-	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
-	local guns: { string } = {}
-	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
-		if container then
-			for _, item in ipairs(container:GetChildren()) do
-				if item:IsA("Tool") and prices[item.Name] ~= nil then
-					table.insert(guns, item.Name)
-				end
-			end
-		end
-	end
-	return guns
-end
-
-local function removeGunFromPlayer(player: Player, gunName: string)
-	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
-		if container then
-			local item = container:FindFirstChild(gunName)
-			if item and item:IsA("Tool") then
-				item:Destroy()
-				return
-			end
-		end
-	end
-end
-
-local function buildShopData(player: Player)
-	local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
-	local available: { { name: string, price: number } } = {}
-	for gunName, price in prices do
-		table.insert(available, { name = gunName, price = price })
-	end
-	table.sort(available, function(a, b)
-		return if a.price == b.price then a.name < b.name else a.price < b.price
-	end)
-	return {
-		available     = available,
-		currentGuns   = getPlayerGunNames(player),
-		silverBalance = EconomyService.getRunSilver(player),
-	}
-end
-
-local function giveGuns(player: Player)
-	local allGunNames: { string } = { "M82", "Deagle", "M60", "M240B", "BushMaster"}
-	local unlockedGunNames: { string } = {}
-	for _, gunName in ipairs(allGunNames) do
+local function giveGuns(player: Player, gunNames: { string }?)
+	local unlockedGunNames: { string } = {Config.STARTER_GUNS[1], Config.STARTER_GUNS[2]}
+	for _, gunName in ipairs(gunNames) do
 		if ProfileService.isWeaponUnlocked(player, gunName) then
 			table.insert(unlockedGunNames, gunName)
 		end
@@ -139,10 +60,7 @@ local function findZombieSpawnPosition(): Vector3
 	return Vector3.new(0, 0, 0)
 end
 
-local function getBattleHumanoid(player: Player): Humanoid?
-	local character = player.Character
-	return character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
-end
+
 
 local function pickZombieType(waveNumber: number): string
 	if waveNumber >= 30 then
@@ -207,13 +125,9 @@ function WaveService.startBattle(player: Player): number
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	Logger.info(TAG, "startBattle: humanoid ready, starting waves (%s).", player.Name)
 
-	local attached = ClerkInteractionModule.attach(player, function()
-		Logger.fireClient(_openGunShopRemote, player, buildShopData(player))
-	end)
-	if not attached then
-		Logger.warn(TAG, "shopClerk part not found in workspace '%s'.")
-	end
+	-- Shop clerk/Proximity prompt removed.
 
+	giveGuns(player, Config.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = Config.STARTING_WAVE
 
@@ -241,42 +155,7 @@ function WaveService.startBattle(player: Player): number
 end
 
 function WaveService:Start()
-	Logger.wrapServerEvent(_requestFreeLoadoutRemote, TAG, function(player: Player)
-		giveGuns(player)
-	end)
-
-	Logger.wrapServerEvent(_requestGunPurchaseRemote, TAG, function(player: Player, buyGunName: any, replaceGunName: any)
-		if type(buyGunName) ~= "string" then return end
-		local prices = Config.SHOP_GUN_PRICES :: { [string]: number }
-		local price = prices[buyGunName]
-		if price == nil then
-			Logger.fireClient(_gunPurchaseResultRemote, player, false, "UNKNOWN_GUN", EconomyService.getRunSilver(player))
-			return
-		end
-		local currentGuns = getPlayerGunNames(player)
-		if table.find(currentGuns, buyGunName) then
-			Logger.fireClient(_gunPurchaseResultRemote, player, false, "ALREADY_OWNED", EconomyService.getRunSilver(player))
-			return
-		end
-		local currentSilver = EconomyService.getRunSilver(player)
-		if currentSilver < price then
-			Logger.fireClient(_gunPurchaseResultRemote, player, false, "INSUFFICIENT_SILVER", currentSilver)
-			return
-		end
-		if #currentGuns >= 2 then
-			if type(replaceGunName) ~= "string" or not table.find(currentGuns, replaceGunName) then
-				Logger.fireClient(_gunPurchaseResultRemote, player, false, "REPLACE_REQUIRED", currentSilver)
-				return
-			end
-			removeGunFromPlayer(player, replaceGunName)
-		end
-		local _, newBalance = EconomyService.spendSilver(player, price)
-		LoadoutGrantModule.grant(player, { buyGunName }, function(msg: string, ...: any)
-			Logger.warn(TAG, msg, ...)
-		end)
-		Logger.info(TAG, "[GunShop] %s bought %s for %d Silver.", player.Name, buyGunName, price)
-		Logger.fireClient(_gunPurchaseResultRemote, player, true, buyGunName, newBalance)
-	end)
+	-- Shop purchase and free-loadout remotes removed.
 end
 
 return WaveService

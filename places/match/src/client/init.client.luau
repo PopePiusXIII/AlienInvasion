@@ -27,14 +27,16 @@ local controllers = script.controllers
 
 require(controllers.CharacterController)      -- no deps
 require(controllers.HudController)            -- requires CharacterController
-require(controllers.GunController)            -- requires HudController
-require(controllers.ShopController)           -- no deps
+require(controllers.InventoryController)      -- custom inventory system
+require(controllers.GunController)            -- requires HudController, InventoryController
+-- ShopController removed
 require(controllers.BoltController)           -- no deps
+require(controllers.RNGController)           -- RNG block controller
 require(controllers.ZombieAnimationController) -- no deps
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
-Logger.info("ClientRuntime", "Booting — 6 controllers registered.")
+Logger.info("ClientRuntime", "Booting — 7 controllers registered.")
 Framework.Start()
 Logger.info("ClientRuntime", "Framework started. All controllers live.")
 

@@ -7,12 +7,13 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local Framework = require(Shared.Framework)
+local Logger    = require(Shared.Logger)
+local Config    = require(Shared.Config)
+local RemoteNames = require(Shared.RemoteNames)
 
 local TAG = "BoltController"
 local BoltController = Framework.CreateController({ Name = TAG })
@@ -32,6 +33,7 @@ type ClientBoltState = {
 }
 
 local _activeBolts: { ClientBoltState } = {}
+local _boltTaskId: string? = nil
 local _silverTemplate: Instance?
 local _goldTemplate:   Instance?
 
@@ -113,6 +115,9 @@ local function onBoltSpawned(id: number, currencyName: string, _amount: number, 
 		spawnTime    = tick(),
 	}
 	table.insert(_activeBolts, state)
+	if _boltTaskId then
+		RenderScheduler.setEnabled(_boltTaskId, true)
+	end
 end
 
 function BoltController:Init()
@@ -129,12 +134,12 @@ function BoltController:Init()
 		Logger.warn(TAG, "GoldBolt template missing — falling back to SilverBolt.")
 		_goldTemplate = _silverTemplate
 	end
-
-	_boltSpawnedRemote = Framework.GetRemote(RemoteNames.BOLT_SPAWNED)
-	_claimBoltRemote   = Framework.GetRemote(RemoteNames.CLAIM_BOLT)
 end
 
 function BoltController:Start()
+	_boltSpawnedRemote = Framework.GetRemote(RemoteNames.BOLT_SPAWNED)
+	_claimBoltRemote   = Framework.GetRemote(RemoteNames.CLAIM_BOLT)
+
 	_boltSpawnedRemote.OnClientEvent:Connect(function(id: number, currencyName: string, amount: number, spawnPosition: Vector3)
 		onBoltSpawned(id, currencyName, amount, spawnPosition)
 	end)
@@ -144,8 +149,11 @@ function BoltController:Start()
 	local attrAccel    = Config.BOLT_ATTRACT_ACCELERATION :: number
 	local collectRad   = Config.BOLT_COLLECT_RADIUS :: number
 
-	RunService.RenderStepped:Connect(function(dt: number)
-		if #_activeBolts == 0 then return end
+	_boltTaskId = RenderScheduler.register("bolts", function(dt: number)
+		if #_activeBolts == 0 then
+			RenderScheduler.setEnabled(_boltTaskId, false)
+			return
+		end
 
 		local character = _localPlayer.Character
 		local rootPart  = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -202,7 +210,7 @@ function BoltController:Start()
 			moveBolt(s.bolt, s.root, s.center)
 			i -= 1
 		end
-	end)
+	end, { enabled = false })
 end
 
 return BoltController

@@ -11,6 +11,7 @@
         "RemoteNames":    { "$path": "src/shared/RemoteNames.luau" },
         "Framework":      { "$path": "../../src/shared/Framework.luau" },
         "Logger":         { "$path": "../../src/shared/Logger.luau" },
+        "RenderScheduler": { "$path": "src/shared/RenderScheduler.luau" },
         "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
         "vide":           { "$path": "../../src/shared/vide" },
         "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" }

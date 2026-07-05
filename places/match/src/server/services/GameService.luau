@@ -22,6 +22,7 @@ local Config       = require(ReplicatedStorage.Shared.Config)
 local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 local WaveService  = require(script.Parent.WaveService)
 local EconomyService = require(script.Parent.EconomyService)
+local RNGService = require(script.Parent.RNGService)
 local MatchAutoStartModule = require(script.Parent.modules.game.MatchAutoStartModule)
 local MatchReturnModule = require(script.Parent.modules.game.MatchReturnModule)
 

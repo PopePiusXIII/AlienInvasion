@@ -18,6 +18,7 @@ local Logger                = require(ReplicatedStorage.Shared.Logger)
 local Config                = require(ReplicatedStorage.Shared.Config)
 local RemoteNames           = require(ReplicatedStorage.Shared.RemoteNames)
 local CharacterController   = require(script.Parent.CharacterController)
+local InventoryController   = require(script.Parent.InventoryController)
 local MatchHUD              = require(ReplicatedStorage.Shared.vide.MatchHUD)
 local HudUpgradeEchoModule  = require(script.Parent.modules.hud.HudUpgradeEchoModule)
 
@@ -37,7 +38,11 @@ function HudController:Init()
 	_screenGui.ResetOnSpawn = false
 	_screenGui.Parent       = _localPlayer.PlayerGui
 
-	_controls, _unmount = MatchHUD.createMatchHUD({ parentGui = _screenGui })
+	local inventorySize = Config.INVENTORY_SIZE or 2
+	_controls, _unmount = MatchHUD.createMatchHUD({ 
+		parentGui = _screenGui,
+		inventorySize = inventorySize,
+	})
 
 	Logger.info(TAG, "ScreenGui created; MatchHUD mounted via vide.")
 end
@@ -76,6 +81,11 @@ function HudController:Start()
 	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number, goldEarned: number)
 		_controls.setSilverAmount(silverStuds)
 		_controls.setGoldAmount(goldEarned or 0)
+	end)
+	
+	-- Listen to inventory changes and update the HUD
+	InventoryController.onInventoryChanged(function(weapons: { string }, equippedSlot: number?)
+		_controls.setInventory(weapons, equippedSlot)
 	end)
 
 	Logger.info(TAG, "Wave event listeners connected.")

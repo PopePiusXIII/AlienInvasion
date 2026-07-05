@@ -11,14 +11,17 @@
 
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
-local RunService        = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
-local Framework     = require(ReplicatedStorage.Shared.Framework)
-local Logger        = require(ReplicatedStorage.Shared.Logger)
-local Config        = require(ReplicatedStorage.Shared.Config)
-local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Framework     = require(Shared.Framework)
+local Logger        = require(Shared.Logger)
+local Config        = require(Shared.Config)
+local RemoteNames   = require(Shared.RemoteNames)
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 local HudController = require(script.Parent.HudController)
+local InventoryController = require(script.Parent.InventoryController)
 local GunCatalogModule = require(script.Parent.modules.gun.GunCatalogModule)
 local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
 local GunViewModelModule = require(script.Parent.modules.gun.GunViewModelModule)
@@ -41,7 +44,7 @@ local _isAutoFiring:     boolean              = false
 local _equippedGun:      Tool?                = nil
 local _activatedConn:    RBXScriptConnection? = nil
 local _deactivatedConn:  RBXScriptConnection? = nil
-local _aimPitchConn:     RBXScriptConnection? = nil
+local _aimPitchTaskId: string? = nil
 local _cameraModeConn:   RBXScriptConnection? = nil
 local _cameraCFrameConn: RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
@@ -256,9 +259,9 @@ local function onGunActivated(gun: Tool)
 end
 
 local function stopAimPitchTracking()
-	if _aimPitchConn then
-		_aimPitchConn:Disconnect()
-		_aimPitchConn = nil
+	if _aimPitchTaskId then
+		RenderScheduler.unregister(_aimPitchTaskId)
+		_aimPitchTaskId = nil
 	end
 
 	if _equippedGun and _baseGunGrip then
@@ -272,7 +275,7 @@ local function startAimPitchTracking(gun: Tool)
 	stopAimPitchTracking()
 	_baseGunGrip = gun.Grip
 
-	_aimPitchConn = RunService.RenderStepped:Connect(function()
+	_aimPitchTaskId = RenderScheduler.register("aimPitch_" .. gun.Name, function(dt)
 		if _equippedGun ~= gun then return end
 		local hrp = _cachedHrp
 		if not hrp then return end
@@ -285,7 +288,7 @@ local function startAimPitchTracking(gun: Tool)
 		pitch = math.clamp(pitch, -MAX_VERTICAL_AIM_RADIANS, MAX_VERTICAL_AIM_RADIANS)
 
 		gun.Grip = (_baseGunGrip :: CFrame) * CFrame.Angles(-pitch, 0, 0)
-	end)
+	end, { enabled = true })
 end
 
 local function onCharacterAdded(character: Model)
@@ -404,9 +407,19 @@ local function onGunUnequipped()
 	refreshAmmoDisplay()
 end
 
--- Watch a character model for the gun being equipped (moved into character)
--- or unequipped (moved out). Uses ChildAdded/ChildRemoved on the character
--- so it catches both initial equip and hotswap.
+-- ── Custom Inventory Integration ──────────────────────────────────────────────
+
+--- Called when inventory changes - we rely on the server to replicate Tool instances.
+--- The client just watches character.ChildAdded/ChildRemoved for Tools (like the old Backpack approach).
+local function onInventoryChanged(weapons: { string }, equippedSlot: number?)
+	Logger.info(TAG, "Inventory changed: weapons=%s, equipped slot=%s", 
+		table.concat(weapons, ", "), tostring(equippedSlot))
+	-- Server handles equipping/unequipping Tool instances; they're replicated to us.
+	-- We just watch character.ChildAdded below to detect when they arrive.
+end
+
+--- Watch a character model for the gun being equipped (moved into character by server)
+--- or unequipped (removed). Uses ChildAdded/ChildRemoved on the character.
 local function watchCharacter(character: Model)
 	-- Check if gun is already equipped (e.g. character respawned mid-session).
 	for _, child in ipairs(character:GetChildren()) do
@@ -438,21 +451,59 @@ function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
 	_shootRemote = Framework.GetRemote(RemoteNames.SHOOT_GUN)
 
+	-- Top-up ammo remote for RNG hits where player rolled an already-equipped weapon
+	local _rngTopupRemote: RemoteEvent = Framework.GetRemote(RemoteNames.RNG_TOPUP_AMMO)
+	_rngTopupRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number?, maxAmmo: number?)
+		if type(weaponName) ~= "string" then return end
+		local stats = getGunStats(weaponName)
+		local mag = magSize or (stats and stats.magSize) or 0
+		local reserve = maxAmmo or (stats and stats.max_ammo) or getReserveAmmo(weaponName)
+		setReserveAmmo(weaponName, reserve)
+		if _equippedGun and _equippedGun.Name == weaponName then
+			setCurrentAmmo(mag)
+			refreshAmmoDisplay()
+		end
+		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, mag, reserve)
+	end)
+
 	_localPlayer.CharacterAdded:Connect(function(character: Model)
 		onCharacterAdded(character)
 		watchCharacter(character)
+		-- Sync with current inventory state when character respawns
+		local weapons = InventoryController.getWeapons()
+		local equippedSlot = InventoryController.getEquippedSlot()
+		onInventoryChanged(weapons, equippedSlot)
 	end)
 	_localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 	if _localPlayer.Character then
 		onCharacterAdded(_localPlayer.Character)
 		watchCharacter(_localPlayer.Character)
 	end
-
-	-- R key manual reload.
+	
+	-- Watch for inventory changes
+	InventoryController.onInventoryChanged(onInventoryChanged)
+	
+	-- Handle number key input for weapon switching
 	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
 		if gameProcessed then return end
+		
+		-- R key manual reload
 		if input.KeyCode == Enum.KeyCode.R then
 			task.spawn(reload)
+			return
+		end
+		
+		-- Number keys for weapon switching (1, 2, etc.)
+		if input.KeyCode == Enum.KeyCode.One then
+			InventoryController.equipSlot(1)
+		elseif input.KeyCode == Enum.KeyCode.Two then
+			InventoryController.equipSlot(2)
+		elseif input.KeyCode == Enum.KeyCode.Three then
+			InventoryController.equipSlot(3)
+		elseif input.KeyCode == Enum.KeyCode.Four then
+			InventoryController.equipSlot(4)
+		elseif input.KeyCode == Enum.KeyCode.Five then
+			InventoryController.equipSlot(5)
 		end
 	end)
 

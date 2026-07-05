@@ -1,7 +1,6 @@
 --!strict
 -- Client-side manager to play zombie animations when available in config.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Configs.ZombieConfig)
 local Logger = require(ReplicatedStorage.Shared.Logger)

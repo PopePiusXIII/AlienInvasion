@@ -1,6 +1,11 @@
 --!strict
 
 local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Framework = require(ReplicatedStorage.Shared.Framework)
+local Logger        = require(ReplicatedStorage.Shared.Logger)
+local InventoryService = nil -- Will be lazy-loaded to avoid circular dependency
 
 local LoadoutGrantModule = {}
 
@@ -59,41 +64,34 @@ local function cloneWeaponAsTool(gunName: string): Tool?
 		normalizeToolPhysics(toolClone)
 		return toolClone
 	end
-
-	if source:IsA("Model") then
-		local tool = Instance.new("Tool")
-		tool.Name = gunName
-		tool.RequiresHandle = true
-
-		local modelClone = (source :: Model):Clone()
-		modelClone.Parent = tool
-
-		normalizeToolPhysics(tool)
-		return tool
-	end
-
-	return nil
+	Logger.warn("No %s tool found in server storage", gunName)
 end
 
 function LoadoutGrantModule.grant(player: Player, desiredGunNames: { string }, onWarn: (message: string, ...any) -> ()): number
-	local backpack = player:FindFirstChildOfClass("Backpack") or player:WaitForChild("Backpack", 5)
-	if not backpack or not backpack:IsA("Backpack") then
-		onWarn("Backpack missing for %s; couldn't grant loadout.", player.Name)
+	-- Lazy-load InventoryService to avoid circular dependency
+	if not InventoryService then
+		InventoryService = Framework.GetService("InventoryService")
+	end
+	
+	if typeof(desiredGunNames) ~= "table" or #desiredGunNames == 0 then
+		onWarn("No desired gun names provided for %s; nothing to grant.", player.Name)
 		return 0
 	end
 
 	local granted = 0
 	for _, gunName in ipairs(desiredGunNames) do
-		local weaponTool = cloneWeaponAsTool(gunName)
-		if weaponTool then
-			local hasInBackpack = backpack:FindFirstChild(weaponTool.Name) ~= nil
-			local character = player.Character
-			local hasEquipped = character and character:FindFirstChild(weaponTool.Name) ~= nil
-			if not hasInBackpack and not hasEquipped then
-				weaponTool.Parent = backpack
+		onWarn("give '%s' to '%s'", gunName, player.Name)
+		
+		-- Verify the weapon exists in ServerStorage
+		local weaponSource = findWeaponSource(gunName)
+		if weaponSource then
+			-- Add to custom inventory system (no longer creating Tool instances here)
+			local success = InventoryService.addWeapon(player, gunName)
+			if success then
+				cloneWeaponAsTool(gunName)
 				granted += 1
 			else
-				weaponTool:Destroy()
+				onWarn("Could not add '%s' to inventory for %s (inventory full or already owned).", gunName, player.Name)
 			end
 		else
 			onWarn("Configured weapon '%s' (Tool or Model) was not found in ServerStorage.", gunName)
@@ -101,7 +99,7 @@ function LoadoutGrantModule.grant(player: Player, desiredGunNames: { string }, o
 	end
 
 	if granted == 0 then
-		onWarn("No guns granted to %s (already had both weapons or templates missing).", player.Name)
+		onWarn("No guns granted to %s (already had weapons or templates missing).", player.Name)
 	end
 
 	return granted

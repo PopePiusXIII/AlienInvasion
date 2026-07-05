@@ -14,11 +14,12 @@
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService        = game:GetService("RunService")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
+local Framework = require(Shared.Framework)
+local Logger    = require(Shared.Logger)
+local Config    = require(Shared.Config)
+local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
 local TAG = "CharacterController"
 
@@ -36,7 +37,7 @@ local CharacterController = Framework.CreateController({ Name = TAG })
 
 local _localPlayer = Players.LocalPlayer
 local _isSprinting = false
-local _rotateWithCameraConn: RBXScriptConnection? = nil
+local _rotateTaskId: string? = nil
 local _inputBeganConn: RBXScriptConnection? = nil
 local _inputEndedConn: RBXScriptConnection? = nil
 
@@ -110,15 +111,15 @@ end
 
 -- Rotation helpers ---------------------------------------------------------
 local function stopRotateWithCamera()
-	if _rotateWithCameraConn then
-		_rotateWithCameraConn:Disconnect()
-		_rotateWithCameraConn = nil
+	if _rotateTaskId then
+		RenderScheduler.unregister(_rotateTaskId)
+		_rotateTaskId = nil
 	end
 end
 
 local function startRotateWithCamera()
 	stopRotateWithCamera()
-	_rotateWithCameraConn = RunService.RenderStepped:Connect(function(dt)
+	_rotateTaskId = RenderScheduler.register("rotateWithCamera", function(dt)
 		local char = _localPlayer.Character
 		if not char then return end
 		local root = getRootPart(char)
@@ -135,7 +136,7 @@ local function startRotateWithCamera()
 				end
 			end
 		end
-	end)
+	end, { enabled = true })
 end
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
