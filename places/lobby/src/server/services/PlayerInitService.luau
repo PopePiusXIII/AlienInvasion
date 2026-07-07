@@ -5,6 +5,7 @@
 --------------------------------------------------------------------------------
 
 local Players           = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework   = require(ReplicatedStorage.Shared.Framework)
@@ -19,6 +20,28 @@ local PlayerInitService = Framework.CreateService({ Name = TAG })
 function PlayerInitService:Init()
 	-- Create the SyncProfile remote so ProfileService can fire it
 	Framework.CreateRemote(RemoteNames.SYNC_PROFILE)
+
+	-- Create the weapon purchase remote
+	local purchaseRemote = Framework.CreateRemote(RemoteNames.PURCHASE_WEAPON)
+	purchaseRemote.OnServerEvent:Connect(function(player: Player, weaponName: string)
+		Logger.info(TAG, "%s wants to buy %s.", player.Name, weaponName)
+
+		-- Attempt to unlock with gold
+		local success, errorCode = ProfileService.tryUnlockWeapon(player, weaponName)
+		if success then
+			Logger.info(TAG, "%s purchased %s with gold.", player.Name, weaponName)
+			ProfileService:SyncToClient(player)
+			return
+		end
+
+		-- If they don't have enough gold, prompt for developer product purchase
+		if errorCode == "INSUFFICIENT_GOLD" then
+			Logger.info(TAG, "%s doesn't have enough gold for %s — prompting dev product.", player.Name, weaponName)
+			MarketplaceService:PromptProductPurchase(player, 3608323068) -- Replace with your gold product ID
+		else
+			Logger.warn(TAG, "%s purchase failed: %s", player.Name, errorCode)
+		end
+	end)
 end
 
 function PlayerInitService:Start()

@@ -13,7 +13,8 @@
         "Logger":         { "$path": "../../src/shared/Logger.luau" },
         "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
         "vide":           { "$path": "../../src/shared/vide" },
-        "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" }
+        "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" },
+        "purchase":     { "$path": "../../src/shared/purchase" }
       },
       "Packages": {
         "$className": "Folder",

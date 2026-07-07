@@ -2,9 +2,7 @@
 --------------------------------------------------------------------------------
 -- DepressedButton.luau  (src/shared/vide)
 -- Reusable ImageButton with hover-shrink ("depressed") effect and click sound.
---
--- Follows the vide component pattern:
---   https://centau.github.io/vide/tut/crash-course/3-components.html
+-- Uses ScaleType.Fit to automatically respect image aspect ratios safely.
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,23 +23,21 @@ export type DepressedButtonProps = {
     hoverSoundId: string?,
 }
 
---- Creates a depressed ImageButton component.
---- Hover effect scales the image content via UIScale (works inside UIGridLayout too).
 local function DepressedButton(props: DepressedButtonProps)
     local uniqueName = "DB_" .. tostring(math.random(100000, 999999))
 
-    create "ImageButton" {
+    return create "ImageButton" {
         Name                   = uniqueName,
         Parent                 = props.parent,
-        Size                 = props.size,
-        Position             = props.position,
+        Size                   = props.size,
+        Position               = props.position,
         BackgroundTransparency = 1,
-        Image                = props.image,
-        AnchorPoint          = Vector2.new(0.5, 0.5),
-
-        create "UIAspectRatioConstraint" {
-            AspectRatio = 1,
-        },
+        Image                  = props.image,
+        AnchorPoint            = Vector2.new(0.5, 0.5),
+        
+        -- 💡 AUTOMATIC ASPECT RATIO TRICK:
+        -- Fits the image texture inside the boundaries while protecting its true shape!
+        ScaleType              = Enum.ScaleType.Fit,
 
         create "UIScale" {
             Name  = "ImageScale",

@@ -9,4 +9,5 @@ return {
 	LEAVE_QUEUE = "LeaveQueue",
 	MATCH_FOUND = "MatchFound",
 	SYNC_PROFILE = "SyncProfile",
+	PURCHASE_WEAPON = "PurchaseWeapon",
 }

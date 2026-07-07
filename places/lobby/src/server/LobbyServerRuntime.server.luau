@@ -24,7 +24,7 @@ require(services.MatchmakingService)       -- requires MatchQueueService, Telepo
 require(services.LightShowService)         -- no deps
 require(services.FlyoverService)           -- no deps
 require(services.PlayerInitService)        -- requires ProfileService
-
+require(ReplicatedStorage.Shared.purchase.purchaseFramework)
 Logger.info("LobbyServerRuntime", "Booting — 6 services registered.")
 Framework.Start()
 Logger.info("LobbyServerRuntime", "Framework started. All services live.")

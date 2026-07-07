@@ -21,12 +21,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Config)
+local CombatConfig = require(ReplicatedStorage.Shared.CombatConfig)
 
 local TAG = "ProfileService"
 
 local ProfileService = Framework.CreateService({ Name = TAG })
 
 -- ── Profile shape ─────────────────────────────────────────────────────────────
+
+local ONE_HUNDRED_GOLD_DEVELOPER_ID = 3608323068
+local FIVE_HUNDRED_GOLD_DEVELOPER_ID = "asdf"
+local ONE_THOUSAND_GOLD_DEVELOPER_ID = "asdfew"
 
 export type PlayerProfile = {
 	bestWave: number,
@@ -83,7 +88,7 @@ end
 -- ── Session lifecycle ────────────────────────────────────────────────────────
 
 local function grantStarterWeapons(profile: PlayerProfile)
-	for _, weaponName in ipairs(Config.STARTER_UNLOCKED_WEAPONS :: { string }) do
+	for _, weaponName in ipairs(CombatConfig.STARTER_UNLOCKED_WEAPONS :: { string }) do
 		profile.Data.unlockedWeapons[weaponName] = true
 	end
 end
@@ -234,7 +239,24 @@ end
 
 -- ── Data operations (merged from DataService) ────────────────────────────────
 
---- Update a player's stats. ProfileStore auto-saves periodically.
+--- Save the player's profile to DataStore immediately.
+function ProfileService.save(player: Player)
+	local session = Profiles[player]
+	if not session then
+		Logger.warn(TAG, "Cannot save for %s — session not active.", player.Name)
+		return
+	end
+
+	local success, err = pcall(function()
+		session:Save()
+	end)
+
+	if not success then
+		Logger.warn(TAG, "Save failed for %s: %s", player.Name, tostring(err))
+	end
+end
+
+--- Update a player's stats at end of game and save immediately.
 function ProfileService.saveStats(player: Player, waveReached: number, economy: EconomySummary?)
 	local profile = ProfileService:GetProfile(player)
 	if not profile then
@@ -253,6 +275,7 @@ function ProfileService.saveStats(player: Player, waveReached: number, economy: 
 	profile.goldStuds            += goldEarned
 
 	Logger.info(TAG, "Saved stats for %s — wave %d.", player.Name, waveReached)
+	ProfileService.save(player)
 end
 
 --- Checks if a weapon is unlocked for the given player.
@@ -267,11 +290,12 @@ end
 
 --- Attempts to unlock a weapon using gold. Returns (success, errorCode).
 function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
-	local priceTable = Config.GOLD_WEAPON_UNLOCK_PRICES :: { [string]: number }
-	local goldCost   = priceTable[weaponName]
-	if goldCost == nil then
-		return false, "UNKNOWN_WEAPON"
-	end
+    local gunStats = CombatConfig.GUN_STATS[weaponName]
+
+    local goldCost = gunStats.gold_cost
+    if goldCost == nil then
+        return false, "UNKNOWN_WEAPON"
+    end
 
 	local profile = ProfileService:GetProfile(player)
 	if not profile then
@@ -293,5 +317,48 @@ function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (bo
 	Logger.info(TAG, "%s unlocked %s for %d gold.", player.Name, weaponName, goldCost)
 	return true, "OK"
 end
+
+function ProfileService.buyDeveloperGold(player: Player, dev_product_id: number): (boolean)
+	-- Map developer product IDs to gold amounts.
+	-- Replace the placeholder IDs with your actual product IDs from the Roblox Creator Hub.
+	local goldRewards = {
+		[ONE_HUNDRED_GOLD_DEVELOPER_ID] = 100,   -- Example: Small pack
+		[12345679] = FIVE_HUNDRED_GOLD_DEVELOPER_ID,   -- Example: Medium pack
+		[12345680] = ONE_THOUSAND_GOLD_DEVELOPER_ID,  -- Example: Large pack
+	}
+
+	local goldAmount = goldRewards[dev_product_id]
+	if not goldAmount then
+		Logger.warn(TAG, "Unknown dev product ID %d from player %s.", dev_product_id, player.Name)
+		return false
+	end
+
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot grant gold to %s — profile not loaded.", player.Name)
+		return false
+	end
+
+	profile.goldStuds += goldAmount
+	Logger.info(TAG, "%s purchased %d gold via dev product %d.", player.Name, goldAmount, dev_product_id)
+
+	-- Save immediately so purchase data isn't lost on server crash.
+	ProfileService.save(player)
+
+	-- Sync updated balance to the client HUD.
+	task.spawn(function()
+		local ok, err = pcall(function()
+			ProfileService:SyncToClient(player)
+		end)
+		if not ok then
+			Logger.warn(TAG, "Failed to sync profile after purchase: %s", tostring(err))
+		end
+	end)
+
+	return true
+end
+
+
+
 
 return ProfileService

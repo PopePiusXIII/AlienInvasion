@@ -28,6 +28,7 @@ ui.images = {
     PlayerAvatar    = "rbxassetid://0",              -- Player avatar frame/icon
     PanelBackground = "rbxassetid://0",              -- Panel background texture/image
     AccentBar       = "rbxassetid://0",             -- Accent bar graphic
+    BuyButton       = "rbxassetid://83427476792515",
     -- GUNS
     Scar            = "rbxassetid://85630207697247",
     Mp5             = "rbxassetid://120069135047702",

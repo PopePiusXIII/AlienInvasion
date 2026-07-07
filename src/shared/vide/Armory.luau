@@ -13,6 +13,10 @@ local ui    = require(script.Parent.UiConfig)
 local DepressedButton = require(script.Parent.DepressedButton)
 local GunPurchaseCard = require(script.Parent.GunPurchaseCard)
 
+-- Client-side modules (only available on client)
+local Framework   = require(ReplicatedStorage.Shared.Framework)
+local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+
 local create = vide.create
 
 -- ── Weapon grid data ────────────────────────────────────────────────────────
@@ -216,7 +220,12 @@ function createArmoryHUD(screenGui: Instance): () -> ()
                     gunName  = entry.configKey,
                     stats    = combatCfg.GUN_STATS[entry.configKey],
                     onBuy    = function()
-                        -- TODO: fire purchase RemoteEvent for entry.configKey
+                        local weaponName = entry.configKey
+                        if not weaponName then return end
+
+                        -- Fire purchase request to server
+                        local purchaseRemote = Framework.GetRemote(RemoteNames.PURCHASE_WEAPON)
+                        purchaseRemote:FireServer(weaponName)
                     end,
                 })
             end
