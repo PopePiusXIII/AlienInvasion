@@ -21,6 +21,7 @@ local Config        = require(ReplicatedStorage.Shared.Config)
 local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
+local GunModule     = require(ReplicatedStorage.Shared.Gun)
 
 local TAG = "CombatService"
 
@@ -36,7 +37,8 @@ function CombatService:Init()
 
 		-- Server-authoritative gun resolution: read from the equipped Tool, not from client input.
 		local equippedTool = character and character:FindFirstChildWhichIsA("Tool") :: Tool?
-		local serverGunName: string? = if equippedTool then equippedTool.Name else nil
+		if not equippedTool then return end
+		local gun = Config.GUN_STATS[equippedTool.Name] :: GunModule.Gun
 
 		local shooterPos: Vector3?
 		if character then
@@ -45,7 +47,7 @@ function CombatService:Init()
 		end
 		local killed, zombieType, deathPosition = ZombieService.damageZombie(
 			zombieModel :: Model?,
-			serverGunName,
+			gun,
 			isHeadshot,
 			shooterPos
 		)

@@ -48,6 +48,7 @@ export type EconomySummary = {
 	goldEarned: number,
 }
 
+
 -- Note: PROFILE_TEMPLATE uses defaults; unlockedWeapons is filled at runtime
 -- via Reconcile() so Config can be referenced.
 local PROFILE_TEMPLATE = {
@@ -57,6 +58,7 @@ local PROFILE_TEMPLATE = {
 	lifetimeSilverEarned = 0,
 	lifetimeSilverSpent = 0,
 	unlockedWeapons = {},
+	inventory = {},
 }
 
 -- ── ProfileStore (lazy-loaded from Packages) ─────────────────────────────────
@@ -290,9 +292,9 @@ end
 
 --- Attempts to unlock a weapon using gold. Returns (success, errorCode).
 function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
-    local gunStats = CombatConfig.GUN_STATS[weaponName]
+    local gun = CombatConfig.GUN_STATS[weaponName] :: GunModule.Gun?
 
-    local goldCost = gunStats.gold_cost
+    local goldCost = gun and gun.gold_cost
     if goldCost == nil then
         return false, "UNKNOWN_WEAPON"
     end

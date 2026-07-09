@@ -105,8 +105,7 @@ end
 
 local function getPlayerUnlockedList(player: Player): { string }
 	local unlocked: { string } = {}
-	local gunStats = Config.GUN_STATS :: { [string]: any }
-	for gunName, _ in pairs(gunStats) do
+	for gunName, _ in pairs(Config.GUN_STATS :: GunModule.GunCatalog) do
 		if ProfileService.isWeaponUnlocked(player, gunName) then
 			table.insert(unlocked, gunName)
 		end

@@ -14,10 +14,12 @@ local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
 local PlayersService    = game:GetService("Players")
+local GunModule = require(ReplicatedStorage.Shared.Gun)
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Config)
+
 local ZombiePathfinderActor = require(script.Parent.modules.zombie.ZombiePathfinderActor)
 
 local TAG = "ZombieService"
@@ -309,7 +311,7 @@ end
 --- Server-authoritative damage application.
 --- Validates identity, parent, and Humanoid before taking damage.
 --- NEVER trust the client to pass a valid model — always re-validate here.
-function ZombieService.damageZombie(zombieModel: Model?, gunName: string?, isHeadshot: boolean?, shooterPos: Vector3?): (boolean, string, Vector3?)
+function ZombieService.damageZombie(zombieModel: Model?, gun: GunModule.Gun, isHeadshot: boolean?, shooterPos: Vector3?): (boolean, string, Vector3?)
 	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
@@ -317,11 +319,8 @@ function ZombieService.damageZombie(zombieModel: Model?, gunName: string?, isHea
 	if not humanoid then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if humanoid.Health <= 0 then return false, tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE), nil end
 
-	-- Resolve gun stats internally — caller just passes the gun name.
-	local statsByName = Config.GUN_STATS :: { [string]: any }
-	local gunStats = if gunName and statsByName[gunName] then statsByName[gunName] else nil
-	local amount: number = if gunStats and type(gunStats.damage) == "number" then gunStats.damage else Config.GUN_DAMAGE
-	local knockbackForce: number = if gunStats and type(gunStats.knockbackForce) == "number" then gunStats.knockbackForce else Config.GUN_KNOCKBACK_FORCE
+	local amount = gun.damage
+	local knockbackForce = gun.knockbackForce
 
 	local healthBefore = humanoid.Health
 	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
