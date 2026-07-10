@@ -157,7 +157,7 @@ local function rollGoldReward(zombieType: string, waveNumber: number): number
 end
 
 -- Validate and process a client's claim that they collected a bolt.
-local function onClaimBolt(player: Player, boltId: unknown)
+local function onClaimBolt(player: Player, boltId: any)
 	if type(boltId) ~= "number" then return end
 
 	local bolts = _boltsByPlayer[player]
@@ -198,7 +198,7 @@ function EconomyService:Init()
 		EconomyService._onPurchaseRequest(player, productId)
 	end)
 
-	Logger.wrapServerEvent(_claimBoltRemote, TAG, function(player: Player, boltId: unknown)
+	Logger.wrapServerEvent(_claimBoltRemote, TAG, function(player: Player, boltId: any)
 		onClaimBolt(player, boltId)
 	end)
 end

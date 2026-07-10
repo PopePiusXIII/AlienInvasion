@@ -22,7 +22,8 @@ local RemoteNames   = require(Shared.RemoteNames)
 local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 local HudController = require(script.Parent.HudController)
 local InventoryController = require(script.Parent.InventoryController)
-local GunCatalogModule = require(script.Parent.modules.gun.GunCatalogModule)
+local GunModule = require(Shared.GunCore)
+local GunApi = require(Shared.GunApi)
 local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
 local GunViewModelModule = require(script.Parent.modules.gun.GunViewModelModule)
 local GunHitScanModule = require(script.Parent.modules.gun.GunHitScanModule)
@@ -57,24 +58,30 @@ local _reserveAmmoByGun: { [string]: number } = {}
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
-type GunStats = {
-	damage: number,
-	range: number,
-	fireCooldown: number,
-	magSize: number,
-	reloadTime: number,
-	isAutomatic: boolean,
-	isShotgun: boolean,
-	knockbackForce: number,
-	tracer: GunCatalogModule.GunTracerStyle,
-}
+local function getGunStats(gunName: string?): GunModule.Gun
+	local name = gunName or "1911"
 
-local function getGunStats(gunName: string?): GunStats
-	return GunCatalogModule.getGunStats(Config, gunName) :: GunStats
+	local rarity = "common"
+	local level = 1
+
+	local guns = InventoryController.getGuns()
+	for _, g in ipairs(guns) do
+		if g.name == name then
+			rarity = g.rarity
+			level = g.level
+			break
+		end
+	end
+
+	local stats = GunApi.resolveStats(name, rarity, level)
+	if not stats then
+		stats = GunApi.resolveStats("1911", "common", 1) :: GunModule.Gun
+	end
+	return stats :: GunModule.Gun
 end
 
 local function isSupportedGunName(name: string): boolean
-	return GunCatalogModule.isSupportedGunName(Config, name)
+	return GunApi.isSupportedGunName(name)
 end
 
 local function getReserveAmmo(gunName: string?): number

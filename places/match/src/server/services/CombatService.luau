@@ -21,11 +21,21 @@ local Config        = require(ReplicatedStorage.Shared.Config)
 local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
-local GunModule     = require(ReplicatedStorage.Shared.Gun)
+local GunModule     = require(ReplicatedStorage.Shared.GunCore)
+local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
 
 local TAG = "CombatService"
 
 local CombatService = Framework.CreateService({ Name = TAG })
+
+--- Lazy-loaded to avoid circular dependency.
+local InventoryService = nil
+
+local function ensureInventoryService()
+	if not InventoryService then
+		InventoryService = Framework.GetService("InventoryService")
+	end
+end
 
 function CombatService:Init()
 	local shootRemote = Framework.CreateRemote(RemoteNames.SHOOT_GUN)
@@ -35,10 +45,17 @@ function CombatService:Init()
 		if not zombieModel then return end
 		local character = player.Character
 
-		-- Server-authoritative gun resolution: read from the equipped Tool, not from client input.
-		local equippedTool = character and character:FindFirstChildWhichIsA("Tool") :: Tool?
-		if not equippedTool then return end
-		local gun = Config.GUN_STATS[equippedTool.Name] :: GunModule.Gun
+		-- Resolve equipped gun via InventoryService + ProfileService
+		ensureInventoryService()
+		local equippedGunId = InventoryService.getEquippedGunId(player)
+		if not equippedGunId then return end
+
+		-- Get current in-memory level for stat resolution
+		local level = InventoryService.getGunLevel(player, equippedGunId)
+
+		-- Get resolved stats (base rarity stats + level multipliers)
+		local gun = ProfileService.getGunStats(player, equippedGunId, level) :: GunModule.Gun?
+		if not gun then return end
 
 		local shooterPos: Vector3?
 		if character then

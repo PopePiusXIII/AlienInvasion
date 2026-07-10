@@ -22,6 +22,8 @@ local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Config)
 local CombatConfig = require(ReplicatedStorage.Shared.CombatConfig)
+local GunModule  = require(ReplicatedStorage.Shared.GunCore)
+local GunMerge   = require(ReplicatedStorage.Shared.GunMerge)
 
 local TAG = "ProfileService"
 
@@ -33,6 +35,8 @@ local ONE_HUNDRED_GOLD_DEVELOPER_ID = 3608323068
 local FIVE_HUNDRED_GOLD_DEVELOPER_ID = "asdf"
 local ONE_THOUSAND_GOLD_DEVELOPER_ID = "asdfew"
 
+export type GunInstance = GunModule.GunInstance
+
 export type PlayerProfile = {
 	bestWave: number,
 	totalGames: number,
@@ -40,6 +44,8 @@ export type PlayerProfile = {
 	lifetimeSilverEarned: number,
 	lifetimeSilverSpent: number,
 	unlockedWeapons: { [string]: boolean },
+	inventory: { [string]: GunInstance },  -- keyed by UUID
+	nextGunId: number,                     -- auto-increment counter for gun IDs
 }
 
 export type EconomySummary = {
@@ -59,6 +65,7 @@ local PROFILE_TEMPLATE = {
 	lifetimeSilverSpent = 0,
 	unlockedWeapons = {},
 	inventory = {},
+	nextGunId = 1,
 }
 
 -- ── ProfileStore (lazy-loaded from Packages) ─────────────────────────────────
@@ -360,7 +367,205 @@ function ProfileService.buyDeveloperGold(player: Player, dev_product_id: number)
 	return true
 end
 
+-- ── Inventory management (gun instances with UUIDs) ───────────────────────────
 
+--- Generate a new gun instance ID.
+local function nextGunId(profile: PlayerProfile): string
+	local id = "gun_" .. profile.nextGunId
+	profile.nextGunId += 1
+	return id
+end
 
+--- Grant a gun to the player's inventory at common rarity, level 1.
+--- Returns the new gun instance ID, or nil if profile not loaded.
+function ProfileService.grantGun(player: Player, gunName: string): string?
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot grant %s to %s — profile not loaded.", gunName, player.Name)
+		return nil
+	end
+
+	-- Validate that the base gun exists in GUN_STATS (check common variant)
+	local statsKey = CombatConfig.getGunStatsKey(gunName, "common")
+	if not CombatConfig.GUN_STATS[statsKey] then
+		Logger.warn(TAG, "Cannot grant %s — no common variant in GUN_STATS.", gunName)
+		return nil
+	end
+
+	-- Mark as unlocked (for backward compat with isWeaponUnlocked checks)
+	profile.unlockedWeapons[gunName] = true
+
+	local id = nextGunId(profile)
+	profile.inventory[id] = {
+		id = id,
+		name = gunName,
+		rarity = "common",
+	}
+
+	Logger.info(TAG, "%s granted %s (id=%s, common).", player.Name, gunName, id)
+	ProfileService.save(player)
+	return id
+end
+
+--- Get all gun instances from the player's profile.
+function ProfileService.getInventory(player: Player): { GunInstance }?
+	local profile = ProfileService:GetProfile(player)
+	if not profile then return nil end
+
+	local result: { GunInstance } = {}
+	for _, instance in profile.inventory do
+		table.insert(result, instance :: GunInstance)
+	end
+	return result
+end
+
+--- Get a single gun instance by ID.
+function ProfileService.getGun(player: Player, gunId: string): GunInstance?
+	local profile = ProfileService:GetProfile(player)
+	if not profile then return nil end
+	return profile.inventory[gunId] :: GunInstance?
+end
+
+--- Remove a gun from the player's inventory by ID.
+function ProfileService.removeGun(player: Player, gunId: string): boolean
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		Logger.warn(TAG, "Cannot remove %s from %s — profile not loaded.", gunId, player.Name)
+		return false
+	end
+
+	local instance = profile.inventory[gunId]
+	if not instance then
+		Logger.warn(TAG, "Gun %s not found in %s's inventory.", gunId, player.Name)
+		return false
+	end
+
+	profile.inventory[gunId] = nil
+	Logger.info(TAG, "%s removed %s (%s).", player.Name, instance.name, gunId)
+	ProfileService.save(player)
+	return true
+end
+
+--- Upgrade a gun's rarity by merging multiple same-rarity instances.
+--- Consumes the source guns and grants one at the next rarity tier (level resets to 1).
+--- Returns (success, newGunId?, errorMessage?).
+function ProfileService.mergeGuns(player: Player, gunIds: { string }): (boolean, string?, string?)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		return false, nil, "PROFILE_NOT_LOADED"
+	end
+
+	if #gunIds < 2 then
+		return false, nil, "NOT_ENOUGH_GUNS"
+	end
+
+	-- Collect and validate all source instances
+	local instances: { GunInstance } = {}
+	for _, gid in ipairs(gunIds) do
+		local inst = profile.inventory[gid] :: GunInstance?
+		if not inst then
+			return false, nil, "GUN_NOT_FOUND"
+		end
+		table.insert(instances, inst)
+	end
+
+	-- All must share the same name and rarity
+	local first = instances[1]
+	for _, inst in ipairs(instances) do
+		if inst.name ~= first.name or inst.rarity ~= first.rarity then
+			return false, nil, "MISMATCHED_GUNS"
+		end
+	end
+
+	-- Determine upgraded rarity via GunMerge rules
+	local newRarity = GunMerge.merge_guns(instances :: { GunInstance })
+	if newRarity == first.rarity then
+		return false, nil, "CANNOT_UPGRADE_FURTHER"
+	end
+
+	-- Validate the target variant exists in GUN_STATS
+	local targetKey = CombatConfig.getGunStatsKey(first.name, newRarity)
+	if not CombatConfig.GUN_STATS[targetKey] then
+		Logger.warn(TAG, "Target variant %s not found in GUN_STATS.", targetKey)
+		return false, nil, "TARGET_VARIANT_MISSING"
+	end
+
+	-- Consume source guns
+	for _, inst in ipairs(instances) do
+		profile.inventory[inst.id] = nil
+	end
+
+	-- Grant upgraded gun (level resets to 1 in InventoryService on match start)
+	local id = nextGunId(profile)
+	profile.inventory[id] = {
+		id = id,
+		name = first.name,
+		rarity = newRarity,
+	}
+
+	Logger.info(TAG, "%s merged %d %s %s → %s (id=%s).",
+		player.Name, #instances, first.rarity, first.name, newRarity, id)
+	ProfileService.save(player)
+	return true, id, nil
+end
+
+--- Upgrade a gun's level (1→2→3→4). In-memory only — not persisted to profile.
+--- Returns (success, newLevel?, errorMessage?).
+function ProfileService.upgradeLevel(player: Player, gunId: string): (boolean, number?, string?)
+	local profile = ProfileService:GetProfile(player)
+	if not profile then
+		return false, nil, "PROFILE_NOT_LOADED"
+	end
+
+	-- Just validate the gun exists in profile; level is tracked by InventoryService
+	local instance = profile.inventory[gunId]
+	if not instance then
+		return false, nil, "GUN_NOT_FOUND"
+	end
+
+	Logger.info(TAG, "%s upgraded %s via RNG (in-memory).", player.Name, instance.name)
+	-- Level tracking is delegated to InventoryService; this method just validates ownership.
+	return true, nil, nil
+end
+
+--- Resolve full stats for a gun instance (base rarity stats + level multipliers).
+--- `level` is passed in by the caller (InventoryService tracks it in-memory per match).
+--- Defaults to 1 if not provided.
+function ProfileService.getGunStats(player: Player, gunId: string, level: number?): GunModule.Gun?
+	local profile = ProfileService:GetProfile(player)
+	if not profile then return nil end
+
+	local instance = profile.inventory[gunId] :: GunInstance?
+	if not instance then return nil end
+
+	-- Look up the rarity-specific base stats
+	local statsKey = CombatConfig.getGunStatsKey(instance.name, instance.rarity)
+	local base = CombatConfig.GUN_STATS[statsKey]
+	if not base then
+		Logger.warn(TAG, "No stats for %s.", statsKey)
+		return nil
+	end
+
+	-- Apply level modifier (default to 1 if caller didn't provide)
+	local effectiveLevel = level or 1
+	local mod: GunModule.GunLevelModifier = CombatConfig.LEVEL_MULTIPLIERS[effectiveLevel] :: GunModule.GunLevelModifier
+	     or CombatConfig.LEVEL_MULTIPLIERS[1] :: GunModule.GunLevelModifier
+
+	return {
+		rarity         = instance.rarity,
+		damage         = math.floor(base.damage * mod.damage),
+		gold_cost      = base.gold_cost,
+		image          = base.image,
+		range          = math.floor(base.range * mod.range),
+		fireCooldown   = base.fireCooldown / mod.cooldownDiv,
+		magSize        = math.max(1, math.floor(base.magSize * mod.magSize)),
+		max_ammo       = base.max_ammo,
+		reloadTime     = base.reloadTime,
+		isAutomatic    = base.isAutomatic,
+		isShotgun      = base.isShotgun,
+		knockbackForce = math.floor(base.knockbackForce * mod.knockback),
+		tracer         = base.tracer,
+	}
+end
 
 return ProfileService

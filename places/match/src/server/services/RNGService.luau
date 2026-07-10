@@ -1,8 +1,10 @@
 --!strict
 --------------------------------------------------------------------------------
 -- RNGService.luau  (src/server/services)
--- Handles RNG block activation and weapon granting.
--- Responsibilities: destroy RNG block, send unlocked list, process weapon swaps.
+-- Handles in-game RNG block activation.
+-- When a player hits the RNG block, their equipped gun's level increases (1→4).
+-- If already at max level, grants gold bonus instead.
+-- Level is tracked in-memory by InventoryService (resets each match).
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,76 +21,19 @@ local RNGService = Framework.CreateService({ Name = TAG })
 -- ── State ────────────────────────────────────────────────────────────────────
 
 local _rngActivateRemote:     RemoteEvent
-local _rngUnlockedListRemote: RemoteEvent
-local _rngRequestGiveRemote:  RemoteEvent
 local _rngTopupRemote:        RemoteEvent
 local _playerLocks:           { [number]: boolean } = {}
 local _lastActivateTime:      { [number]: number }  = {}
 
+-- Gold granted when RNG rolls a max-level gun
+local MAX_LEVEL_GOLD_BONUS = 50
+
 -- Lazy-loaded to avoid circular dependency.
 local InventoryService = nil
-
--- ── Helpers ──────────────────────────────────────────────────────────────────
 
 local function ensureInventoryService()
 	if not InventoryService then
 		InventoryService = Framework.GetService("InventoryService")
-	end
-end
-
-local function isValidWeapon(weaponName: string): boolean
-	return Config.GUN_STATS[weaponName] ~= nil
-end
-
-local function playerOwnsWeapon(player: Player, weaponName: string): boolean
-	if ProfileService.isWeaponUnlocked(player, weaponName) then
-		return true
-	end
-	ensureInventoryService()
-	local currentWeapons = InventoryService.getWeapons(player)
-	for _, w in ipairs(currentWeapons) do
-		if w == weaponName then return true end
-	end
-	return false
-end
-
-local function topUpEquippedAmmo(player: Player, weaponName: string)
-	local stats = Config.GUN_STATS[weaponName]
-	if not stats then return end
-	Logger.info(TAG, "Rolled weapon matches equipped (%s) for %s — topping up ammo.", weaponName, player.Name)
-	_rngTopupRemote:FireClient(player, weaponName, stats.magSize, stats.max_ammo)
-end
-
-local function removeWeaponForSwap(player: Player, slotIndex: number, toRemoveName: string?)
-	local currentWeapons = InventoryService.getWeapons(player)
-	if slotIndex < 1 or slotIndex > #currentWeapons then return end
-
-	local toRemove = toRemoveName
-	if not toRemove or toRemove == "" then
-		toRemove = currentWeapons[slotIndex]
-	end
-
-	if toRemove and toRemove ~= "" then
-		Logger.info(TAG, "Removing weapon %s from slot %d for %s", toRemove, slotIndex, player.Name)
-		InventoryService.removeWeapon(player, toRemove)
-	end
-end
-
-local function grantAndEquipWeapon(player: Player, weaponName: string, slotIndex: number)
-	local success = InventoryService.addWeaponAtSlot(player, weaponName, slotIndex)
-	if not success then
-		Logger.warn(TAG, "Failed to add %s to inventory for %s", weaponName, player.Name)
-		return
-	end
-	Logger.info(TAG, "Added %s to inventory for %s via RNG at slot %d", weaponName, player.Name, slotIndex)
-
-	-- Find the actual index of the newly added weapon and equip it.
-	local newWeapons = InventoryService.getWeapons(player)
-	for i, w in ipairs(newWeapons) do
-		if w == weaponName then
-			InventoryService.setEquippedSlot(player, i)
-			break
-		end
 	end
 end
 
@@ -103,15 +48,19 @@ local function withPlayerLock(uid: number, fn: () -> ())
 	end
 end
 
-local function getPlayerUnlockedList(player: Player): { string }
-	local unlocked: { string } = {}
-	for gunName, _ in pairs(Config.GUN_STATS :: GunModule.GunCatalog) do
-		if ProfileService.isWeaponUnlocked(player, gunName) then
-			table.insert(unlocked, gunName)
-		end
-	end
+--- Top up ammo on the equipped gun using resolved stats.
+local function topUpEquippedAmmo(player: Player)
+	ensureInventoryService()
+	local equippedGunId = InventoryService.getEquippedGunId(player)
+	if not equippedGunId then return end
 
-	return unlocked
+	-- Get current in-memory level for stat resolution
+	local level = InventoryService.getGunLevel(player, equippedGunId)
+	local gun = ProfileService.getGunStats(player, equippedGunId, level)
+	if not gun then return end
+
+	Logger.info(TAG, "Topping up ammo for %s (%s, level %d).", player.Name, equippedGunId, level)
+	_rngTopupRemote:FireClient(player, gun.name or "", gun.magSize, gun.max_ammo)
 end
 
 -- ── Remote Handlers ──────────────────────────────────────────────────────────
@@ -135,40 +84,43 @@ local function handleRngActivate(player: Player)
 		Logger.info(TAG, "No RNG BLOCK found to destroy for %s", player.Name)
 	end
 
-	local unlocked = getPlayerUnlockedList(player)
-	Logger.info(TAG, "Sending unlocked list (count=%d) to %s", #unlocked, player.Name)
-	_rngUnlockedListRemote:FireClient(player, unlocked)
-
-    if #unlocked == 0 then
-        Logger.warn("no guns unlocked for player %s", player.Name)
-    end
-end
-
-local function handleRngRequestGive(player: Player, weaponName: string, slotIndex: number, toRemoveName: string?)
-	if type(weaponName) ~= "string" then return end
-	if not isValidWeapon(weaponName) then return end
-	if not playerOwnsWeapon(player, weaponName) then
-		Logger.warn(TAG, "Rejecting RNG grant of %s for %s — not unlocked nor owned.", weaponName, player.Name)
-		return
-	end
-
-	ensureInventoryService() --need to fix this FIX!!!
-
-	local uid = player.UserId
 	withPlayerLock(uid, function()
-		local equippedWeapon = InventoryService.getEquippedWeapon(player)
+		ensureInventoryService()
 
-		Logger.info(TAG, "Server current inventory for %s — weapons=%s, equipped=%s",
-			player.Name, table.concat(InventoryService.getWeapons(player), ", "), tostring(equippedWeapon))
-
-		-- If the rolled weapon is already equipped, just top up ammo.
-		if equippedWeapon == weaponName then
-			topUpEquippedAmmo(player, weaponName)
+		-- Get the player's currently equipped gun
+		local equippedGunId = InventoryService.getEquippedGunId(player)
+		if not equippedGunId then
+			Logger.warn(TAG, "No equipped gun for %s — RNG block had no effect.", player.Name)
 			return
 		end
 
-		removeWeaponForSwap(player, slotIndex, toRemoveName)
-		grantAndEquipWeapon(player, weaponName, slotIndex)
+		local instance = ProfileService.getGun(player, equippedGunId)
+		if not instance then
+			Logger.warn(TAG, "Equipped gun %s not found in profile for %s.", equippedGunId, player.Name)
+			return
+		end
+
+		-- Try to upgrade level (1→2→3→4) via InventoryService (in-memory)
+		local success, newLevel, errorMsg = InventoryService.upgradeGunLevel(player, equippedGunId)
+
+		if success and newLevel then
+			Logger.info(TAG, "%s's %s upgraded to level %d via RNG.", player.Name, instance.name, newLevel)
+			topUpEquippedAmmo(player)
+		elseif errorMsg == "MAX_LEVEL" then
+			-- Grant gold bonus instead
+			local profile = ProfileService:GetProfile(player)
+			if profile then
+				profile.goldStuds += MAX_LEVEL_GOLD_BONUS
+				Logger.info(TAG, "%s's %s is max level — granted %d gold.", player.Name, instance.name, MAX_LEVEL_GOLD_BONUS)
+				ProfileService.save(player)
+				ProfileService:SyncToClient(player)
+			end
+
+			-- Still top up ammo
+			topUpEquippedAmmo(player)
+		else
+			Logger.warn(TAG, "Failed to upgrade %s's gun: %s", player.Name, tostring(errorMsg))
+		end
 	end)
 end
 
@@ -176,14 +128,11 @@ end
 
 function RNGService:Init()
 	_rngActivateRemote     = Framework.CreateRemote(RemoteNames.RNG_ACTIVATE)
-	_rngUnlockedListRemote = Framework.CreateRemote(RemoteNames.RNG_UNLOCKED_LIST)
-	_rngRequestGiveRemote  = Framework.CreateRemote(RemoteNames.RNG_REQUEST_GIVE)
 	_rngTopupRemote        = Framework.CreateRemote(RemoteNames.RNG_TOPUP_AMMO)
 end
 
 function RNGService:Start()
 	_rngActivateRemote.OnServerEvent:Connect(handleRngActivate)
-	_rngRequestGiveRemote.OnServerEvent:Connect(handleRngRequestGive)
 end
 
 return RNGService

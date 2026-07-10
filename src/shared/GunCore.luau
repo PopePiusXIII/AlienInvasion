@@ -1,9 +1,15 @@
 export type GunRarity = "common" | "rare" | "legendary" | "epic" | "mythic"
-export type GunLevel = 1 | 2 | 3 |4
+export type GunLevel = number
 export type GunTracer = {
     lifetime:  number,
     thickness: number,
     color:     Color3,
+}
+
+export type GunInstance = {
+    id: string,           -- UUID per instance (auto-increment counter)
+    name: string,         -- "1911", "Deagle" (key into GUN_STATS base name)
+    rarity: GunRarity,
 }
 
 --- Base gun stats for a specific rarity tier (no level applied).

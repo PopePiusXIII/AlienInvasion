@@ -1,13 +1,18 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GunModule = require(ReplicatedStorage.Shared.Gun)
+local GunModule = require(ReplicatedStorage.Shared.GunCore)
+local CombatConfig = require(ReplicatedStorage.Shared.CombatConfig)
+local Logger = require(ReplicatedStorage.Shared.Logger)
 
 local GunCatalogModule = {}
 
+--- Get base stats for a gun by name (no rarity/level applied).
+--- Used for quick lookups where the caller doesn't have instance data.
 function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string?): GunModule.Gun
 	local defaultTracer = config.GUN_TRACER_DEFAULT :: GunModule.GunTracer
-	local gun = config.GUN_STATS[gunName] :: GunModule.Gun?
+	-- Try common variant first as fallback for legacy callers
+	local gun = CombatConfig.GUN_STATS[CombatConfig.getGunStatsKey(gunName or "", "common")] :: GunModule.Gun?
 	if gun then
 		return {
 			damage = gun.damage,
@@ -36,8 +41,38 @@ function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string
 	}
 end
 
+--- Resolve full stats for a gun with rarity + level multipliers applied.
+function GunCatalogModule.getResolvedStats(gunName: string, rarity: string, level: number): GunModule.Gun
+	local statsKey = CombatConfig.getGunStatsKey(gunName, rarity)
+	local base = CombatConfig.GUN_STATS[statsKey]
+	if not base then
+		Logger.warn("GunCatalog", "No stats for %s.", statsKey)
+		return GunCatalogModule.getGunStats({}, gunName)
+	end
+
+	local mod: GunModule.GunLevelModifier = CombatConfig.LEVEL_MULTIPLIERS[level] :: GunModule.GunLevelModifier
+	     or CombatConfig.LEVEL_MULTIPLIERS[1] :: GunModule.GunLevelModifier
+
+	return {
+		rarity         = rarity,
+		damage         = math.floor(base.damage * mod.damage),
+		gold_cost      = base.gold_cost,
+		image          = base.image,
+		range          = math.floor(base.range * mod.range),
+		fireCooldown   = base.fireCooldown / mod.cooldownDiv,
+		magSize        = math.max(1, math.floor(base.magSize * mod.magSize)),
+		max_ammo       = base.max_ammo or 0,
+		reloadTime     = base.reloadTime,
+		isAutomatic    = base.isAutomatic == true,
+		isShotgun      = base.isShotgun == true,
+		knockbackForce = math.floor(base.knockbackForce * mod.knockback),
+		tracer         = base.tracer,
+	}
+end
+
 function GunCatalogModule.isSupportedGunName(config: { [string]: any }, name: string): boolean
-	return config.GUN_STATS[name] ~= nil
+	-- Check if the common variant exists (means the base gun is valid)
+	return CombatConfig.GUN_STATS[CombatConfig.getGunStatsKey(name, "common")] ~= nil
 end
 
 return GunCatalogModule

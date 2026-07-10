@@ -14,7 +14,7 @@ local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
 local PlayersService    = game:GetService("Players")
-local GunModule = require(ReplicatedStorage.Shared.Gun)
+local GunModule = require(ReplicatedStorage.Shared.GunCore)
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
@@ -26,12 +26,18 @@ local TAG = "ZombieService"
 
 export type OnDied = () -> ()
 
+type ZombieSnapshot = {
+	rootPosition: Vector3?,
+	humanoid: Humanoid,
+}
+
 local ZombieService = Framework.CreateService({ Name = TAG })
 
 local _zombieTemplates: { [string]: Model } = {}
 
 type ZombieEntry = { zombie: Model, humanoid: Humanoid, target: Player }
 local _activeZombies: { ZombieEntry } = {}
+local _rngTemplateWarned = false
 
 -- ── Snapshot feeder (main thread) ────────────────────────────────────────────
 -- Purges dead zombies and feeds fresh position snapshots to the desynchronized
@@ -50,7 +56,7 @@ local function snapshotFeederLoop()
 		end
 
 		-- Snapshot zombie root positions and feed to the desynchronized actor.
-		local snapshots: { ZombiePathfinderActor.ZombieSnapshot } = {}
+		local snapshots: { ZombieSnapshot } = {}
 		for _, entry in ipairs(_activeZombies) do
 			local root = entry.zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
 			table.insert(snapshots, {
