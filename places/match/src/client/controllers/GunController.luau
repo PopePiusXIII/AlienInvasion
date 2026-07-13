@@ -23,7 +23,6 @@ local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 local HudController = require(script.Parent.HudController)
 local InventoryController = require(script.Parent.InventoryController)
 local GunModule = require(Shared.GunCore)
-local GunApi = require(Shared.GunApi)
 local GunFxModule = require(script.Parent.modules.gun.GunFxModule)
 local GunViewModelModule = require(script.Parent.modules.gun.GunViewModelModule)
 local GunHitScanModule = require(script.Parent.modules.gun.GunHitScanModule)
@@ -58,30 +57,14 @@ local _reserveAmmoByGun: { [string]: number } = {}
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
-local function getGunStats(gunName: string?): GunModule.Gun
-	local name = gunName or "1911"
-
-	local rarity = "common"
-	local level = 1
-
+local function getGunStats(gunName: string): GunModule.Gun
 	local guns = InventoryController.getGuns()
 	for _, g in ipairs(guns) do
-		if g.name == name then
-			rarity = g.rarity
-			level = g.level
-			break
+		if g.name == gunName then
+			return g.stats
 		end
 	end
-
-	local stats = GunApi.resolveStats(name, rarity, level)
-	if not stats then
-		stats = GunApi.resolveStats("1911", "common", 1) :: GunModule.Gun
-	end
-	return stats :: GunModule.Gun
-end
-
-local function isSupportedGunName(name: string): boolean
-	return GunApi.isSupportedGunName(name)
+	return {} :: GunModule.Gun
 end
 
 local function getReserveAmmo(gunName: string?): number
@@ -418,9 +401,9 @@ end
 
 --- Called when inventory changes - we rely on the server to replicate Tool instances.
 --- The client just watches character.ChildAdded/ChildRemoved for Tools (like the old Backpack approach).
-local function onInventoryChanged(weapons: { string }, equippedSlot: number?)
-	Logger.info(TAG, "Inventory changed: weapons=%s, equipped slot=%s", 
-		table.concat(weapons, ", "), tostring(equippedSlot))
+local function onInventoryChanged(guns: { any }, equippedSlot: number?)
+	Logger.info(TAG, "Inventory changed: %d guns, equipped slot=%s", 
+		#guns, tostring(equippedSlot))
 	-- Server handles equipping/unequipping Tool instances; they're replicated to us.
 	-- We just watch character.ChildAdded below to detect when they arrive.
 end
@@ -430,19 +413,19 @@ end
 local function watchCharacter(character: Model)
 	-- Check if gun is already equipped (e.g. character respawned mid-session).
 	for _, child in ipairs(character:GetChildren()) do
-		if child:IsA("Tool") and isSupportedGunName(child.Name) then
+		if child:IsA("Tool") then
 			onGunEquipped(child :: Tool)
 		end
 	end
 
 	character.ChildAdded:Connect(function(child: Instance)
-		if child:IsA("Tool") and isSupportedGunName(child.Name) then
+		if child:IsA("Tool") then
 			onGunEquipped(child :: Tool)
 		end
 	end)
 
 	character.ChildRemoved:Connect(function(child: Instance)
-		if child:IsA("Tool") and isSupportedGunName(child.Name) then
+		if child:IsA("Tool") then
 			onGunUnequipped()
 		end
 	end)
@@ -477,9 +460,9 @@ function GunController:Start()
 		onCharacterAdded(character)
 		watchCharacter(character)
 		-- Sync with current inventory state when character respawns
-		local weapons = InventoryController.getWeapons()
+		local guns = InventoryController.getGuns()
 		local equippedSlot = InventoryController.getEquippedSlot()
-		onInventoryChanged(weapons, equippedSlot)
+		onInventoryChanged(guns, equippedSlot)
 	end)
 	_localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 	if _localPlayer.Character then

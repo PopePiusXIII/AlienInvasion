@@ -944,7 +944,8 @@ function createMatchHUD(props: MatchHUDProps): ({
                     local activeAmmo = activeWeaponAmmo()
 
                     -- Find active weapon name
-                    local activeWeaponName = weapons[equipped] or ""
+                    local activeWeapon = weapons[equipped]
+                    local activeWeaponName = activeWeapon and activeWeapon.name or ""
 
                     local children = {}
 
@@ -983,7 +984,8 @@ function createMatchHUD(props: MatchHUDProps): ({
                     -- Weapon slots row — build inline, no nested derive
                     local slotChildren = {}
                     for i = 1, inventorySize do
-                        local weapon    = weapons[i] or ""
+                        local weapon    = weapons[i]
+                        local weaponName = weapon and weapon.name or ""
                         local isEquipped = (equipped == i)
                         local sAmmo     = ammoData[i]
 
@@ -1010,8 +1012,8 @@ function createMatchHUD(props: MatchHUDProps): ({
                                 Size = UDim2.new(1, -8, 0.6, 0),
                                 Position = UDim2.new(0, 4, 0.1, 0),
                                 BackgroundTransparency = 1,
-                                Text = weapon == "" and "—" or weapon,
-                                TextColor3 = weapon == "" and C.MUTED or C.FOREGROUND,
+                                Text = weaponName == "" and "—" or weaponName,
+                                TextColor3 = weaponName == "" and C.MUTED or C.FOREGROUND,
                                 TextSize = 10,
                                 Font = FONT_BOLD,
                                 TextWrapped = true,

@@ -2,10 +2,11 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework      = require(ReplicatedStorage.Shared.Framework)
 local Logger         = require(ReplicatedStorage.Shared.Logger)
-local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
 local Config         = require(ReplicatedStorage.Shared.Config)
 local RemoteNames    = require(ReplicatedStorage.Shared.RemoteNames)
 

@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- ProfileService.luau  (src/shared → ReplicatedStorage.Shared.ProfileService)
+-- ProfileService.luau  (src/shared → ServerScriptService.ServerModules.ProfileService)
 -- Wraps ProfileStore for cross-place player data persistence.
 -- Used by both Lobby and Match places — DRY profile session management.
 --
@@ -17,13 +17,15 @@
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Config)
 local CombatConfig = require(ReplicatedStorage.Shared.CombatConfig)
 local GunModule  = require(ReplicatedStorage.Shared.GunCore)
-local GunMerge   = require(ReplicatedStorage.Shared.GunMerge)
+local GunMerge   = require(ServerScriptService.ServerModules.GunMerge)
 
 local TAG = "ProfileService"
 
@@ -45,7 +47,6 @@ export type PlayerProfile = {
 	lifetimeSilverSpent: number,
 	unlockedWeapons: { [string]: boolean },
 	inventory: { [string]: GunInstance },  -- keyed by UUID
-	nextGunId: number,                     -- auto-increment counter for gun IDs
 }
 
 export type EconomySummary = {
@@ -65,7 +66,6 @@ local PROFILE_TEMPLATE = {
 	lifetimeSilverSpent = 0,
 	unlockedWeapons = {},
 	inventory = {},
-	nextGunId = 1,
 }
 
 -- ── ProfileStore (lazy-loaded from Packages) ─────────────────────────────────
@@ -369,11 +369,9 @@ end
 
 -- ── Inventory management (gun instances with UUIDs) ───────────────────────────
 
---- Generate a new gun instance ID.
-local function nextGunId(profile: PlayerProfile): string
-	local id = "gun_" .. profile.nextGunId
-	profile.nextGunId += 1
-	return id
+--- Generate a new gun instance ID using HttpService GUID (unguessable by client).
+local function generateGunId(): string
+	return HttpService:GenerateGUID():upper()
 end
 
 --- Grant a gun to the player's inventory at common rarity, level 1.
@@ -395,7 +393,7 @@ function ProfileService.grantGun(player: Player, gunName: string): string?
 	-- Mark as unlocked (for backward compat with isWeaponUnlocked checks)
 	profile.unlockedWeapons[gunName] = true
 
-	local id = nextGunId(profile)
+	local id = generateGunId()
 	profile.inventory[id] = {
 		id = id,
 		name = gunName,
@@ -496,7 +494,7 @@ function ProfileService.mergeGuns(player: Player, gunIds: { string }): (boolean,
 	end
 
 	-- Grant upgraded gun (level resets to 1 in InventoryService on match start)
-	local id = nextGunId(profile)
+	local id = generateGunId()
 	profile.inventory[id] = {
 		id = id,
 		name = first.name,

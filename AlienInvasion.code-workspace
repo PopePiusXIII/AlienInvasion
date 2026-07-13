@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"name": "lobby",
+			"path": "places/lobby"
+		},
+		{
+			"name": "match",
+			"path": "places/match"
+		},
+		{
+			"name": "shared",
+			"path": "src/shared"
+		},
+		{
+			"name": "everything",
+			"path": "."
+		}
+	],
+	"settings": {
+		"luau-lsp.studioPlugin.enabled": true,
+		"luau-lsp.studioPlugin.port": 3667,
+		"luau-lsp.sourcemap.rojoPath": ""
+	},
+	"task": {}
+}

@@ -22,6 +22,7 @@ local RNGService = Framework.CreateService({ Name = TAG })
 
 local _rngActivateRemote:     RemoteEvent
 local _rngTopupRemote:        RemoteEvent
+local _rngRequestGiveRemote:  RemoteEvent
 local _playerLocks:           { [number]: boolean } = {}
 local _lastActivateTime:      { [number]: number }  = {}
 
@@ -59,8 +60,12 @@ local function topUpEquippedAmmo(player: Player)
 	local gun = ProfileService.getGunStats(player, equippedGunId, level)
 	if not gun then return end
 
-	Logger.info(TAG, "Topping up ammo for %s (%s, level %d).", player.Name, equippedGunId, level)
-	_rngTopupRemote:FireClient(player, gun.name or "", gun.magSize, gun.max_ammo)
+	-- getGunStats doesn't return a name, fetch it from the profile instance
+	local instance = ProfileService.getGun(player, equippedGunId)
+	local displayName = instance and instance.name or ""
+
+	Logger.info(TAG, "Topping up ammo for %s (%s, level %d).", player.Name, displayName, level)
+	_rngTopupRemote:FireClient(player, displayName, gun.magSize, gun.max_ammo)
 end
 
 -- ── Remote Handlers ──────────────────────────────────────────────────────────
@@ -69,7 +74,7 @@ local function handleRngActivate(player: Player)
 	local uid = player.UserId
 	local now = tick()
 	local last = _lastActivateTime[uid]
-	if last and now - last < 0.000001 then
+	if last and now - last < 0.5 then
 		Logger.info(TAG, "Ignoring duplicate RNG_ACTIVATE from %s (cooldown)", player.Name)
 		return
 	end
@@ -129,10 +134,47 @@ end
 function RNGService:Init()
 	_rngActivateRemote     = Framework.CreateRemote(RemoteNames.RNG_ACTIVATE)
 	_rngTopupRemote        = Framework.CreateRemote(RemoteNames.RNG_TOPUP_AMMO)
+	_rngRequestGiveRemote  = Framework.CreateRemote(RemoteNames.RNG_REQUEST_GIVE)
+	-- Required by ProfileService:SyncToClient (not created in match place otherwise)
+	Framework.CreateRemote(RemoteNames.SYNC_PROFILE)
 end
 
 function RNGService:Start()
 	_rngActivateRemote.OnServerEvent:Connect(handleRngActivate)
+	_rngRequestGiveRemote.OnServerEvent:Connect(function(player: Player, weaponName: string, slot: number?, _toRemove: string?)
+		-- Grant the rolled weapon to the player's inventory
+		local success = ProfileService.grantGun(player, weaponName)
+		if success then
+			Logger.info(TAG, "%s received %s from RNG prompt.", player.Name, weaponName)
+		else
+			Logger.warn(TAG, "Failed to grant %s to %s via RNG.", weaponName, player.Name)
+		end
+	end)
+
+	-- Sync unlocked weapons to client via Player attribute (no remote needed)
+	local Players = game:GetService("Players")
+	local function syncUnlockedWeapons(player: Player)
+		task.defer(function()
+			local profile = ProfileService:GetProfile(player)
+			if not profile then return end
+			local names: { string } = {}
+			for _, instance in profile.inventory do
+				table.insert(names, instance.name)
+			end
+			player:SetAttribute("RngUnlockedWeapons", table.concat(names, ","))
+			Logger.info(TAG, "Synced %d unlocked weapons to %s.", #names, player.Name)
+		end)
+	end
+
+	-- Sync for existing players
+	for _, p in Players:GetPlayers() do
+		syncUnlockedWeapons(p)
+	end
+
+	-- Sync on profile load (in case it's not ready yet)
+	ProfileService.OnProfileLoaded(function(player, _profile)
+		syncUnlockedWeapons(player)
+	end)
 end
 
 return RNGService

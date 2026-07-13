@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Generate Sourcemap - Match",
+      "type": "shell",
+      "command": "rojo sourcemap places/match/match.project.json --output places/match/sourcemap.json",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "Generates sourcemap.json for the match place"
+    },
+    {
+      "label": "Generate Sourcemap - Lobby",
+      "type": "shell",
+      "command": "rojo sourcemap places/lobby/default.project.json --output places/lobby/sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Generates sourcemap.json for the lobby place"
+    },
+    {
+      "label": "Generate All Sourcemaps",
+      "type": "shell",
+      "dependsOrder": "parallel",
+      "depends": [
+        "Generate Sourcemap - Match",
+        "Generate Sourcemap - Lobby"
+      ],
+      "problemMatcher": [],
+      "detail": "Generates sourcemaps for all places"
+    },
+    {
+      "label": "Generate Sourcemap (Watch) - Match",
+      "type": "shell",
+      "command": "rojo sourcemap --watch places/match/match.project.json --output places/match/sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Watches match place and regenerates sourcemap automatically",
+      "isBackground": true
+    },
+    {
+      "label": "Generate Sourcemap (Watch) - Lobby",
+      "type": "shell",
+      "command": "rojo sourcemap --watch places/lobby/default.project.json --output places/lobby/sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Watches lobby place and regenerates sourcemap automatically",
+      "isBackground": true
+    }
+  ]
+}

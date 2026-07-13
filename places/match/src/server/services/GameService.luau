@@ -15,14 +15,15 @@
 local Players           = game:GetService("Players")
 local TeleportService   = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework    = require(ReplicatedStorage.Shared.Framework)
 local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
-local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
 local WaveService  = require(script.Parent.WaveService)
 local EconomyService = require(script.Parent.EconomyService)
-local RNGService = require(script.Parent.RNGService)
+local RNGService = require(script.Parent.RngService)
 local MatchAutoStartModule = require(script.Parent.modules.game.MatchAutoStartModule)
 local MatchReturnModule = require(script.Parent.modules.game.MatchReturnModule)
 
@@ -93,7 +94,7 @@ function GameService.startMatch()
 			Logger.info(TAG, "%s done on wave %d. %d player(s) remaining.",
 				player.Name, waveReached, remaining)
 
-			if remaining <= 0 and _matchState == "ACTIVE" then
+			if remaining <= 0 and (_matchState :: string) == "ACTIVE" then
 				_matchState = "ENDED"
 				Logger.info(TAG, "Match ENDED. Returning to lobby in 5s.")
 				task.delay(5, GameService._returnAllToLobby)

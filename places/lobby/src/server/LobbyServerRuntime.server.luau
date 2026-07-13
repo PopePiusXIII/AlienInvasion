@@ -7,12 +7,13 @@
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 
 -- ── Shared services (cross-place) ────────────────────────────────────────────
-require(ReplicatedStorage.Shared.ProfileService)
+require(ServerScriptService.ServerModules.ProfileService)
 
 -- ── Lobby services ───────────────────────────────────────────────────────────
 

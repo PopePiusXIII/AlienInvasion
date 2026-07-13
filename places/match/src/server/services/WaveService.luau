@@ -11,12 +11,13 @@
 --------------------------------------------------------------------------------
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework    = require(ReplicatedStorage.Shared.Framework)
 local Logger       = require(ReplicatedStorage.Shared.Logger)
 local Config       = require(ReplicatedStorage.Shared.Config)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
-local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
@@ -150,7 +151,7 @@ function WaveService.startBattle(player: Player): number
 	end
 
 	player:SetAttribute("CurrentWave", nil)
-	Logger.info(TAG, "Final wave: %d.", player.Name, waveNumber)
+	Logger.info(TAG, "Final wave: %d for %s.", waveNumber, player.Name)
 	return waveNumber
 end
 

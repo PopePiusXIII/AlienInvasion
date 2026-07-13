@@ -9,12 +9,13 @@
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage     = game:GetService("ServerStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Config)
 local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
-local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
 
 local TAG = "InventoryService"
 
@@ -114,22 +115,24 @@ local function getInventory(player: Player): { gunIds: { string }, equippedSlot:
 	return _playerInventories[uid]
 end
 
---- Sync inventory state to client: sends gun IDs + metadata for HUD rendering.
+--- Sync inventory state to client: sends resolved stats (server does the lookup).
 local function syncToClient(player: Player)
 	local inv = getInventory(player)
 	local levels = _gunLevels[player.UserId] or {}
 
-	-- Build enriched list with rarity/level for each slot
-	local weaponData: { { id: string, name: string, rarity: string, level: number } } = {}
+	-- Server resolves stats and sends them directly — client doesn't need rarity/level.
+	local weaponData: { { id: string, name: string, stats: any } } = {}
 	for _, gid in ipairs(inv.gunIds) do
 		local instance = ProfileService.getGun(player, gid)
 		if instance then
-			table.insert(weaponData, {
-				id = instance.id,
-				name = instance.name,
-				rarity = instance.rarity,
-				level = levels[gid] or 1,
-			})
+			local resolved = ProfileService.getGunStats(player, gid, levels[gid])
+			if resolved then
+				table.insert(weaponData, {
+					id = gid,
+					name = instance.name,
+					stats = resolved,
+				})
+			end
 		end
 	end
 

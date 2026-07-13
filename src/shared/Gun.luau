@@ -1,5 +1,4 @@
 export type GunRarity = "common" | "rare" | "legendary" | "epic" | "mythic"
-export type GunLevel = 1 | 2 | 3 |4
 export type GunTracer = {
     lifetime:  number,
     thickness: number,

@@ -13,7 +13,6 @@ local RNGController = Framework.CreateController({ Name = TAG })
 
 local _localPlayer: Player
 local _rngActivateRemote: RemoteEvent
-local _rngUnlockedListRemote: RemoteEvent
 local _rngRequestGiveRemote: RemoteEvent
 
 local _gui: ScreenGui?
@@ -28,9 +27,11 @@ local _attachedRngParts: { [Instance]: RBXScriptConnection } = {}
 
 local function buildGui()
     _gui = Instance.new("ScreenGui")
-    _gui.Name = "RNGGui"
-    _gui.ResetOnSpawn = false
-    _gui.Parent = _localPlayer:WaitForChild("PlayerGui")
+    if _gui then
+        _gui.Name = "RNGGui"
+        _gui.ResetOnSpawn = false
+        _gui.Parent = _localPlayer:WaitForChild("PlayerGui")
+    end
 
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 220, 0, 80)
@@ -90,8 +91,7 @@ local function onSelectWeapon()
     Logger.info(TAG, "Rolled RNG choice: %s", choice)
 
     -- Check if weapon is already in inventory
-    local currentWeapons = InventoryController.getWeapons()
-    local owned = table.find(currentWeapons, choice) ~= nil
+    local owned = InventoryController.hasWeapon(choice)
     
     if _selectedLabel then
         if owned then
@@ -115,28 +115,37 @@ end
 
 function RNGController:Start()
     _rngActivateRemote = Framework.GetRemote(RemoteNames.RNG_ACTIVATE)
-    _rngUnlockedListRemote = Framework.GetRemote(RemoteNames.RNG_UNLOCKED_LIST)
     _rngRequestGiveRemote = Framework.GetRemote(RemoteNames.RNG_REQUEST_GIVE)
 
-        buildGui()
-    -- Listen for unlocked list from server
-    _rngUnlockedListRemote.OnClientEvent:Connect(function(unlocked: { string })
-        _state.unlocked = unlocked or {}
-        Logger.info(TAG, "Received unlocked list (count=%d)", #_state.unlocked)
-        if #_state.unlocked > 0 then
-            Logger.info(TAG, "Unlocked list contents: %s", table.concat(_state.unlocked, ", "))
-        end
-        showPrompt()
+    buildGui()
+
+    -- Read unlocked weapons from Player attribute (set by RNGService on server)
+    local function readUnlockedList(): { string }
+        local raw = _localPlayer:GetAttribute("RngUnlockedWeapons")
+        if not raw or type(raw) ~= "string" or raw == "" then return {} end
+        return string.split(raw, ",")
+    end
+
+    -- Initial read
+    _state.unlocked = readUnlockedList()
+    Logger.info(TAG, "Initial unlocked list (count=%d)", #_state.unlocked)
+
+    -- Listen for changes (e.g. after profile loads late)
+    _localPlayer:GetAttributeChangedSignal("RngUnlockedWeapons"):Connect(function()
+        _state.unlocked = readUnlockedList()
+        Logger.info(TAG, "Unlocked list updated (count=%d)", #_state.unlocked)
     end)
 
     -- Attach handlers to RNG BLOCK parts (existing and future spawns)
-    local function handleRngPart(part: BasePart)
-        if not part or _attachedRngParts[part] then return end
+    local function handleRngPart(part: any)
+        if not part:IsA("BasePart") then return end
+        if _attachedRngParts[part] then return end
         local conn = part.Touched:Connect(function(hit)
             local char = _localPlayer.Character
             if not char then return end
             if hit and hit:IsDescendantOf(char) then
-                Logger.info(TAG, "Touched RNG BLOCK — firing activate remote")
+                Logger.info(TAG, "Touched RNG BLOCK — showing prompt + firing activate remote")
+                showPrompt()
                 _rngActivateRemote:FireServer()
             end
         end)
@@ -145,25 +154,23 @@ function RNGController:Start()
 
     -- Attach to existing RNG BLOCKs
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "RNG BLOCK" then
-            if obj:IsA("BasePart") then
-                handleRngPart(obj :: BasePart)
-            elseif obj:IsA("Model") then
-                local anyPart = obj:FindFirstChildWhichIsA("BasePart", true)
-                if anyPart then handleRngPart(anyPart :: BasePart) end
-            end
+        if obj.Name ~= "RNG BLOCK" then continue end
+        if obj:IsA("BasePart") then
+            handleRngPart(obj)
+        elseif obj:IsA("Model") then
+            local anyPart = obj:FindFirstChildWhichIsA("BasePart", true)
+            if anyPart then handleRngPart(anyPart) end
         end
     end
 
     -- Listen for future RNG BLOCK spawns
     workspace.DescendantAdded:Connect(function(desc)
-        if desc.Name == "RNG BLOCK" then
-            if desc:IsA("BasePart") then
-                handleRngPart(desc :: BasePart)
-            elseif desc:IsA("Model") then
-                local anyPart = desc:FindFirstChildWhichIsA("BasePart", true)
-                if anyPart then handleRngPart(anyPart :: BasePart) end
-            end
+        if desc.Name ~= "RNG BLOCK" then return end
+        if desc:IsA("BasePart") then
+            handleRngPart(desc)
+        elseif desc:IsA("Model") then
+            local anyPart = desc:FindFirstChildWhichIsA("BasePart", true)
+            if anyPart then handleRngPart(anyPart) end
         end
     end)
 
@@ -174,10 +181,9 @@ function RNGController:Start()
         if input.KeyCode == Enum.KeyCode.F then
             if _state.selected then
                 -- If already selected, treat F as slot1 selection
-                local currentWeapons = InventoryController.getWeapons()
                 local toRemove: string? = nil
-                
-                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(currentWeapons, ", "))
+
+                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(InventoryController.getWeapons(), ", "))
                 Logger.info(TAG, "Requesting give: %s (slot=1) remove=%s", _state.selected, tostring(toRemove))
                 _rngRequestGiveRemote:FireServer(_state.selected, 1, toRemove)
                 hidePrompt()
@@ -187,11 +193,10 @@ function RNGController:Start()
             end
         elseif input.KeyCode == Enum.KeyCode.G then
             if _state.selected then
-                local currentWeapons = InventoryController.getWeapons()
                 local toRemove: string? = nil
 
 
-                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(currentWeapons, ", "))
+                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(InventoryController.getWeapons(), ", "))
                 Logger.info(TAG, "Requesting give: %s (slot=2) remove=%s", _state.selected, tostring(toRemove))
                 _rngRequestGiveRemote:FireServer(_state.selected, 2, toRemove)
                 hidePrompt()

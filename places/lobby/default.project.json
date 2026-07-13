@@ -11,7 +11,7 @@
         "RemoteNames":    { "$path": "src/shared/RemoteNames.luau" },
         "Framework":      { "$path": "../../src/shared/Framework.luau" },
         "Logger":         { "$path": "../../src/shared/Logger.luau" },
-        "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
+        "GunCore":        { "$path": "../../src/shared/Gun.luau" },
         "vide":           { "$path": "../../src/shared/vide" },
         "CombatConfig":   { "$path": "../../src/shared/configs/CombatConfig.luau" },
         "purchase":     { "$path": "../../src/shared/purchase" }
@@ -26,6 +26,13 @@
     "ServerScriptService": {
       "LobbyServer": {
         "$path": "src/server"
+      },
+
+      "ServerModules": {
+        "$className": "Folder",
+        "ProfileService": { "$path": "../../src/shared/ProfileService.luau" },
+        "GunApi":         { "$path": "../../src/shared/GunApi.luau" },
+        "GunMerge":       { "$path": "../../src/shared/GunMerge.luau" }
       }
     },
 

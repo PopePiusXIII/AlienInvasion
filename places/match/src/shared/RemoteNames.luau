@@ -28,4 +28,5 @@ return {
 	-- Custom inventory system remotes
 	INVENTORY_SYNC         = "InventorySync",
 	INVENTORY_EQUIP        = "InventoryEquip",
+	SYNC_PROFILE           = "SyncProfile",
 }

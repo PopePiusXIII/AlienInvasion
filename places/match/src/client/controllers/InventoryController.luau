@@ -12,6 +12,7 @@ local StarterGui        = game:GetService("StarterGui")
 local Framework     = require(ReplicatedStorage.Shared.Framework)
 local Logger        = require(ReplicatedStorage.Shared.Logger)
 local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
+local GunModule     = require(ReplicatedStorage.Shared.GunCore)
 
 local TAG = "InventoryController"
 
@@ -23,19 +24,43 @@ StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 
 local _localPlayer = Players.LocalPlayer
 
+--- Synced gun: server-resolved stats + UUID + name for Tool matching.
+export type SyncedGun = {
+	id: string,
+	name: string,
+	stats: GunModule.Gun,
+}
+
 -- Local inventory state
-local _weapons: { string } = {}
+local _guns: { SyncedGun } = {}
 local _equippedSlot: number? = nil
 
 -- Callbacks for when inventory changes
-local _onInventoryChangedCallbacks: { (weapons: { string }, equippedSlot: number?) -> () } = {}
+local _onInventoryChangedCallbacks: { (guns: { SyncedGun }, equippedSlot: number?) -> () } = {}
 
 local _inventorySyncRemote:  RemoteEvent
 local _inventoryEquipRemote: RemoteEvent
 
---- Gets the current weapons in the inventory
+--- Gets the current guns in the inventory (full synced data)
+function InventoryController.getGuns(): { SyncedGun }
+	return _guns
+end
+
+--- Gets weapon names only (legacy helper for quick lookups)
 function InventoryController.getWeapons(): { string }
-	return _weapons
+	local result: { string } = {}
+	for _, g in ipairs(_guns) do
+		table.insert(result, g.name)
+	end
+	return result
+end
+
+--- Checks if a weapon name exists in the inventory
+function InventoryController.hasWeapon(name: string): boolean
+	for _, g in ipairs(_guns) do
+		if g.name == name then return true end
+	end
+	return false
 end
 
 --- Gets the equipped slot (1-indexed, nil if nothing equipped)
@@ -43,12 +68,18 @@ function InventoryController.getEquippedSlot(): number?
 	return _equippedSlot
 end
 
---- Gets the equipped weapon name (nil if nothing equipped)
-function InventoryController.getEquippedWeapon(): string?
-	if _equippedSlot and _weapons[_equippedSlot] then
-		return _weapons[_equippedSlot]
+--- Gets the equipped gun's full synced data (nil if nothing equipped)
+function InventoryController.getEquippedGun(): SyncedGun?
+	if _equippedSlot and _guns[_equippedSlot] then
+		return _guns[_equippedSlot]
 	end
 	return nil
+end
+
+--- Gets the equipped weapon's resolved stats (nil if nothing equipped)
+function InventoryController.getEquippedStats(): GunModule.Gun?
+	local gun = InventoryController.getEquippedGun()
+	return gun and gun.stats or nil
 end
 
 --- Requests to equip a weapon at the given slot (1-indexed)
@@ -57,21 +88,21 @@ function InventoryController.equipSlot(slot: number?)
 end
 
 --- Registers a callback to be invoked when inventory changes
-function InventoryController.onInventoryChanged(callback: (weapons: { string }, equippedSlot: number?) -> ())
+function InventoryController.onInventoryChanged(callback: (guns: { SyncedGun }, equippedSlot: number?) -> ())
 	table.insert(_onInventoryChangedCallbacks, callback)
 end
 
 --- Internal: updates local state and fires callbacks
-local function updateInventory(weapons: { string }, equippedSlot: number?)
-	_weapons = weapons
+local function updateInventory(guns: { SyncedGun }, equippedSlot: number?)
+	_guns = guns
 	_equippedSlot = equippedSlot
 	
-	Logger.info(TAG, "Inventory updated: %s, equipped slot: %s", 
-		table.concat(weapons, ", "), tostring(equippedSlot))
+	Logger.info(TAG, "Inventory updated: %d guns, equipped slot: %s", 
+		#guns, tostring(equippedSlot))
 	
 	-- Fire all callbacks
 	for _, callback in ipairs(_onInventoryChangedCallbacks) do
-		task.spawn(callback, weapons, equippedSlot)
+		task.spawn(callback, guns, equippedSlot)
 	end
 end
 
@@ -87,8 +118,8 @@ function InventoryController:Start()
 
 	-- Listen for inventory sync from server
     warn(TAG, "INVETORY SYNC REMOTE STARTED")
-	Logger.wrapClientEvent(_inventorySyncRemote, TAG, function(weapons: { string }, equippedSlot: number?)
-		updateInventory(weapons, equippedSlot)
+	Logger.wrapClientEvent(_inventorySyncRemote, TAG, function(guns: { SyncedGun }, equippedSlot: number?)
+		updateInventory(guns, equippedSlot)
 	end)
 
 	-- Input listener for equipping weapons

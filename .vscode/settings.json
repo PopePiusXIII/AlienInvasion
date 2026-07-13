@@ -1,0 +1,9 @@
+{
+  "luau-lsp.sourcemap.enabled": true,
+  "luau-lsp.sourcemap.autogenerate": false,
+  "luau-lsp.sourcemap.rojoProjectFile": "places/match/match.project.json",
+  "luau-lsp.sourcemap.includeNonScripts": true,
+  "luau-lsp.sourcemap.sourcemapFile": "sourcemap.json",
+  "luau-lsp.studioPlugin.enabled": true,
+  "luau-lsp.studioPlugin.port": 3667
+}
