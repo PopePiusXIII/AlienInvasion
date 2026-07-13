@@ -1,7 +1,0 @@
-{
-  "luau-lsp.sourcemap.enabled": true,
-  "luau-lsp.sourcemap.autogenerate": false,
-  "luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
-  "luau-lsp.sourcemap.includeNonScripts": true,
-  "luau-lsp.sourcemap.sourcemapFile": "sourcemap.json"
-}

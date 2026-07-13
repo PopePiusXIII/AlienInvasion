@@ -2,25 +2,19 @@
 	"folders": [
 		{
 			"name": "lobby",
-			"path": "places/lobby"
+			"path": "src/place_lobby"
 		},
 		{
 			"name": "match",
-			"path": "places/match"
+			"path": "src/place_match"
 		},
 		{
-			"name": "shared",
-			"path": "src/shared"
-		},
-		{
-			"name": "everything",
-			"path": "."
+			"name": "common",
+			"path": "src/common"
 		}
 	],
 	"settings": {
 		"luau-lsp.studioPlugin.enabled": true,
-		"luau-lsp.studioPlugin.port": 3667,
-		"luau-lsp.sourcemap.rojoPath": ""
-	},
-	"task": {}
+		"luau-lsp.studioPlugin.port": 3667
+	}
 }
