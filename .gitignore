@@ -1,5 +1,6 @@
 # Studio lock files (never commit these)
 *.rbxlx.lock
 *.rbxl.lock
-
+ServerPackages/
+Packages/
 sourcemap.json
