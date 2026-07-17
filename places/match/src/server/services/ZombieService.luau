@@ -30,6 +30,7 @@ local _zombieTemplates: { [string]: Model } = {}
 
 type ZombieEntry = { zombie: Model, humanoid: Humanoid, target: Player }
 local _activeZombies: { ZombieEntry } = {}
+local _rngTemplateWarned = false
 
 -- ── Snapshot feeder (main thread) ────────────────────────────────────────────
 -- Purges dead zombies and feeds fresh position snapshots to the desynchronized
@@ -48,7 +49,7 @@ local function snapshotFeederLoop()
 		end
 
 		-- Snapshot zombie root positions and feed to the desynchronized actor.
-		local snapshots: { ZombiePathfinderActor.ZombieSnapshot } = {}
+		local snapshots = {}
 		for _, entry in ipairs(_activeZombies) do
 			local root = entry.zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
 			table.insert(snapshots, {
@@ -93,7 +94,6 @@ function ZombieService:Init()
 		setupZombieCollision(_zombieTemplates[typeName])
 		disableZombieDisplay(_zombieTemplates[typeName])
 	end
-	local _rngTemplateWarned = false
 
 	-- Ensure the group exists
 	pcall(function()
@@ -147,13 +147,11 @@ local function configureHumanoid(humanoid: Humanoid, maxHealth: number, walkSpee
 	humanoid.MaxSlopeAngle   = 90
 end
 
-local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
-	local spread = math.random(0, 60)
-	zombie:PivotTo(CFrame.new(spawnPos + Vector3.new(
-		0.0,
-		Config.ZOMBIE_SPAWN_HEIGHT,
-		spread
-	)))
+local function placeAtSpawnPosition(zombie: Model, spawnPart: BasePart?)
+	local spread = math.random(-5, 5)
+	local localOffset = CFrame.new(spread, Config.ZOMBIE_SPAWN_HEIGHT, 0.0)
+	zombie:PivotTo(spawnPart.CFrame * localOffset)
+	
 end
 
 local function setupTouchDamage(zombie: Model, humanoid: Humanoid, touchDamage: number)
@@ -283,9 +281,9 @@ end
 -- ── Public API ────────────────────────────────────────────────────────────────
 
 --- Spawn a zombie that chases [target]. Calls [onDied] when it dies.
---- [centerPos] is the map spawn-point; omit to use world origin.
+--- [centerPos] is the map spawn-point;
 --- [zombieType] selects the variant; defaults to ZOMBIE_DEFAULT_TYPE.
-function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?, zombieType: string?)
+function ZombieService.spawn(target: Player, onDied: OnDied, spawnPart: BasePart?, zombieType: string?)
 	local resolvedType = zombieType or Config.ZOMBIE_DEFAULT_TYPE
 	local types = Config.ZOMBIE_TYPES :: { [string]: { MaxHealth: number, WalkSpeed: number, TouchDamage: number } }
 	local stats = types[resolvedType] or types[Config.ZOMBIE_DEFAULT_TYPE]
@@ -298,7 +296,7 @@ function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?
 		return
 	end
 	configureHumanoid(humanoid, stats.MaxHealth, stats.WalkSpeed)
-	placeAtSpawnPosition(zombie, centerPos or Vector3.new(0, 0, 0))
+	placeAtSpawnPosition(zombie, spawnPart)
 
 	-- RNG block spawn on spawn removed; now spawns on death.
 	setupTouchDamage(zombie, humanoid, stats.TouchDamage)

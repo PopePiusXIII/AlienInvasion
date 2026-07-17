@@ -51,13 +51,13 @@ local function giveGuns(player: Player, gunNames: { string }?)
 	end)
 end
 
-local function findZombieSpawnPosition(): Vector3
+local function findZombieSpawnPart(): BasePart?
 	local spawnPart = workspace:FindFirstChild("Spawn_Mob", true)
 	if spawnPart and spawnPart:IsA("BasePart") then
-		return (spawnPart :: BasePart).Position
+		return spawnPart :: BasePart
 	end
 	Logger.warn(TAG, "Spawn_Mob not found in Workspace — falling back to origin.")
-	return Vector3.new(0, 0, 0)
+	return nil
 end
 
 
@@ -79,12 +79,16 @@ local function pickZombieType(waveNumber: number): string
 		elseif roll == 2 then return "Normal_Run"
 		 else return "Normal" end
 	else
-		return "Normal"
+		local roll = math.random(3)
+		if roll == 1 then return "Normal"
+		elseif roll == 2 then return "Normal_Run"
+		elseif roll == 3 then return "OneStepper"
+		 else return "Tank" end
 	end
 end
 
 -- Runs one full wave: spawns all zombies, waits for all to die (or player death).
-local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, humanoid: Humanoid)
+local function runWave(player: Player, waveNumber: number, spawnPart: BasePart?, humanoid: Humanoid)
 	Logger.info(TAG, "Wave %d — %s (%d zombies).", waveNumber, player.Name, waveNumber)
 	player:SetAttribute("CurrentWave", waveNumber)
 
@@ -97,7 +101,7 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 	local totalZombies = 10 * waveNumber
 	for i = 1, totalZombies do
 		if not player.Parent or humanoid.Health <= 0 then break end
-		ZombieService.spawn(player, onZombieDied, spawnPos, pickZombieType(waveNumber))
+		ZombieService.spawn(player, onZombieDied, spawnPart, pickZombieType(waveNumber))
 		if i < totalZombies then
 			task.wait(Config.WAVE_SPAWN_INTERVAL)
 		end
@@ -128,13 +132,13 @@ function WaveService.startBattle(player: Player): number
 	-- Shop clerk/Proximity prompt removed.
 
 	giveGuns(player, Config.STARTER_GUNS)
-	local spawnPos   = findZombieSpawnPosition()
+	local spawnPart  = findZombieSpawnPart()
 	local waveNumber = Config.STARTING_WAVE
 
 	-- The humanoid reference is captured once. Even if the character respawns,
 	-- this humanoid's Health drops to 0 on death, so the loop detects it correctly.
 	while player.Parent and humanoid.Health > 0 do
-		runWave(player, waveNumber, spawnPos, humanoid)
+		runWave(player, waveNumber, spawnPart, humanoid)
 
 		if humanoid.Health <= 0 then
 			Logger.info(TAG, "%s died on wave %d.", player.Name, waveNumber)

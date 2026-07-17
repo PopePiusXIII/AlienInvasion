@@ -29,7 +29,6 @@ require(controllers.CharacterController)      -- no deps
 require(controllers.HudController)            -- requires CharacterController
 require(controllers.InventoryController)      -- custom inventory system
 require(controllers.GunController)            -- requires HudController, InventoryController
--- ShopController removed
 require(controllers.BoltController)           -- no deps
 require(controllers.RNGController)           -- RNG block controller
 require(controllers.ZombieAnimationController) -- no deps

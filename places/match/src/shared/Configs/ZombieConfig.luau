@@ -8,16 +8,25 @@ return {
 			Template = "Normal_Zombie",
 			-- Optional Animations table. If present, keys are action names and values
 			-- are Roblox asset ids (number or string). Example:
-			Animations = { walk = 180426354, jump = 125750702 }
+			Animations = { walk = 136074740322714, jump = 125750702 }
+		},
+		OneStepper  = {
+			MaxHealth = 50,
+			WalkSpeed = 6,
+			TouchDamage = 10,
+			Template = "OneStepper_Zombie",
+			-- Optional Animations table. If present, keys are action names and values
+			-- are Roblox asset ids (number or string). Example:
+			Animations = { walk = 71293133064836, jump = 125750702 }
 		},
 		Normal_Run  = {
 			MaxHealth = 50,
-			WalkSpeed = 30,
+			WalkSpeed = 28,
 			TouchDamage = 10,
 			Template = "Normal_Run_Zombie",
 			-- Optional Animations table. If present, keys are action names and values
 			-- are Roblox asset ids (number or string). Example:
-			Animations = { walk = 140652003617107, jump = 125750702 }
+			Animations = { walk = 133975326182834, jump = 125750702 }
 		},
 		Tank    = {
 			MaxHealth = 250,
@@ -31,7 +40,7 @@ return {
 	ZOMBIE_DAMAGE_COOLDOWN     = 1,
 	ZOMBIE_CHASE_INTERVAL      = 0.1,
 	ZOMBIE_SPAWN_DISTANCE      = 100,
-	ZOMBIE_SPAWN_HEIGHT        = 3,
+	ZOMBIE_SPAWN_HEIGHT        = 2,
 	ZOMBIE_REPULSION_DISTANCE  = 8,   -- studs; zombies within this range push apart
 	ZOMBIE_REPULSION_FORCE     = 14,  -- max offset (studs) applied to MoveTo target
 }
