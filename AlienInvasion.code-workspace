@@ -11,6 +11,9 @@
 		{
 			"name": "common",
 			"path": "src/common"
+		},
+		{	"name": "root",
+			"path": "."
 		}
 	],
 	"settings": {
