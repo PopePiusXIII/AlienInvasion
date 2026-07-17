@@ -1,1 +1,36 @@
-../../match.project.json
+{
+  "name": "AlienInvasion_Common",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$className": "Folder",
+        "Framework": { "$path": "Framework.luau" },
+        "vide": { "$path": "vide" }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "../../Packages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau" }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "ServerModules": {
+        "$className": "Folder",
+        "Gun": { "$path": "Gun.luau" },
+        "GunApi": { "$path": "GunApi.luau" },
+        "GunCore": { "$path": "GunCore.luau" },
+        "GunMerge": { "$path": "GunMerge.luau" },
+        "Inventory": { "$path": "Inventory.luau" },
+        "Logger": { "$path": "Logger.luau" },
+        "ProfileService": { "$path": "ProfileService.luau" },
+        "ProfileServiceTypes": { "$path": "ProfileServiceTypes.luau" },
+        "RngCore": { "$path": "RngCore.luau" },
+        "RngCoreTypes": { "$path": "RngCoreTypes.luau" },
+        "CombatConfig": { "$path": "configs/CombatConfig.luau" },
+        "purchase": { "$path": "purchase" }
+      }
+    }
+  }
+}

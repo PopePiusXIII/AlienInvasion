@@ -6,13 +6,15 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "$path": "src/place_lobby/shared",
         "Framework":      { "$path": "src/common/Framework.luau" },
         "Logger":         { "$path": "src/common/Logger.luau" },
         "GunCore":        { "$path": "src/common/GunCore.luau" },
         "vide":           { "$path": "src/common/vide" },
         "CombatConfig":   { "$path": "src/common/configs/CombatConfig.luau" },
-        "purchase":       { "$path": "src/common/purchase" }
+        "purchase":       { "$path": "src/common/purchase" },
+        "Config":         { "$path": "src/place_lobby/shared/Config.luau" },
+        "LightShowConfig": { "$path": "src/place_lobby/shared/LightShowConfig.luau" },
+        "RemoteNames":    { "$path": "src/place_lobby/shared/RemoteNames.luau" }
       },
       "Packages": {
         "$className": "Folder",
@@ -40,6 +42,6 @@
           "$path": "src/place_lobby/client"
         }
       }
-    },
+    }
   }
 }

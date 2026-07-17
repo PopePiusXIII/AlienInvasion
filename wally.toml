@@ -7,4 +7,6 @@ realm = "shared"
 
 [dependencies]
 vide = "centau/vide@0.4.0"
+
+[server-dependencies]
 ProfileStore = "vyon/profilestore@1.0.3"

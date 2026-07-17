@@ -87,7 +87,7 @@ function Logger.wrapServerEvent(
 )
 	remote.OnServerEvent:Connect(function(player: Player, ...)
 		netTrace("C→S", remote.Name, player.Name, ...)
-		local ok, err = pcall(handler, player, ...)
+		local ok, err = pcall(handler :: (Player, ...any) -> any, player, ...)
 		if not ok then
 			Logger.warn(tag, "OnServerEvent CRASHED [%s]: %s", remote.Name, tostring(err))
 		end
@@ -97,6 +97,7 @@ end
 --- CLIENT — Connect a RemoteEvent.OnClientEvent with pcall isolation + net trace.
 ---
 --- Use this everywhere instead of remote.OnClientEvent:Connect(handler).
+
 function Logger.wrapClientEvent(
 	remote:  RemoteEvent,
 	tag:     string,
@@ -104,7 +105,7 @@ function Logger.wrapClientEvent(
 )
 	remote.OnClientEvent:Connect(function(...)
 		netTrace("S→C", remote.Name, ...)
-		local ok, err = pcall(handler, ...)
+		local ok, err = pcall(handler :: (...any) -> any, ...)
 		if not ok then
 			Logger.warn(tag, "OnClientEvent CRASHED [%s]: %s", remote.Name, tostring(err))
 		end

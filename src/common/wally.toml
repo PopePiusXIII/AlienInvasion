@@ -1,0 +1,8 @@
+[package]
+name = "hoyt/alieninvasion-common"
+version = "0.1.0"
+realm = "server"
+private = true
+
+[dependencies]
+vide = "centau/vide@0.4.0"

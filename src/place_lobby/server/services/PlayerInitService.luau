@@ -17,10 +17,15 @@ local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
 local TAG = "PlayerInitService"
 
 local PlayerInitService = Framework.CreateService({ Name = TAG })
+local _syncProfileRemote: RemoteEvent
+
+local function syncProfile(player: Player, profile: any)
+	_syncProfileRemote:FireClient(player, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
+	Logger.info(TAG, "Synced profile to %s — gold=%d, silver=%d.", player.Name, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
+end
 
 function PlayerInitService:Init()
-	-- Create the SyncProfile remote so ProfileService can fire it
-	Framework.CreateRemote(RemoteNames.SYNC_PROFILE)
+	_syncProfileRemote = Framework.CreateRemote(RemoteNames.SYNC_PROFILE)
 
 	-- Create the weapon purchase remote
 	local purchaseRemote = Framework.CreateRemote(RemoteNames.PURCHASE_WEAPON)
@@ -31,7 +36,6 @@ function PlayerInitService:Init()
 		local success, errorCode = ProfileService.tryUnlockWeapon(player, weaponName)
 		if success then
 			Logger.info(TAG, "%s purchased %s with gold.", player.Name, weaponName)
-			ProfileService:SyncToClient(player)
 			return
 		end
 
@@ -46,55 +50,17 @@ function PlayerInitService:Init()
 end
 
 function PlayerInitService:Start()
-	Logger.info(TAG, "Starting — will sync profiles for existing players.")
+	ProfileService.OnProfileLoaded(syncProfile)
+	ProfileService.OnProfileChanged(syncProfile)
 
-	local function syncProfile(player: Player)
-		Logger.info(TAG, "Waiting for profile for %s.", player.DisplayName)
-		local success, result = pcall(function()
-			return ProfileService.WaitForProfile(player)
-		end)
-		if not success then
-			Logger.warn(TAG, "WaitForProfile CRASHED for %s: %s", player.DisplayName, tostring(result))
-			return
+	for _, player in Players:GetPlayers() do
+		local profile = ProfileService:GetProfile(player)
+		if profile then
+			syncProfile(player, profile)
 		end
-		local profile = result
-		if not profile then
-			Logger.warn(TAG, "No profile for %s — timed out or failed.", player.DisplayName)
-			return
-		end
-		Logger.info(TAG, "Got profile for %s — gold=%d, silver=%d.", player.DisplayName, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
-		local success2, err = pcall(function()
-			ProfileService:SyncToClient(player)
-		end)
-		if not success2 then
-			Logger.warn(TAG, "SyncToClient CRASHED for %s: %s", player.DisplayName, tostring(err))
-			return
-		end
-		Logger.info(TAG, "Sync fired for %s.", player.DisplayName)
 	end
 
-	-- Register callback so we react immediately when ProfileService loads a profile.
-	ProfileService.OnProfileLoaded(function(player: Player, profile: any)
-		Logger.info(TAG, "ProfileLoaded callback for %s — gold=%d, silver=%d.", player.DisplayName, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
-		local success, err = pcall(function()
-			ProfileService:SyncToClient(player)
-		end)
-		if not success then
-			Logger.warn(TAG, "SyncToClient CRASHED for %s: %s", player.DisplayName, tostring(err))
-			return
-		end
-		Logger.info(TAG, "Sync fired for %s.", player.DisplayName)
-	end)
-
-	-- Handle players who joined before Start() ran (e.g. in Studio)
-	local existingPlayers = Players:GetPlayers()
-	Logger.info(TAG, "Found %d existing player(s).", #existingPlayers)
-	for _, player in existingPlayers do
-		task.spawn(syncProfile, player)
-	end
-
-	-- Future joins are handled by the OnProfileLoaded callback above.
-	Logger.info(TAG, "Start complete.")
+	Logger.info(TAG, "Profile sync listeners connected.")
 end
 
 return PlayerInitService

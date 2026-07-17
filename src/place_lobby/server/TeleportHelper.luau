@@ -14,7 +14,7 @@ local RETRY_DELAY  = 2
 
 local function withRetry(label: string, fn: () -> ()): boolean
 	for attempt = 1, MAX_RETRIES do
-		local ok, err = pcall(fn)
+		local ok, err = pcall(fn :: () -> any)
 		if ok then return true end
 		warn(string.format("[TeleportHelper] %s attempt %d/%d failed: %s",
 			label, attempt, MAX_RETRIES, tostring(err)))

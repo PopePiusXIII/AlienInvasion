@@ -15,29 +15,39 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
 local MatchProfile = require(ReplicatedStorage.Shared.MatchProfile)
+local MatchProfileServiceTypes = require(ReplicatedStorage.Shared.MatchProfileServiceTypes)
 local Framework      = require(ReplicatedStorage.Shared.Framework)
 local Logger         = require(ReplicatedStorage.Shared.Logger)
 local RemoteNames    = require(ReplicatedStorage.Shared.RemoteNames)
 local ModifierConfig = require(ReplicatedStorage.Shared.Configs.MatchProfileConfig)
 
 local TAG = "MatchProfileService"
-local MatchProfileService = Framework.CreateService({ Name = TAG })
 
+local MatchProfileService = Framework.CreateService({ Name = TAG }) :: MatchProfileServiceTypes.API
 
 -- ── State ────────────────────────────────────────────────────────────────────
 
-local _playerModifiers: { [Player]: MatchProfile.MatchProfileT } = {}
+local _playerModifiers: { [Player]: MatchProfile.MatchProfile } = {}
 
---- Build an empty modifier profile with all properties set to 1.0 (identity).
-local function buildEmptyModifierProfile(): MatchProfile.MatchProfileT
-	local gun_modifier: MatchProfile.GunModifer = {} :: any
+---------------------------------- Helper Functions -------------------------------------
+
+local function buildEmptyModifierProfile(): MatchProfile.MatchProfile
+	local gun_modifier: MatchProfile.GunModifer = {
+		reload_speed = 1.0,
+		ammo_capacity = 1.0,
+		damage = 1.0,
+		fire_rate = 1.0,
+	}
 	for _, entry in pairs(ModifierConfig) do
 		if entry.category == "gun" then
 			gun_modifier[entry.property] = 1.0
 		end
 	end
 
-	local player_modifier: MatchProfile.PlayerModifier = {} :: any
+	local player_modifier: MatchProfile.PlayerModifier = {
+		health = 1.0,
+		speed = 1.0,
+	}
 	for _, entry in pairs(ModifierConfig) do
 		if entry.category == "player" then
 			player_modifier[entry.property] = 1.0
@@ -47,7 +57,6 @@ local function buildEmptyModifierProfile(): MatchProfile.MatchProfileT
 	return { gun_modifier = gun_modifier, player_modifier = player_modifier }
 end
 
---- Initialize modifier profile for a player if not already set.
 local function ensureModifiers(player: Player)
 	if _playerModifiers[player] then return end
 	_playerModifiers[player] = buildEmptyModifierProfile()
@@ -89,6 +98,11 @@ function MatchProfileService.apply(player: Player, key: string)
 		playerMod[entry.property] = (playerMod[entry.property] or 1.0) * entry.value
 		Logger.info(TAG, "%s applied %s → player.%s = %.2f", player.Name, key, entry.property, playerMod[entry.property])
 	end
+end
+
+function MatchProfileService.getModifierTypes(player: Player): MatchProfile.FlatModifiers
+	ensureModifiers(player)
+	return MatchProfile.into(_playerModifiers[player])
 end
 
 -- ── Remote Handlers ──────────────────────────────────────────────────────────

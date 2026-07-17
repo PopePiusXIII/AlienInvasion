@@ -1,1 +1,71 @@
-../../match.project.json
+{
+  "name": "AlienInvasion",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$className": "Folder",
+        "Framework": { "$path": "../../src/common/Framework.luau" },
+        "Logger": { "$path": "../../src/common/Logger.luau" },
+        "GunCore": { "$path": "../../src/common/GunCore.luau" },
+        "vide": { "$path": "../../src/common/vide" },
+        "CombatConfig": { "$path": "../../src/common/configs/CombatConfig.luau" },
+        "MatchProfile": { "$path": "shared/types/MatchProfile.luau" },
+        "MatchProfileServiceTypes": { "$path": "shared/types/MatchProfileServiceTypes.luau" },
+        "RngCoreTypes": { "$path": "../../src/common/RngCoreTypes.luau" },
+        "RemoteNames": { "$path": "shared/RemoteNames.luau" },
+        "Configs": { "$path": "shared/Configs" }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "../../Packages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau" }
+      }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "server" },
+      "ServerModules": {
+        "$className": "Folder",
+        "ProfileService": { "$path": "../../src/common/ProfileService.luau" },
+        "ProfileServiceTypes": { "$path": "../../src/common/ProfileServiceTypes.luau" },
+        "GunApi": { "$path": "../../src/common/GunApi.luau" },
+        "GunMerge": { "$path": "../../src/common/GunMerge.luau" },
+        "RngCore": { "$path": "../../src/common/RngCore.luau" }
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "client" }
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "FilteringEnabled": true
+      },
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Color": [0.423, 0.37254, 0.38823],
+          "Locked": true,
+          "Position": [0, -10, 0],
+          "Size": [512, 20, 512]
+        }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Ambient": [0, 0, 0],
+        "Brightness": 2,
+        "GlobalShadows": true,
+        "Outlines": false,
+        "Technology": "Voxel"
+      }
+    },
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    }
+  }
+}

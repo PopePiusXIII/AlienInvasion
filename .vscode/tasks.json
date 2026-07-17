@@ -4,7 +4,7 @@
     {
       "label": "Generate Sourcemap - Match",
       "type": "shell",
-      "command": "rojo sourcemap match.project.json --output match.sourcemap.json",
+      "command": "rojo sourcemap match.project.json --include-non-scripts --output match.sourcemap.json",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -15,7 +15,7 @@
     {
       "label": "Generate Sourcemap - Lobby",
       "type": "shell",
-      "command": "rojo sourcemap lobby.project.json --output lobby.sourcemap.json",
+      "command": "rojo sourcemap lobby.project.json --include-non-scripts --output lobby.sourcemap.json",
       "problemMatcher": [],
       "detail": "Generates sourcemap.json for the lobby place"
     },
@@ -25,10 +25,26 @@
       "dependsOrder": "parallel",
       "depends": [
         "Generate Sourcemap - Match",
-        "Generate Sourcemap - Lobby"
+        "Generate Sourcemap - Lobby",
+        "Generate Sourcemap - Match Folder",
+        "Generate Sourcemap - Common"
       ],
       "problemMatcher": [],
       "detail": "Generates sourcemaps for all places"
+    },
+    {
+      "label": "Generate Sourcemap - Match Folder",
+      "type": "shell",
+      "command": "cd src/place_match && rojo sourcemap default.project.json --include-non-scripts --output sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Generates the match folder sourcemap used by Luau LSP"
+    },
+    {
+      "label": "Generate Sourcemap - Common",
+      "type": "shell",
+      "command": "cd src/common && rojo sourcemap default.project.json --include-non-scripts --output sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Generates the common folder sourcemap used by Luau LSP"
     },
     {
       "label": "Generate Sourcemap (Watch) - Match",

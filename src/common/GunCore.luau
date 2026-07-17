@@ -30,6 +30,7 @@ export type Gun = {
     tracer:         GunTracer,
 }
 
+
 --- Per-level multiplier applied on top of a Gun's base rarity stats.
 export type GunLevelModifier = {
     damage:     number,   -- multiply

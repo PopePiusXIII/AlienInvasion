@@ -14,6 +14,11 @@
 		}
 	],
 	"settings": {
+		"luau-lsp.sourcemap.enabled": true,
+		"luau-lsp.sourcemap.autogenerate": true,
+		"luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
+		"luau-lsp.sourcemap.sourcemapFile": "sourcemap.json",
+		"luau-lsp.sourcemap.includeNonScripts": true,
 		"luau-lsp.studioPlugin.enabled": true,
 		"luau-lsp.studioPlugin.port": 3667
 	}

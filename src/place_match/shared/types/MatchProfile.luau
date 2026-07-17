@@ -1,4 +1,6 @@
 --!strict
+local MatchProfile = {}
+
 export type GunModifer = {
 	reload_speed: number,
 	ammo_capacity: number,
@@ -11,9 +13,25 @@ export type PlayerModifier = {
 	speed: number,
 }
 
-export type MatchProfileT = {
+export type FlatModifiers = { [string]: number }
+
+export type MatchProfile = {
 	gun_modifier: GunModifer,
 	player_modifier: PlayerModifier,
 }
 
-return {}
+function MatchProfile.into(profile: MatchProfile): FlatModifiers
+	local modifiers: FlatModifiers = {}
+
+	for property, value in pairs(profile.gun_modifier) do
+		modifiers[property] = value
+	end
+
+	for property, value in pairs(profile.player_modifier) do
+		modifiers[property] = value
+	end
+
+	return modifiers
+end
+
+return MatchProfile

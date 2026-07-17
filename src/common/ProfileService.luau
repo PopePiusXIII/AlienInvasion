@@ -21,44 +21,29 @@ local HttpService = game:GetService("HttpService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
-local CombatConfig = require(ReplicatedStorage.Shared.CombatConfig)
-local GunModule  = require(ReplicatedStorage.Shared.GunCore)
+local Logger    = require(ServerScriptService.ServerModules.Logger)
+local CombatConfig = require(ServerScriptService.ServerModules.CombatConfig)
+local GunCore  = require(ServerScriptService.ServerModules.GunCore)
 local GunMerge   = require(ServerScriptService.ServerModules.GunMerge)
+local pst = require(ServerScriptService.ServerModules.ProfileServiceTypes)
 
 local TAG = "ProfileService"
 
 local ProfileService = Framework.CreateService({ Name = TAG })
 
+type PlayerProfile = pst.PlayerProfile
+type EconomySummary = pst.EconomySummary
+type GunInstance = GunCore.GunInstance
 -- ── Profile shape ─────────────────────────────────────────────────────────────
 
 local ONE_HUNDRED_GOLD_DEVELOPER_ID = 3608323068
-local FIVE_HUNDRED_GOLD_DEVELOPER_ID = "asdf"
-local ONE_THOUSAND_GOLD_DEVELOPER_ID = "asdfew"
-
-export type GunInstance = GunModule.GunInstance
-
-export type PlayerProfile = {
-	bestWave: number,
-	totalGames: number,
-	goldStuds: number,
-	lifetimeSilverEarned: number,
-	lifetimeSilverSpent: number,
-	unlockedWeapons: { [string]: boolean },
-	inventory: { [string]: GunInstance },  -- keyed by UUID
-}
-
-export type EconomySummary = {
-	silverEarned: number,
-	silverSpent: number,
-	goldEarned: number,
-}
+local _FIVE_HUNDRED_GOLD_DEVELOPER_ID = "asdf"
+local _ONE_THOUSAND_GOLD_DEVELOPER_ID = "asdfew"
 
 
 -- Note: PROFILE_TEMPLATE uses defaults; unlockedWeapons is filled at runtime
 -- via Reconcile() so Config can be referenced.
-local PROFILE_TEMPLATE = {
+local PROFILE_TEMPLATE : PlayerProfile = {
 	bestWave = 0,
 	totalGames = 0,
 	goldStuds = 0,
@@ -89,9 +74,25 @@ local Profiles: { [Player]: any } = {}
 -- ── Profile loaded callback (for services that need to react) ─────────────────
 
 local ProfileLoadedCallbacks: { (player: Player, profile: PlayerProfile) -> () } = {}
+local ProfileChangedCallbacks: { (player: Player, profile: PlayerProfile) -> () } = {}
 
 function ProfileService.OnProfileLoaded(callback: (player: Player, profile: PlayerProfile) -> ())
 	table.insert(ProfileLoadedCallbacks, callback)
+end
+
+function ProfileService.OnProfileChanged(callback: (player: Player, profile: PlayerProfile) -> ())
+	table.insert(ProfileChangedCallbacks, callback)
+end
+
+local function notifyProfileChanged(player: Player, profile: PlayerProfile)
+	for _, callback in ProfileChangedCallbacks do
+		task.spawn(function()
+			local ok, err = pcall(function() callback(player, profile) end)
+			if not ok then
+				Logger.warn(TAG, "ProfileChanged callback crashed: %s", tostring(err))
+			end
+		end)
+	end
 end
 
 -- ── Session lifecycle ────────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ end
 
 function ProfileService:Start()
 	local Players = game:GetService("Players")
+local GunCore = require(script.Parent.GunCore)
 
 	for _, player in Players:GetPlayers() do
 		task.spawn(onPlayerAdded, player)
@@ -231,21 +233,6 @@ function ProfileService:WaitForProfile(player: Player): PlayerProfile?
 	return Profiles[player].Data :: PlayerProfile
 end
 
---- Sends current gold/silver balance to the client HUD.
-function ProfileService:SyncToClient(player: Player)
-	local profile = ProfileService:GetProfile(player)
-	if not profile then
-		Logger.warn(TAG, "Cannot sync profile for %s — not loaded.", player.Name)
-		return
-	end
-
-	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-	local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
-	local remote = Remotes:WaitForChild(RemoteNames.SYNC_PROFILE) :: RemoteEvent
-	remote:FireClient(player, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
-	Logger.info(TAG, "Synced profile to %s — gold=%d, silver=%d.", player.Name, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
-end
-
 -- ── Data operations (merged from DataService) ────────────────────────────────
 
 --- Save the player's profile to DataStore immediately.
@@ -284,6 +271,7 @@ function ProfileService.saveStats(player: Player, waveReached: number, economy: 
 	profile.goldStuds            += goldEarned
 
 	Logger.info(TAG, "Saved stats for %s — wave %d.", player.Name, waveReached)
+	notifyProfileChanged(player, profile)
 	ProfileService.save(player)
 end
 
@@ -299,7 +287,7 @@ end
 
 --- Attempts to unlock a weapon using gold. Returns (success, errorCode).
 function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
-    local gun = CombatConfig.GUN_STATS[weaponName] :: GunModule.Gun?
+    local gun = CombatConfig.GUN_STATS[weaponName] :: GunCore.Gun?
 
     local goldCost = gun and gun.gold_cost
     if goldCost == nil then
@@ -324,6 +312,7 @@ function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (bo
 	profile.unlockedWeapons[weaponName] = true
 
 	Logger.info(TAG, "%s unlocked %s for %d gold.", player.Name, weaponName, goldCost)
+	notifyProfileChanged(player, profile)
 	return true, "OK"
 end
 
@@ -353,16 +342,7 @@ function ProfileService.buyDeveloperGold(player: Player, dev_product_id: number)
 
 	-- Save immediately so purchase data isn't lost on server crash.
 	ProfileService.save(player)
-
-	-- Sync updated balance to the client HUD.
-	task.spawn(function()
-		local ok, err = pcall(function()
-			ProfileService:SyncToClient(player)
-		end)
-		if not ok then
-			Logger.warn(TAG, "Failed to sync profile after purchase: %s", tostring(err))
-		end
-	end)
+	notifyProfileChanged(player, profile)
 
 	return true
 end
@@ -529,7 +509,7 @@ end
 --- Resolve full stats for a gun instance (base rarity stats + level multipliers).
 --- `level` is passed in by the caller (InventoryService tracks it in-memory per match).
 --- Defaults to 1 if not provided.
-function ProfileService.getGunStats(player: Player, gunId: string, level: number?): GunModule.Gun?
+function ProfileService.getGunStats(player: Player, gunId: string, level: number?): GunCore.Gun?
 	local profile = ProfileService:GetProfile(player)
 	if not profile then return nil end
 
@@ -546,8 +526,8 @@ function ProfileService.getGunStats(player: Player, gunId: string, level: number
 
 	-- Apply level modifier (default to 1 if caller didn't provide)
 	local effectiveLevel = level or 1
-	local mod: GunModule.GunLevelModifier = CombatConfig.LEVEL_MULTIPLIERS[effectiveLevel] :: GunModule.GunLevelModifier
-	     or CombatConfig.LEVEL_MULTIPLIERS[1] :: GunModule.GunLevelModifier
+	local mod: GunCore.GunLevelModifier = CombatConfig.LEVEL_MULTIPLIERS[effectiveLevel] :: GunCore.GunLevelModifier
+	     or CombatConfig.LEVEL_MULTIPLIERS[1] :: GunCore.GunLevelModifier
 
 	return {
 		rarity         = instance.rarity,
@@ -566,4 +546,6 @@ function ProfileService.getGunStats(player: Player, gunId: string, level: number
 	}
 end
 
-return ProfileService
+local ProfileServiceAPI: Framework.Module & pst.API = ProfileService :: (Framework.Module & pst.API)
+
+return ProfileServiceAPI

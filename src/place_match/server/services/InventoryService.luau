@@ -21,7 +21,6 @@ local TAG = "InventoryService"
 
 local InventoryService = Framework.CreateService({ Name = TAG })
 
--- In-match slot state: { [userId] = { gunIds = { "gun_1", "gun_2" }, equippedSlot = 1 } }
 local _playerInventories: { [number]: { gunIds: { string }, equippedSlot: number? } } = {}
 
 -- In-memory level tracking (resets each match, not persisted to profile).

@@ -43,7 +43,7 @@ function CombatService:Init()
 	local hitSoundRemote = Framework.CreateRemote(RemoteNames.ZOMBIE_HIT_SOUND)
 
 	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, isHeadshot: boolean, hitPosition: Vector3)
-		if not zombieModel then return end
+		if not zombieModel:IsA("Model") then return end
 		local character = player.Character
 
 		-- Resolve equipped gun via InventoryService + ProfileService
@@ -61,10 +61,12 @@ function CombatService:Init()
 		local shooterPos: Vector3?
 		if character then
 			local hrp = character:FindFirstChild("HumanoidRootPart")
-			shooterPos = hrp and hrp.Position or nil
+			if hrp and hrp:IsA("BasePart") then
+				shooterPos = hrp.Position
+			end
 		end
 		local killed, zombieType, deathPosition = ZombieService.damageZombie(
-			zombieModel :: Model?,
+			zombieModel,
 			gun,
 			isHeadshot,
 			shooterPos

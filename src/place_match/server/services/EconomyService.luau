@@ -252,8 +252,10 @@ function EconomyService.beginRun(player: Player)
 end
 
 function EconomyService.grantKillRewards(player: Player, zombieType: string, waveNumber: number, deathPosition: Vector3?)
-	local origin = deathPosition
-	if not origin then
+	local origin: Vector3
+	if deathPosition then
+		origin = deathPosition
+	else
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if not root then return end
 		origin = root.Position
