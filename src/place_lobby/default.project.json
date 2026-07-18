@@ -8,11 +8,12 @@
         "$className": "Folder",
         "Framework":      { "$path": "../common/Framework.luau" },
         "RemoteNames":    { "$path": "shared/RemoteNames.luau" },
+        "CombatConfig":   { "$path": "../common/configs/CombatConfig.luau" },
         "vide":           { "$path": "../common/vide" }
       },
       "Packages": {
         "$className": "Folder",
-        "vide":         { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "vide":         { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" }
       }
     },
 

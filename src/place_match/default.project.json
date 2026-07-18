@@ -33,6 +33,12 @@
         "RngCore": { "$path": "../../src/common/RngCore.luau" }
       }
     },
+    "ServerStorage": {
+      "Stories": {
+        "$className": "Folder",
+        "$path": "stories"
+      }
+    },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": { "$path": "client" }

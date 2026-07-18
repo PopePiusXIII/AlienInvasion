@@ -212,13 +212,15 @@ function createArmoryHUD(screenGui: Instance): () -> ()
                 end
             end
 
-            if combatCfg and combatCfg.GUN_STATS[entry.configKey] then
-                currentCard = GunPurchaseCard({
-                    parent   = cardContainer,
-                    position = UDim2.new(0, 0, 0, 0),
-                    size     = UDim2.new(1, 0, 1, 0),
-                    gunName  = entry.configKey,
-                    stats    = combatCfg.GUN_STATS[entry.configKey],
+			local statsKey = "common_" .. entry.configKey
+			local gunStats = combatCfg and combatCfg.GUN_STATS[statsKey]
+			if gunStats then
+				currentCard = GunPurchaseCard({
+					parent   = cardContainer,
+					position = UDim2.new(0, 0, 0, 0),
+					size     = UDim2.new(1, 0, 1, 0),
+					gunName  = entry.configKey,
+					stats    = gunStats,
                     onBuy    = function()
                         local weaponName = entry.configKey
                         if not weaponName then return end

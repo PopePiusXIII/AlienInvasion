@@ -3,8 +3,9 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 MarketplaceService.ProcessReceipt = function(receipt)
-	local player = Players:GetPlayerByUserId(receipt.PlayerId)	if not player then
-		return Enum.ProductPurchaseDecision.NotYet
+	local player = Players:GetPlayerByUserId(receipt.PlayerId)	
+	if not player then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
 	local success, err = pcall(function()
@@ -15,7 +16,7 @@ MarketplaceService.ProcessReceipt = function(receipt)
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	else
 		warn("Failed to fulfill purchase (productId: " .. tostring(receipt.ProductId) .. "): " .. tostring(err))
-		return Enum.ProductPurchaseDecision.NotYet
+		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 end
 return true
