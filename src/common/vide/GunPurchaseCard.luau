@@ -237,7 +237,7 @@ local function GunPurchaseCard(props: GunPurchaseCardProps)
             Name                   = "GunImage",
             Size                   = UDim2.new(0.4, 0, 1, 0),
             BackgroundTransparency = 1,
-            Image                  = props.stats.image or "rbxassetid://0",
+            Image                  = props.stats.image,
             ScaleType              = Enum.ScaleType.Fit,
 
             create "UICorner" {

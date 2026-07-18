@@ -3,43 +3,60 @@
   "tree": {
     "$className": "DataModel",
 
-    "ServerStorage": {
+    "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "Framework":      { "$path": "src/common/Framework.luau" },
-        "Logger":         { "$path": "src/common/Logger.luau" },
-        "GunCore":        { "$path": "src/common/GunCore.luau" },
-        "vide":           { "$path": "src/common/vide" },
-        "CombatConfig":   { "$path": "src/common/configs/CombatConfig.luau" },
-        "purchase":       { "$path": "src/common/purchase" },
-        "Config":         { "$path": "src/place_lobby/shared/Config.luau" },
-        "LightShowConfig": { "$path": "src/place_lobby/shared/LightShowConfig.luau" },
-        "RemoteNames":    { "$path": "src/place_lobby/shared/RemoteNames.luau" }
+        "Framework":      { "$path": "../common/Framework.luau" },
+        "RemoteNames":    { "$path": "shared/RemoteNames.luau" },
+        "vide":           { "$path": "../common/vide" }
       },
       "Packages": {
         "$className": "Folder",
-        "vide":         { "$path": "Packages/_Index/centau_vide@0.4.0/vide/src" },
-        "ProfileStore": { "$path": "Packages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau" }
+        "vide":         { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+      }
+    },
+
+    "ServerStorage": {
+      "Shared": {
+        "$className": "Folder",
+        "Framework":      { "$path": "../common/Framework.luau" },
+        "Logger":         { "$path": "../common/Logger.luau" },
+        "GunCore":        { "$path": "../common/GunCore.luau" },
+        "CombatConfig":   { "$path": "../common/configs/CombatConfig.luau" },
+        "purchase":       { "$path": "../common/purchase" },
+        "Config":         { "$path": "shared/Config.luau" },
+        "LightShowConfig": { "$path": "shared/LightShowConfig.luau" },
+        "RemoteNames":    { "$path": "shared/RemoteNames.luau" }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide":         { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "../../ServerPackages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau" }
+      },
+      "Stories": {
+        "$className": "Folder",
+        "$path": "stories"
       }
     },
 
     "ServerScriptService": {
       "LobbyServer": {
-        "$path": "src/place_lobby/server"
+        "$className": "Folder",
+        "$path": "server"
       },
 
       "ServerModules": {
         "$className": "Folder",
-        "ProfileService": { "$path": "src/common/ProfileService.luau" },
-        "GunApi":         { "$path": "src/common/GunApi.luau" },
-        "GunMerge":       { "$path": "src/common/GunMerge.luau" }
+        "ProfileService": { "$path": "../common/ProfileService.luau" },
+        "GunApi":         { "$path": "../common/GunApi.luau" },
+        "GunMerge":       { "$path": "../common/GunMerge.luau" }
       }
     },
 
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "LobbyClient": {
-          "$path": "src/place_lobby/client"
+          "$path": "client"
         }
       }
     }

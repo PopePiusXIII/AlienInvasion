@@ -46,7 +46,7 @@ local function DepressedButton(props: DepressedButtonProps)
 
         create "Sound" {
             Name     = "HoverSound",
-            SoundId  = props.hoverSoundId or "rbxassetid://0",
+            SoundId  = props.hoverSoundId,
             Volume   = 1.0,
         },
 

@@ -23,44 +23,50 @@ local armoryHud = require(script.Parent.Armory)
 local create = vide.create
 local source = vide.source
 local effect = vide.effect
-local root   = vide.root
+local mount  = vide.mount
 
 export type LobbyMainHUDProps = {
     title: string,
     hintText: string,
+    parentGui: Instance?,
 }
 
 --- Creates the always-visible lobby HUD.
---- Returns the ScreenGui instance and a control table for updating reactive fields.
+--- Returns the ScreenGui, a control table for updating reactive fields, and an
+--- unmount function.
 function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
     setSilver: (number) -> (),
     setGold: (number) -> (),
     setHint:   (string) -> (),
-
-})
+}, () -> ())
     local silverAmount = source(0)
     local goldAmount = source(0)
     local hintMsg      = source(props.hintText or "")
 
-    local screenGui = create "ScreenGui" {
-        Name           = "LobbyMainHud",
-        ResetOnSpawn   = false,
-        IgnoreGuiInset = true,
-    }
+    local screenGui: Instance
+    if props.parentGui then
+        screenGui = props.parentGui
+    else
+        screenGui = create "ScreenGui" {
+            Name           = "LobbyMainHud",
+            ResetOnSpawn   = false,
+            IgnoreGuiInset = true,
+            Parent         = Players.LocalPlayer.PlayerGui,
+        }
+    end
 
     -- Armory panel (created once, returns a toggle function)
     local toggleArmory = armoryHud.createArmoryHUD(screenGui)
 
     -- Click sound (static, not reactive)
-    local clickSound = create "Sound" {
+    local _clickSound = create "Sound" {
         Name     = "ShopClick",
         Parent   = screenGui,
         SoundId  = ui.sounds.Click,
         Volume   = ui.button.clickVolume,
     }
 
-    -- Create a reactive scope; instances are parented manually via Parent property
-    root(function()
+    local function renderHUD()
         -- Game title (top-center) — static
         create "TextLabel" {
             Name                   = "Title",
@@ -173,7 +179,9 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         })
 
 
-    end)
+    end
+
+    local unmount = mount(renderHUD, screenGui)
 
     local controls = {
         setSilver = function(amount: number) silverAmount(amount) end,
@@ -181,7 +189,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         setHint   = function(msg: string) hintMsg(msg) end,
     }
 
-    return screenGui, controls
+    return screenGui, controls, unmount
 end
 
 return {

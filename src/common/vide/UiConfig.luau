@@ -18,16 +18,17 @@ local SocialService = game:GetService("SocialService")
 local ui = {}
 
 -- ── Images ────────────────────────────────────────────────────────────────────
+local placeholder = "rbxassetid://90029504881916"
 
 ui.images = {
-    MatchButton     = "rbxassetid://0",              -- Find Match / Cancel button icon
+    MatchButton     = placeholder,              -- Find Match / Cancel button icon
     ShopButton      = "rbxassetid://90029504881916", -- Shop button icon
     ClassShopButton = "rbxassetid://124983139179704", -- Shop button icon
     PlayButton      = "rbxassetid://133750960686182",
-    SilverIcon      = "rbxassetid://0",              -- Silver currency icon
-    PlayerAvatar    = "rbxassetid://0",              -- Player avatar frame/icon
-    PanelBackground = "rbxassetid://0",              -- Panel background texture/image
-    AccentBar       = "rbxassetid://0",             -- Accent bar graphic
+    SilverIcon      = placeholder,              -- Silver currency icon
+    PlayerAvatar    = placeholder,              -- Player avatar frame/icon
+    PanelBackground = placeholder,              -- Panel background texture/image
+    AccentBar       = placeholder,             -- Accent bar graphic
     BuyButton       = "rbxassetid://83427476792515",
     -- GUNS
     Scar            = "rbxassetid://85630207697247",
