@@ -13,10 +13,6 @@ local ui    = require(script.Parent.UiConfig)
 local DepressedButton = require(script.Parent.DepressedButton)
 local GunPurchaseCard = require(script.Parent.GunPurchaseCard)
 
--- Client-side modules (only available on client)
-local Framework   = require(ReplicatedStorage.Shared.Framework)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
-
 local create = vide.create
 
 -- ── Weapon grid data ────────────────────────────────────────────────────────
@@ -51,7 +47,7 @@ local GAP      = 0.03   -- gap between grid cells (fraction of panel)
 
 --- Creates the armory popup panel with a breakout detail view.
 --- Returns a toggle function so the caller just calls it on click.
-function createArmoryHUD(screenGui: Instance): () -> ()
+function createArmoryHUD(screenGui: Instance, onPurchaseWeapon: ((string) -> ())?): () -> ()
     local armoryPanel = create "Frame" {
         Name                   = "ArmoryPanel",
         Parent                 = screenGui,
@@ -225,9 +221,9 @@ function createArmoryHUD(screenGui: Instance): () -> ()
                         local weaponName = entry.configKey
                         if not weaponName then return end
 
-                        -- Fire purchase request to server
-                        local purchaseRemote = Framework.GetRemote(RemoteNames.PURCHASE_WEAPON)
-                        purchaseRemote:FireServer(weaponName)
+                        if onPurchaseWeapon then
+                            onPurchaseWeapon(weaponName)
+                        end
                     end,
                 })
             end

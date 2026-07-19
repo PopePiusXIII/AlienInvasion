@@ -14,7 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Framework  = require(ReplicatedStorage.Shared.Framework)
 local Logger     = require(ReplicatedStorage.Shared.Logger)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local ProfileApi = require(script.Parent.Parent.api.ProfileApi)
 local LobbyMainHUD = require(ReplicatedStorage.Shared.vide.LobbyMainHUD)
 local MatchmakingHUDModule     = require(ReplicatedStorage.Shared.vide.MatchmakingHUD)
 local LobbyHudController = Framework.CreateController({ Name = "LobbyHudController" })
@@ -39,18 +39,22 @@ local _onShopClicked:      () -> () = function() end
 function LobbyHudController:Init()
 	-- Always-on lobby HUD
 	_mainScreenGui, _mainControls = LobbyMainHUD.createLobbyMainHUD({
-		title    = "ALIEN INVASION",
-	})
+		title            = "ALIEN INVASION",
+			onPurchaseWeapon = function(weaponName: string)
+				ProfileApi.purchaseWeapon(weaponName)
+			end,
+			profileApi        = ProfileApi,
+		})
 	_mainScreenGui.Parent = Players.LocalPlayer.PlayerGui
 end
 
 function LobbyHudController:Start()
-	local syncProfileRemote = Framework.GetRemote(RemoteNames.SYNC_PROFILE)
-	syncProfileRemote.OnClientEvent:Connect(function(gold: number, silver: number)
-		Logger.info(TAG, "Profile synced — gold=%d, silver=%d.", gold, silver)
-		LobbyHudController.setGold(gold)
-		LobbyHudController.setSilver(silver)
+	ProfileApi.onChanged(function(profile)
+		Logger.info(TAG, "Profile synced — gold=%d, silver=%d.", profile.gold, profile.silver)
+		LobbyHudController.setGold(profile.gold)
+		LobbyHudController.setSilver(profile.silver)
 	end)
+	ProfileApi.start()
 end
 
 -- ── Matchmaking panel lifecycle ───────────────────────────────────────────────

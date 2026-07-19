@@ -37,7 +37,20 @@ local function DepressedButton(props: DepressedButtonProps)
         
         -- 💡 AUTOMATIC ASPECT RATIO TRICK:
         -- Fits the image texture inside the boundaries while protecting its true shape!
-        ScaleType              = Enum.ScaleType.Fit,
+        -- ScaleType              = Enum.ScaleType.Fit,
+
+        create "UICorner" {
+            Name = "UICorner",
+            BottomLeftRadius = UDim.new(0, 20),
+            BottomRightRadius = UDim.new(0, 20),
+            TopLeftRadius = UDim.new(0, 20),
+            TopRightRadius = UDim.new(0, 20),
+        },
+
+        create "UIStroke" {
+            Name = "UIStroke",
+            Thickness = 3,
+        },
 
         create "UIScale" {
             Name  = "ImageScale",

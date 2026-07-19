@@ -19,6 +19,8 @@ local theme = require(script.Parent.VideTheme)
 local ui    = require(script.Parent.UiConfig)
 local DepressedButton = require(script.Parent.DepressedButton)
 local armoryHud = require(script.Parent.Armory)
+local ProfileInventory = require(script.Parent.ProfileInventory)
+local ProfileApiType = require(ReplicatedStorage.Shared.ProfileApiType)
 
 local create = vide.create
 local source = vide.source
@@ -29,6 +31,9 @@ export type LobbyMainHUDProps = {
     title: string,
     hintText: string,
     parentGui: Instance?,
+    playerName: string?,
+    onPurchaseWeapon: ((string) -> ())?,
+    profileApi: ProfileApiType.API?,
 }
 
 --- Creates the always-visible lobby HUD.
@@ -42,6 +47,16 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
     local silverAmount = source(0)
     local goldAmount = source(0)
     local hintMsg      = source(props.hintText or "")
+    -- UI Labs stories run without a client Player, so LocalPlayer can be nil.
+    -- Keep the component renderable there while preserving the real name in-game.
+    local localPlayer = Players.LocalPlayer
+    local displayName = props.playerName
+    if not displayName then
+        displayName = "PLAYER"
+        if localPlayer then
+            displayName = localPlayer.Name
+        end
+    end
 
     local screenGui: Instance
     if props.parentGui then
@@ -51,12 +66,17 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             Name           = "LobbyMainHud",
             ResetOnSpawn   = false,
             IgnoreGuiInset = true,
-            Parent         = Players.LocalPlayer.PlayerGui,
+            Parent         = localPlayer and localPlayer.PlayerGui,
         }
     end
 
     -- Armory panel (created once, returns a toggle function)
-    local toggleArmory = armoryHud.createArmoryHUD(screenGui)
+    local toggleArmory = armoryHud.createArmoryHUD(screenGui, props.onPurchaseWeapon)
+    local toggleInventory: () -> () = function() end
+    local cleanupInventory: (() -> ())? = nil
+    if props.profileApi then
+        toggleInventory, cleanupInventory = ProfileInventory.createProfileInventoryHUD(props.profileApi, screenGui)
+    end
 
     -- Click sound (static, not reactive)
     local _clickSound = create "Sound" {
@@ -91,7 +111,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             TextScaled           = true,
             Font                 = theme.FONT_BOLD,
             TextXAlignment       = Enum.TextXAlignment.Left,
-            Text                 = Players.LocalPlayer.Name,
+            Text                 = displayName,
         }
 
         -- Silver balance (top-left, below player name) — reactive
@@ -178,10 +198,31 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             end,
         })
 
+        create "TextButton" {
+            Name                   = "InventoryButton",
+            Parent                 = screenGui,
+            Size                   = UDim2.new(0.16, 0, 0.05, 0),
+            Position               = UDim2.new(0.42, 0, 0.83, 0),
+            BackgroundColor3       = theme.BACKGROUND_LIGHT,
+            TextColor3             = theme.TEXT_PRIMARY,
+            Text                   = "INVENTORY",
+            TextScaled             = true,
+            Font                   = theme.FONT_BOLD,
+            BorderSizePixel        = 0,
+            Visible                = props.profileApi ~= nil,
+            Activated              = toggleInventory,
+        }
+
 
     end
 
     local unmount = mount(renderHUD, screenGui)
+    local function cleanup()
+        unmount()
+        if cleanupInventory then
+            cleanupInventory()
+        end
+    end
 
     local controls = {
         setSilver = function(amount: number) silverAmount(amount) end,
@@ -189,7 +230,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
         setHint   = function(msg: string) hintMsg(msg) end,
     }
 
-    return screenGui, controls, unmount
+    return screenGui, controls, cleanup
 end
 
 return {

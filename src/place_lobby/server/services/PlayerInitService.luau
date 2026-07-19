@@ -20,7 +20,29 @@ local PlayerInitService = Framework.CreateService({ Name = TAG })
 local _syncProfileRemote: RemoteEvent
 
 local function syncProfile(player: Player, profile: any)
-	_syncProfileRemote:FireClient(player, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
+	local unlockedWeapons = {}
+	for weaponName, unlocked in profile.unlockedWeapons do
+		if unlocked then
+			table.insert(unlockedWeapons, weaponName)
+		end
+	end
+
+	local inventory = {}
+	for id, item in profile.inventory do
+		table.insert(inventory, {
+			id = id,
+			name = item.name,
+			rarity = item.rarity,
+		})
+	end
+
+	_syncProfileRemote:FireClient(
+		player,
+		profile.goldStuds,
+		profile.lifetimeSilverEarned - profile.lifetimeSilverSpent,
+		unlockedWeapons,
+		inventory
+	)
 	Logger.info(TAG, "Synced profile to %s — gold=%d, silver=%d.", player.Name, profile.goldStuds, profile.lifetimeSilverEarned - profile.lifetimeSilverSpent)
 end
 
@@ -64,4 +86,3 @@ function PlayerInitService:Start()
 end
 
 return PlayerInitService
-

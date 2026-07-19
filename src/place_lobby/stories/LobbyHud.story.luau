@@ -2,6 +2,7 @@
 
 local LobbyMainHUD = require(game.ReplicatedStorage.Shared.vide.LobbyMainHUD)
 local MatchmakingHUD = require(game.ReplicatedStorage.Shared.vide.MatchmakingHUD)
+local ProfileApi = require(game.ServerStorage.Shared.UiLabsApi)
 
 
 local function story(target: Instance)
@@ -9,12 +10,16 @@ local function story(target: Instance)
 			title = "ALIEN INVASION",
 			hintText = "Walk to a pad to play",
 			parentGui = target,
+			onPurchaseWeapon = ProfileApi.purchaseWeapon,
 		})
 		if _mainGui ~= target then
 			_mainGui.Parent = target
 		end
-		mainControls.setSilver(1250)
-		mainControls.setGold(80)
+		local unsubscribeProfile = ProfileApi.onChanged(function(profile)
+			mainControls.setSilver(profile.silver)
+			mainControls.setGold(profile.gold)
+		end)
+		ProfileApi.start()
 
 		local matchmakingGui, matchmakingControls = MatchmakingHUD.createMatchmakingHUD({
 			title = "ALIEN INVASION",
@@ -30,6 +35,7 @@ local function story(target: Instance)
 		matchmakingControls.setVisible(true)
 
 		return function()
+			unsubscribeProfile()
 			if unmountMain then
 				unmountMain()
 			end

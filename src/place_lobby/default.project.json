@@ -8,6 +8,7 @@
         "$className": "Folder",
         "Framework":      { "$path": "../common/Framework.luau" },
         "RemoteNames":    { "$path": "shared/RemoteNames.luau" },
+        "ProfileApiType": { "$path": "shared/ProfileApiType.luau" },
         "CombatConfig":   { "$path": "../common/configs/CombatConfig.luau" },
         "vide":           { "$path": "../common/vide" }
       },
@@ -27,7 +28,9 @@
         "purchase":       { "$path": "../common/purchase" },
         "Config":         { "$path": "shared/Config.luau" },
         "LightShowConfig": { "$path": "shared/LightShowConfig.luau" },
-        "RemoteNames":    { "$path": "shared/RemoteNames.luau" }
+        "RemoteNames":    { "$path": "shared/RemoteNames.luau" },
+        "ProfileApiType": { "$path": "shared/ProfileApiType.luau" },
+        "UiLabsApi":      { "$path": "client/api/UiLabsApi.luau" }
       },
       "Packages": {
         "$className": "Folder",
