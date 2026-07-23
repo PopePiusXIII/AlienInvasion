@@ -11,13 +11,14 @@ export type ImgButtonHighlightedProps = {
     size: UDim2,
     onActivated: () -> (),
     hoverSoundId: string?,
+    isSelected: (() -> boolean)?,
 }
 
-local function CreateStroke(selected: vide.Source<boolean>)
+local function CreateStroke(selected: vide.Source<boolean>, isSelected: (() -> boolean)?)
 	return create "UIStroke" {
 		Name = "UIStroke",
 		Color = function()
-			return selected()
+			return (selected() or (isSelected and isSelected()))
 				and Color3.fromRGB(255, 0, 0)
 				or Color3.fromRGB(0, 0, 0)
 		end,
@@ -71,7 +72,7 @@ local function ImgButtonHighlighted(props: ImgButtonHighlightedProps)
         end,
 
 
-		CreateStroke(hovered),
+		CreateStroke(hovered, props.isSelected),
 	}
 
 	return instance

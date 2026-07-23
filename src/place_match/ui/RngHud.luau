@@ -1,4 +1,5 @@
 local ReplicatedStorage = (game.ReplicatedStorage)
+local ContextActionService = game:GetService("ContextActionService")
 local vide  = require(ReplicatedStorage.Packages.vide)
 local ImgButtonHighlight = require(ReplicatedStorage.Shared.vide.ImgButtonHighlight)
 
@@ -7,9 +8,18 @@ local source = vide.source
 local effect = vide.effect
 local mount  = vide.mount
 local root   = vide.root
+local cleanup = vide.cleanup
 
-local rngHud = create "Frame" {
+local ACTION_NAME = "RngHud_Select"
+
+local rngHud = create "ScreenGui" {
+    Name = "RngHud",
+    ResetOnSpawn = false,
+}
+
+local rngHudFrame = create "Frame" {
     Name = "Frame",
+    Parent = rngHud,
     AnchorPoint = Vector2.new(0.5, 0.5),
     BackgroundColor3 = Color3.new(1, 1, 1),
     BorderColor3 = Color3.new(),
@@ -106,7 +116,13 @@ local rngHud = create "Frame" {
     },
 }
 
-root(function()
+local destroyRoot = root(function()
+    local selectedIndex = source(1)
+    local buttons = {}
+    local fHeld = false
+    local holdToken = 0
+    local holdActivated = false
+
     for _, button in {
         {
             image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
@@ -121,14 +137,70 @@ root(function()
             position = UDim2.fromScale(0.398707, 0.141089),
         },
     } do
+        local index = #buttons + 1
+        local onActivated = function() print("scionara") end
+
         ImgButtonHighlight({
-            parent = rngHud,
+            parent = rngHudFrame,
             image = button.image,
             position = button.position,
             size = UDim2.fromScale(0.202586, 0.709434),
-            onActivated = function() end,
+            onActivated = onActivated,
+            isSelected = function()
+                return selectedIndex() == index
+            end,
         })
+
+        table.insert(buttons, onActivated)
     end
+
+    local function handleF(_, inputState)
+        if inputState == Enum.UserInputState.Begin then
+            if fHeld then
+                return Enum.ContextActionResult.Sink
+            end
+
+            fHeld = true
+            holdActivated = false
+            holdToken += 1
+            local token = holdToken
+
+            task.delay(0.5, function()
+                if fHeld and holdToken == token then
+                    holdActivated = true
+                    buttons[selectedIndex()]()
+                end
+            end)
+        elseif inputState == Enum.UserInputState.End then
+            if not fHeld then
+                return Enum.ContextActionResult.Sink
+            end
+
+            fHeld = false
+            holdToken += 1
+
+            if not holdActivated then
+                selectedIndex(selectedIndex() % #buttons + 1)
+            end
+        end
+
+        return Enum.ContextActionResult.Sink
+    end
+
+    ContextActionService:UnbindAction(ACTION_NAME)
+    ContextActionService:BindActionAtPriority(
+        ACTION_NAME,
+        handleF,
+        false,
+        Enum.ContextActionPriority.High.Value,
+        Enum.KeyCode.F
+    )
+
+    cleanup(function()
+        ContextActionService:UnbindAction(ACTION_NAME)
+    end)
 end)
+
+rngHud.Destroying:Once(destroyRoot)
 
 return rngHud
