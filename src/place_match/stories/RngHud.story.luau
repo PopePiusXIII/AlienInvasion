@@ -1,6 +1,6 @@
 --!strict
 
-local Inventory = require(game.StarterPlayer.StarterPlayerScripts.LobbyClient.ui.Inventory)
+local Inventory = require(game.ReplicatedStorage.Shared.ui.RngHud)
 
 local function story(target: Instance)
 	Inventory.Parent = target

@@ -14,6 +14,7 @@
         "MatchProfileServiceTypes": { "$path": "shared/types/MatchProfileServiceTypes.luau" },
         "RngCoreTypes": { "$path": "../../src/common/RngCoreTypes.luau" },
         "RemoteNames": { "$path": "shared/RemoteNames.luau" },
+        "ui": { "$path": "ui" },
         "Configs": { "$path": "shared/Configs" }
       },
       "Packages": {

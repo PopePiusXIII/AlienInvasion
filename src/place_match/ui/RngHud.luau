@@ -1,0 +1,134 @@
+local ReplicatedStorage = (game.ReplicatedStorage)
+local vide  = require(ReplicatedStorage.Packages.vide)
+local ImgButtonHighlight = require(ReplicatedStorage.Shared.vide.ImgButtonHighlight)
+
+local create = vide.create
+local source = vide.source
+local effect = vide.effect
+local mount  = vide.mount
+local root   = vide.root
+
+local rngHud = create "Frame" {
+    Name = "Frame",
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    BackgroundColor3 = Color3.new(1, 1, 1),
+    BorderColor3 = Color3.new(),
+    BorderSizePixel = 0,
+    Position = UDim2.fromScale(0.505834, 0.274347),
+    Size = UDim2.fromScale(0.483333, 0.24537),
+
+    create "ImageLabel" {
+        Name = "Black_Stud_Background",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+        Image = "rbxassetid://6927295847",
+        Position = UDim2.fromScale(0.5, 0.498113),
+        ScaleType = Enum.ScaleType.Tile,
+        Size = UDim2.fromScale(1, 1),
+        TileSize = UDim2.fromOffset(100, 100),
+
+        create "UICorner" {
+            Name = "UICorner",
+            BottomLeftRadius = UDim.new(0.0754717, 0),
+            BottomRightRadius = UDim.new(0.0754717, 0),
+            TopLeftRadius = UDim.new(0.0754717, 0),
+            TopRightRadius = UDim.new(0.0754717, 0),
+        },
+
+        create "UIStroke" {
+            Name = "UIStroke",
+            StrokeSizingMode = Enum.StrokeSizingMode.ScaledSize,
+            Thickness = 0.0377358,
+        },
+
+        create "UIAspectRatioConstraint" {
+            Name = "UIAspectRatioConstraint",
+            AspectRatio = 3.50189,
+        },
+    },
+
+    create "ImageLabel" {
+        Name = "Black_Stud_Background",
+        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+        Image = "rbxassetid://6927295847",
+        Position = UDim2.fromScale(0, -0.173585),
+        ScaleType = Enum.ScaleType.Tile,
+        Size = UDim2.fromScale(1, 0.171205),
+        TileSize = UDim2.fromOffset(100, 100),
+
+        create "UICorner" {
+            Name = "UICorner",
+            BottomLeftRadius = UDim.new(0.440825, 0),
+            BottomRightRadius = UDim.new(0.440825, 0),
+            TopLeftRadius = UDim.new(0.440825, 0),
+            TopRightRadius = UDim.new(0.440825, 0),
+        },
+
+        create "UIStroke" {
+            Name = "UIStroke",
+            StrokeSizingMode = Enum.StrokeSizingMode.ScaledSize,
+            Thickness = 0.220413,
+        },
+
+        create "TextLabel" {
+            Name = "TextLabel",
+            BackgroundTransparency = 1,
+            FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json"),
+            Position = UDim2.fromScale(0.298491, -0.484908),
+            RichText = true,
+            Size = UDim2.fromScale(0.377472, 2.97687),
+            Text = "Select Your Skill",
+            TextColor3 = Color3.fromRGB(255, 0, 0),
+            TextScaled = true,
+            TextStrokeColor3 = Color3.fromRGB(255, 0, 0),
+
+            create "UIPadding" {
+                Name = "UIPadding",
+                PaddingBottom = UDim.new(-0.0866667, 0),
+                PaddingTop = UDim.new(-0.0866667, 0),
+            },
+
+            create "UIAspectRatioConstraint" {
+                Name = "UIAspectRatioConstraint",
+                AspectRatio = 4,
+            },
+        },
+
+        create "UIAspectRatioConstraint" {
+            Name = "UIAspectRatioConstraint",
+            AspectRatio = 20.4543,
+        },
+    },
+
+    create "UIAspectRatioConstraint" {
+        Name = "UIAspectRatioConstraint",
+        AspectRatio = 3.50189,
+    },
+}
+
+root(function()
+    for _, button in {
+        {
+            image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+            position = UDim2.fromScale(0.742457, 0.141089),
+        },
+        {
+            image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+            position = UDim2.fromScale(0.0538793, 0.144862),
+        },
+        {
+            image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+            position = UDim2.fromScale(0.398707, 0.141089),
+        },
+    } do
+        ImgButtonHighlight({
+            parent = rngHud,
+            image = button.image,
+            position = button.position,
+            size = UDim2.fromScale(0.202586, 0.709434),
+            onActivated = function() end,
+        })
+    end
+end)
+
+return rngHud
