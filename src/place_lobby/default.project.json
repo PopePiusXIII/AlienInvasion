@@ -6,11 +6,15 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "Framework":      { "$path": "../common/Framework.luau" },
+        "$path": "../common/shared",
+        "Logger":         { "$path": "../common/shared/Logger.luau" },
+        "GunCore":        { "$path": "../common/shared/GunCore.luau" },
+        "CombatConfig":   { "$path": "../common/shared/configs/CombatConfig.luau" },
+        "ProfileDbTypes": { "$path": "../common/shared/ProfileDbTypes.luau" },
         "RemoteNames":    { "$path": "shared/RemoteNames.luau" },
         "ProfileApiType": { "$path": "shared/ProfileApiType.luau" },
-        "CombatConfig":   { "$path": "../common/configs/CombatConfig.luau" },
-        "vide":           { "$path": "../common/vide" }
+        "Config":         { "$path": "shared/Config.luau" },
+        "LightShowConfig": { "$path": "shared/LightShowConfig.luau" }
       },
       "Packages": {
         "$className": "Folder",
@@ -21,10 +25,7 @@
     "ServerStorage": {
       "Shared": {
         "$className": "Folder",
-        "Framework":      { "$path": "../common/Framework.luau" },
-        "Logger":         { "$path": "../common/Logger.luau" },
-        "GunCore":        { "$path": "../common/GunCore.luau" },
-        "CombatConfig":   { "$path": "../common/configs/CombatConfig.luau" },
+        "$path": "../common/shared",
         "purchase":       { "$path": "../common/purchase" },
         "Config":         { "$path": "shared/Config.luau" },
         "LightShowConfig": { "$path": "shared/LightShowConfig.luau" },
@@ -51,9 +52,13 @@
 
       "ServerModules": {
         "$className": "Folder",
-        "ProfileDb": { "$path": "../common/ProfileDb.luau" },
-        "GunApi":         { "$path": "../common/GunApi.luau" },
-        "GunMerge":       { "$path": "../common/GunMerge.luau" }
+        "ProfileDb": { "$path": "../common/server/ProfileDb.luau" },
+        "Logger": { "$path": "../common/shared/Logger.luau" },
+        "GunCore": { "$path": "../common/shared/GunCore.luau" },
+        "CombatConfig": { "$path": "../common/shared/configs/CombatConfig.luau" },
+        "ProfileDbTypes": { "$path": "../common/shared/ProfileDbTypes.luau" },
+        "GunApi":         { "$path": "../common/server/GunApi.luau" },
+        "GunMerge":       { "$path": "../common/server/GunMerge.luau" }
       }
     },
 

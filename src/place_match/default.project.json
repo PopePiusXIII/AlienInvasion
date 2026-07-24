@@ -5,14 +5,10 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "Framework": { "$path": "../../src/common/Framework.luau" },
-        "Logger": { "$path": "../../src/common/Logger.luau" },
-        "GunCore": { "$path": "../../src/common/GunCore.luau" },
-        "vide": { "$path": "../../src/common/vide" },
-        "CombatConfig": { "$path": "../../src/common/configs/CombatConfig.luau" },
+        "$path": "../../src/common/shared",
+        "CombatConfig": { "$path": "../../src/common/shared/configs/CombatConfig.luau" },
         "MatchProfile": { "$path": "shared/types/MatchProfile.luau" },
         "MatchProfileServiceTypes": { "$path": "shared/types/MatchProfileServiceTypes.luau" },
-        "RngCoreTypes": { "$path": "../../src/common/RngCoreTypes.luau" },
         "RemoteNames": { "$path": "shared/RemoteNames.luau" },
         "ui": { "$path": "ui" },
         "Configs": { "$path": "shared/Configs" }
@@ -27,11 +23,15 @@
       "Server": { "$path": "server" },
       "ServerModules": {
         "$className": "Folder",
-        "ProfileDb": { "$path": "../../src/common/ProfileDb.luau" },
-        "ProfileDbTypes": { "$path": "../../src/common/ProfileDbTypes.luau" },
-        "GunApi": { "$path": "../../src/common/GunApi.luau" },
-        "GunMerge": { "$path": "../../src/common/GunMerge.luau" },
-        "RngCore": { "$path": "../../src/common/RngCore.luau" }
+        "ProfileDb": { "$path": "../../src/common/server/ProfileDb.luau" },
+        "ProfileDbTypes": { "$path": "../../src/common/shared/ProfileDbTypes.luau" },
+        "Logger": { "$path": "../../src/common/shared/Logger.luau" },
+        "GunCore": { "$path": "../../src/common/shared/GunCore.luau" },
+        "CombatConfig": { "$path": "../../src/common/shared/configs/CombatConfig.luau" },
+        "RngCoreTypes": { "$path": "../../src/common/server/modules/RngCoreTypes.luau" },
+        "GunApi": { "$path": "../../src/common/server/GunApi.luau" },
+        "GunMerge": { "$path": "../../src/common/server/GunMerge.luau" },
+        "RngCore": { "$path": "../../src/common/server/modules/RngCore.luau" }
       }
     },
     "ServerStorage": {

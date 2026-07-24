@@ -1,11 +1,8 @@
-local ReplicatedStorage = (game.ReplicatedStorage)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local vide  = require(ReplicatedStorage.Packages.vide)
 local DepressedButton = require(ReplicatedStorage.Shared.vide.DepressedButton)
 
 local create = vide.create
-local source = vide.source
-local effect = vide.effect
-local mount  = vide.mount
 
 local inventoryRoot = create "ScreenGui" {
     Name = "OpenedInventory",
@@ -13,7 +10,7 @@ local inventoryRoot = create "ScreenGui" {
 }
 
 
-main_frame = create "Frame" {
+local main_frame = create "Frame" {
     Name = "Parent_Frame",
     Parent = inventoryRoot,
     AnchorPoint = Vector2.new(0.5, 0.5),

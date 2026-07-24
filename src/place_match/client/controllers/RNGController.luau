@@ -13,7 +13,7 @@ local TAG = "RNGController"
 local RNGController = Framework.CreateController({ Name = TAG })
 
 local _localPlayer: Player
-local _rngActivateRemote: RemoteEvent
+local _rngActivateRemote: RemoteFunction
 local _rngRequestGiveRemote: RemoteEvent
 
 local _gui: ScreenGui = RngHud
@@ -82,7 +82,7 @@ function RNGController:Init()
 end
 
 function RNGController:Start()
-    _rngActivateRemote = Framework.GetRemote(RemoteNames.RNG_ACTIVATE)
+    _rngActivateRemote = Framework.GetRemoteFunction(RemoteNames.RNG_ACTIVATE)
     _rngRequestGiveRemote = Framework.GetRemote(RemoteNames.RNG_REQUEST_GIVE)
 
     buildGui()
@@ -113,8 +113,8 @@ function RNGController:Start()
             if not char then return end
             if hit and hit:IsDescendantOf(char) then
                 Logger.info(TAG, "Touched RNG BLOCK — showing prompt + firing activate remote")
-                showPrompt()
-                _rngActivateRemote:FireServer()
+                local items = _rngActivateRemote:InvokeServer()
+                showPrompt(items)
             end
         end)
         _attachedRngParts[part] = conn
@@ -143,36 +143,36 @@ function RNGController:Start()
     end)
 
     -- Input handling
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if not _state.visible then return end
-        if input.KeyCode == Enum.KeyCode.F then
-            if _state.selected then
-                -- If already selected, treat F as slot1 selection
-                local toRemove: string? = nil
+    -- UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    --     if gameProcessed then return end
+    --     if not _state.visible then return end
+    --     if input.KeyCode == Enum.KeyCode.F then
+    --         if _state.selected then
+    --             -- If already selected, treat F as slot1 selection
+    --             local toRemove: string? = nil
 
-                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(InventoryController.getWeapons(), ", "))
-                Logger.info(TAG, "Requesting give: %s (slot=1) remove=%s", _state.selected, tostring(toRemove))
-                _rngRequestGiveRemote:FireServer(_state.selected, 1, toRemove)
-                hidePrompt()
-            else
-                Logger.info(TAG, "F pressed while prompt visible")
-                onSelectWeapon()
-            end
-        elseif input.KeyCode == Enum.KeyCode.G then
-            if _state.selected then
-                local toRemove: string? = nil
+    --             Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(InventoryController.getWeapons(), ", "))
+    --             Logger.info(TAG, "Requesting give: %s (slot=1) remove=%s", _state.selected, tostring(toRemove))
+    --             _rngRequestGiveRemote:FireServer(_state.selected, 1, toRemove)
+    --             hidePrompt()
+    --         else
+    --             Logger.info(TAG, "F pressed while prompt visible")
+    --             onSelectWeapon()
+    --         end
+    --     elseif input.KeyCode == Enum.KeyCode.G then
+    --         if _state.selected then
+    --             local toRemove: string? = nil
 
 
-                Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(InventoryController.getWeapons(), ", "))
-                Logger.info(TAG, "Requesting give: %s (slot=2) remove=%s", _state.selected, tostring(toRemove))
-                _rngRequestGiveRemote:FireServer(_state.selected, 2, toRemove)
-                hidePrompt()
-            end
-        elseif input.KeyCode == Enum.KeyCode.X then
-            hidePrompt()
-        end
-    end)
+    --             Logger.info(TAG, "Client current inventory — weapons=%s", table.concat(InventoryController.getWeapons(), ", "))
+    --             Logger.info(TAG, "Requesting give: %s (slot=2) remove=%s", _state.selected, tostring(toRemove))
+    --             _rngRequestGiveRemote:FireServer(_state.selected, 2, toRemove)
+    --             hidePrompt()
+    --         end
+    --     elseif input.KeyCode == Enum.KeyCode.X then
+    --         hidePrompt()
+    --     end
+    -- end)
 end
 
 return RNGController

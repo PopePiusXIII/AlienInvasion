@@ -62,6 +62,7 @@ end
 local function createMatchPanel()
 	if _isMatchPanelActive then return end
 	_isMatchPanelActive = true
+	local player = assert(Players.LocalPlayer)
 
 	_matchScreenGui, _matchControls = MatchmakingHUDModule.createMatchmakingHUD({
 		title      = "ALIEN INVASION",
@@ -74,7 +75,7 @@ local function createMatchPanel()
 			_onShopClicked()
 		end,
 	})
-	_matchScreenGui.Parent = Players.LocalPlayer.PlayerGui
+	_matchScreenGui.Parent = player.PlayerGui
 	Logger.info(TAG, "Matchmaking panel created.")
 end
 
@@ -113,7 +114,8 @@ function LobbyHudController.setPanelVisible(visible: boolean)
 	elseif not _isMatchPanelActive then
 		-- Panel was never created, nothing to hide.
 	else
-		_matchControls.setVisible(false)
+		local controls = _matchControls
+		if controls then controls.setVisible(false) end
 	end
 end
 

@@ -52,15 +52,24 @@ local function getRemoteFolder(): Folder
 	if _remoteFolder then return _remoteFolder :: Folder end
 	local RS = game:GetService("ReplicatedStorage")
 	if IS_SERVER then
-		local f = RS:FindFirstChild("Remotes") :: Folder?
+		local f = RS:FindFirstChild("Remotes")
 		if not f then
-			f        = Instance.new("Folder") :: Folder
-			f.Name   = "Remotes"
-			f.Parent = RS
+			local folder = Instance.new("Folder")
+			folder.Name = "Remotes"
+			folder.Parent = RS
+			f = folder
 		end
+		assert(f:IsA("Folder"), "[Framework] ReplicatedStorage.Remotes is not a Folder")
 		_remoteFolder = f
 	else
-		_remoteFolder = RS:WaitForChild("Remotes", 10) :: Folder
+		local success, result = pcall(function()
+			return RS:WaitForChild("Remotes", 10)
+		end)
+		if not success or not result then
+			error("[Framework] Could not find Remotes folder in ReplicatedStorage after 10s. Is the server running?")
+		end
+		assert(result:IsA("Folder"), "[Framework] ReplicatedStorage.Remotes is not a Folder")
+		_remoteFolder = result
 	end
 
 	return _remoteFolder :: Folder
@@ -163,7 +172,7 @@ function Framework.Start()
 	for name, mod in pairs(_registry) do
 		warn(string.format("[Framework] Init %s", name))
 		if mod.Init then
-			local ok, err = pcall(mod.Init, mod)
+			local ok, err = pcall(function() return (mod.Init :: any)(mod) end)
 			if not ok then
 				warn(string.format("[Framework] Init FAILED (%s): %s", name, tostring(err)))
 			end
@@ -174,7 +183,7 @@ function Framework.Start()
 	for name, mod in pairs(_registry) do
 		if mod.Start then
 			task.spawn(function()
-				local ok, err = pcall(mod.Start, mod)
+				local ok, err = pcall(function() return (mod.Start :: any)(mod) end)
 				if not ok then
 					warn(string.format("[Framework] Start CRASHED (%s): %s", name, tostring(err)))
 				end

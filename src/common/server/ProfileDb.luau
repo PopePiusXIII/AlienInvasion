@@ -21,11 +21,11 @@ local HttpService = game:GetService("HttpService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ServerScriptService.ServerModules.Logger)
-local CombatConfig = require(ServerScriptService.ServerModules.CombatConfig)
-local GunCore  = require(ServerScriptService.ServerModules.GunCore)
+local Logger    = require(ReplicatedStorage.Shared.Logger)
+local CombatConfig = require(ReplicatedStorage.Shared.configs.CombatConfig)
+local GunCore  = require(ReplicatedStorage.Shared.GunCore)
 local GunMerge   = require(ServerScriptService.ServerModules.GunMerge)
-local pst = require(ServerScriptService.ServerModules.ProfileDbTypes)
+local pst = require(ReplicatedStorage.Shared.ProfileDbTypes)
 
 local TAG = "ProfileDb"
 

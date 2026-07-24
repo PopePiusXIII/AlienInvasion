@@ -1,4 +1,3 @@
-local SocialService = game:GetService("SocialService")
 --!strict
 --------------------------------------------------------------------------------
 -- UiConfig.luau  (src/common/vide)

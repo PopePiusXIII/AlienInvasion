@@ -8,9 +8,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local vide = require(ReplicatedStorage.Packages.vide)
-local ui   = require(script.Parent.UiConfig)
-local themeModule = require(script.Parent.VideTheme)
-local theme = themeModule or { ACCENT = Color3.fromRGB(220, 60, 60) }
 
 local create = vide.create
 

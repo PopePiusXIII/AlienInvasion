@@ -102,7 +102,7 @@ end
 
 --- Create a stat bar (HP / Armor style with tick marks)
 --- When used inside a derive(), this reads the closures directly.
-local function createStatBar(label: () -> string, valuePct: () -> number, color: () -> Color3)
+local function _createStatBar(label: () -> string, valuePct: () -> number, color: () -> Color3)
     return derive(function()
         local pct   = math.clamp(valuePct(), 0, 1)
         local col   = color()
@@ -181,7 +181,7 @@ local function createStatBar(label: () -> string, valuePct: () -> number, color:
 end
 
 --- Create a single kill feed entry
-local function createKillFeedEntry(playerText: () -> string, methodText: () -> string)
+local function _createKillFeedEntry(playerText: () -> string, methodText: () -> string)
     return derive(function()
         return create "Frame" {
             Name = "KillEntry",
@@ -230,7 +230,7 @@ local function createKillFeedEntry(playerText: () -> string, methodText: () -> s
 end
 
 --- Create a perk badge
-local function createPerkBadge(nameText: () -> string, isActive: () -> boolean)
+local function _createPerkBadge(nameText: () -> string, isActive: () -> boolean)
     return derive(function()
         local active = isActive()
         return create "Frame" {
@@ -328,7 +328,7 @@ local function createCrosshair()
 end
 
 --- Create an objective checkbox row
-local function createObjectiveRow(text: () -> string, done: () -> boolean)
+local function _createObjectiveRow(text: () -> string, done: () -> boolean)
     return derive(function()
         local completed = done()
         return create "Frame" {
@@ -372,7 +372,7 @@ local function createObjectiveRow(text: () -> string, done: () -> boolean)
 end
 
 --- Create the XP progress bar
-local function createXPBar(xpCurrent: () -> number, xpMax: () -> number)
+local function _createXPBar(xpCurrent: () -> number, xpMax: () -> number)
     return derive(function()
         local pct = math.clamp(xpCurrent() / math.max(xpMax(), 1), 0, 1)
         return create "Frame" {
@@ -408,7 +408,7 @@ local function createXPBar(xpCurrent: () -> number, xpMax: () -> number)
 end
 
 --- Create a hotbar slot for a weapon
-local function createWeaponSlot(index: number, weaponName: () -> string?, isEquipped: () -> boolean, onClick: () -> ())
+local function _createWeaponSlot(index: number, weaponName: () -> string?, isEquipped: () -> boolean, onClick: () -> ())
     return derive(function()
         local name     = weaponName()
         local equipped = isEquipped()
@@ -481,8 +481,8 @@ function createMatchHUD(props: MatchHUDProps): ({
     setArmor:            (number, number) -> (),          -- current, max
     addKillFeedEntry:    (player: string, method: string) -> (),
     clearKillFeed:       () -> (),
-    setPerks:            ({ name: string, active: boolean }) -> (),
-    setObjectives:       ({ text: string, done: boolean }) -> (),
+    setPerks:            ({ { name: string, active: boolean } }) -> (),
+    setObjectives:       ({ { text: string, done: boolean } }) -> (),
     setXP:               (number, number) -> (),          -- current, max
     setActiveWeaponAmmo: (current: number, maxMag: number) -> (),
     setSlotAmmo:         (slotIndex: number, current: number, maxMag: number) -> (),
@@ -534,7 +534,7 @@ function createMatchHUD(props: MatchHUDProps): ({
     local waveAlertNumber   = source(1)
 
     -- Slot click callback (stored imperatively)
-    local slotClickHandler: ((number) -> ())? = nil
+    local _slotClickHandler: ((number) -> ())? = nil
 
     -- ── Legacy signal aliases (for backward compat) ───────────────────
     local waveText     = source("")
@@ -1355,7 +1355,7 @@ function createMatchHUD(props: MatchHUDProps): ({
         end,
 
         onSlotClick = function(handler: (number) -> ())
-            slotClickHandler = handler
+            _slotClickHandler = handler
         end,
     }
 

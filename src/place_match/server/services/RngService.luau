@@ -12,13 +12,13 @@ local TAG = "RngService"
 
 local RngService = Framework.CreateService({ Name = TAG })
 
-local _rngActivateRemote:     RemoteEvent
+local _rngActivateRemote:     RemoteFunction
 local _rngTopupRemote:        RemoteEvent
 local _rngRequestGiveRemote:  RemoteEvent
 
 function RngService:Init()
 	Logger.info(TAG, "Initialized.")
-	    _rngActivateRemote     = Framework.CreateRemote(RemoteNames.RNG_ACTIVATE)
+	    _rngActivateRemote     = Framework.CreateRemoteFunction(RemoteNames.RNG_ACTIVATE)
         _rngTopupRemote        = Framework.CreateRemote(RemoteNames.RNG_TOPUP_AMMO)
         _rngRequestGiveRemote  = Framework.CreateRemote(RemoteNames.RNG_REQUEST_GIVE)
 end
@@ -31,11 +31,12 @@ function handleRngActivate(player: Player)
 	end
 
 	local _random_3 = RngCore.selectRandom3(modifierNames)
+	
 
 end
 
 function RngService:Start()
-	_rngActivateRemote.OnServerEvent:Connect(handleRngActivate)
+	_rngActivateRemote.OnServerInvoke = handleRngActivate
 end
 
 return RngService

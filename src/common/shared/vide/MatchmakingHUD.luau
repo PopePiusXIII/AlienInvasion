@@ -53,9 +53,10 @@ function createMatchmakingHUD(props: MatchmakingHUDProps): (Instance, {
 
     -- Create reactive scope; instances are parented via Parent property
     root(function()
-        switch(panelVisible, {
-            [false] = nil,
-            [true] = create "Frame" {
+	        switch(panelVisible)({
+	            [false] = function() return nil end,
+	            [true] = function()
+	                return create "Frame" {
                 Name                 = "Panel",
                 Parent               = screenGui,
                 Size               = UDim2.new(0.34, 0, 0.28, 0),
@@ -130,7 +131,8 @@ function createMatchmakingHUD(props: MatchmakingHUDProps): (Instance, {
                         end,
                     }
                 end),
-            },
+	                }
+	            end,
         })
     end)
 
