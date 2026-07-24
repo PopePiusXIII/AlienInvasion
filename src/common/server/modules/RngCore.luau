@@ -29,9 +29,12 @@ local function selectRandom3<T>(items: {T}): {T}
 	return selected
 end
 
-local RngCore: RngCoreTypes.API = {
+
+local RngCore: RngCoreTypes.RngCoreT = {
 	selectRandom = selectRandom,
 	selectRandom3 = selectRandom3,
 }
+
+
 
 return RngCore

@@ -3,11 +3,10 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
       "Shared": {
         "$className": "Folder",
-        "Framework": { "$path": "Framework.luau" },
-        "vide": { "$path": "vide" },
-        "api": {"$path": "client/api"}
+        "$path": "shared"
       },
       "Packages": {
         "$className": "Folder",
@@ -19,19 +18,9 @@
       "$className": "ServerScriptService",
       "ServerModules": {
         "$className": "Folder",
-        "Gun": { "$path": "Gun.luau" },
-        "GunApi": { "$path": "GunApi.luau" },
-        "GunCore": { "$path": "GunCore.luau" },
-        "GunMerge": { "$path": "GunMerge.luau" },
-        "Inventory": { "$path": "Inventory.luau" },
-        "Logger": { "$path": "Logger.luau" },
-        "ProfileDb": { "$path": "ProfileDb.luau" },
-        "ProfileDbTypes": { "$path": "ProfileDbTypes.luau" },
-        "RngCore": { "$path": "RngCore.luau" },
-        "RngCoreTypes": { "$path": "RngCoreTypes.luau" },
-        "CombatConfig": { "$path": "configs/CombatConfig.luau" },
-        "purchase": { "$path": "purchase" }
+        "server": { "$path": "server" }
       }
     }
   }
 }
+

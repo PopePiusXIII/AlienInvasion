@@ -8,11 +8,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local vide  = require(ReplicatedStorage.Packages.vide)
-local theme = require(script.Parent.VideTheme)
-local ui    = require(script.Parent.UiConfig)
-local DepressedButton = require(script.Parent.DepressedButton)
-local GunPurchaseCard = require(script.Parent.GunPurchaseCard)
-
+local theme = require(ReplicatedStorage.Shared.vide.VideTheme)
+local ui    = require(ReplicatedStorage.Shared.vide.UiConfig)
+local DepressedButton = require(ReplicatedStorage.Shared.vide.DepressedButton)
+local GunPurchaseCard = require(ReplicatedStorage.Shared.vide.GunPurchaseCard)
+local combatCfg = require(ReplicatedStorage.Shared.configs.CombatConfig)
 local create = vide.create
 
 -- ── Weapon grid data ────────────────────────────────────────────────────────
@@ -198,16 +198,6 @@ function createArmoryHUD(screenGui: Instance, onPurchaseWeapon: ((string) -> ())
 
         -- If the weapon has a known config key, render a full GunPurchaseCard
         if entry.configKey then
-            -- Dynamically require CombatConfig from ReplicatedStorage.Shared
-            local shared = ReplicatedStorage:FindFirstChild("Shared")
-            local combatCfg = nil
-            if shared then
-                local cfgModule = shared:FindFirstChild("CombatConfig")
-                if cfgModule and cfgModule:IsA("ModuleScript") then
-                    combatCfg = require(cfgModule)
-                end
-            end
-
 			local statsKey = "common_" .. entry.configKey
 			local gunStats = combatCfg and combatCfg.GUN_STATS[statsKey]
 			if gunStats then

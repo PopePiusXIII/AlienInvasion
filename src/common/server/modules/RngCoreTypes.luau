@@ -1,6 +1,6 @@
 --!strict
 
-export type API = {
+export type RngCoreT = {
 	selectRandom: <T>(items: { T }) -> T?,
 	selectRandom3: <T>(items: { T }) -> { T },
 }

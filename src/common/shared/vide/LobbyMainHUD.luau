@@ -20,7 +20,7 @@ local ui    = require(script.Parent.UiConfig)
 local DepressedButton = require(script.Parent.DepressedButton)
 local armoryHud = require(script.Parent.Armory)
 local ProfileInventory = require(script.Parent.ProfileInventory)
-local ProfileApiType = require(ReplicatedStorage.Shared.ProfileApiType)
+local ProfileDb = require(ReplicatedStorage.Shared.ProfileDbTypes)
 
 local create = vide.create
 local source = vide.source
@@ -33,7 +33,7 @@ export type LobbyMainHUDProps = {
     parentGui: Instance?,
     playerName: string?,
     onPurchaseWeapon: ((string) -> ())?,
-    profileApi: ProfileApiType.API?,
+    profileApi: ProfileDb.API?,
 }
 
 --- Creates the always-visible lobby HUD.

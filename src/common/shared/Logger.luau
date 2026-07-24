@@ -1,4 +1,5 @@
 --!strict
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --------------------------------------------------------------------------------
 -- Logger.luau  (src/common → ReplicatedStorage.Shared.Logger)
 -- Centralized structured logging with a network middleware pipeline.
@@ -20,7 +21,7 @@
 --   require(game.ReplicatedStorage.Shared.Logger).DEBUG_NETWORKING = true
 --------------------------------------------------------------------------------
 
-local Config = require(script.Parent.Config)
+local Config = require(ReplicatedStorage.Shared.configs.LoggerConfig)
 
 local Logger = {}
 

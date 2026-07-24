@@ -1,7 +1,8 @@
 
 local ProfileServiceTypes = {}
 
-local GunCore = require("./GunCore")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GunCore = require(ReplicatedStorage.Shared.GunCore)
 
 export type PlayerProfile = {
 	bestWave: number,
