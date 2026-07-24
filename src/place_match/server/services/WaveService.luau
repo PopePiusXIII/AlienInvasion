@@ -39,7 +39,7 @@ end
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
 
-local function giveGuns(player: Player, gunNames: { string }?)
+local function giveGuns(player: Player, gunNames: { string })
 	local unlockedGunNames: { string } = {Config.STARTER_GUNS[1], Config.STARTER_GUNS[2]}
 	for _, gunName in ipairs(gunNames) do
 		if ProfileService.isWeaponUnlocked(player, gunName) then

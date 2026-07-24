@@ -11,7 +11,8 @@
         "MatchProfileServiceTypes": { "$path": "shared/types/MatchProfileServiceTypes.luau" },
         "RemoteNames": { "$path": "shared/RemoteNames.luau" },
         "ui": { "$path": "ui" },
-        "Configs": { "$path": "shared/Configs" }
+        "Configs": { "$path": "shared/Configs" },
+        "Config": { "$path": "shared/Config.luau" }
       },
       "Packages": {
         "$className": "Folder",

@@ -13,7 +13,6 @@
 local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
-local PlayersService    = game:GetService("Players")
 local GunModule = require(ReplicatedStorage.Shared.GunCore)
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
@@ -194,7 +193,7 @@ local function applyKnockback(zombieModel: Model, knockbackForce: number, shoote
 	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not rootPart or not shooterPos then return end
 	local direction = (rootPart.Position - shooterPos).Unit
-	rootPart.Velocity = direction * knockbackForce
+	rootPart.AssemblyLinearVelocity = direction * knockbackForce
 	-- Store the knockback direction so ragdoll can reuse it on death.
 	zombieModel:SetAttribute("KnockbackDirX", direction.X)
 	zombieModel:SetAttribute("KnockbackDirY", direction.Y)
@@ -234,7 +233,7 @@ local function ragdollAndExplode(zombieModel: Model, explosionForce: number)
 
 			-- Dampen inherited knockback velocity so pieces don't fly off too far,
 			-- then add an impulse along the shot direction plus small random spread.
-			part.Velocity = part.Velocity * 0.15 + shotDir * explosionForce 
+			part.AssemblyLinearVelocity = part.AssemblyLinearVelocity * 0.15 + shotDir * explosionForce 
 
 		end
 	end
