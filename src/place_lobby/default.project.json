@@ -51,7 +51,7 @@
 
       "ServerModules": {
         "$className": "Folder",
-        "ProfileService": { "$path": "../common/ProfileService.luau" },
+        "ProfileDb": { "$path": "../common/ProfileDb.luau" },
         "GunApi":         { "$path": "../common/GunApi.luau" },
         "GunMerge":       { "$path": "../common/GunMerge.luau" }
       }

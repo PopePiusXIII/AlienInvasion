@@ -7,6 +7,7 @@ local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
 local InventoryController = require(script.Parent.InventoryController)
+local RngHud = require(ReplicatedStorage.Shared.ui.RngHud)
 
 local TAG = "RNGController"
 local RNGController = Framework.CreateController({ Name = TAG })
@@ -15,7 +16,7 @@ local _localPlayer: Player
 local _rngActivateRemote: RemoteEvent
 local _rngRequestGiveRemote: RemoteEvent
 
-local _gui: ScreenGui?
+local _gui: ScreenGui = RngHud
 local _promptFrame: Frame?
 local _selectedLabel: TextLabel?
 local _state = {
@@ -26,53 +27,20 @@ local _state = {
 local _attachedRngParts: { [Instance]: RBXScriptConnection } = {}
 
 local function buildGui()
-    _gui = Instance.new("ScreenGui")
-    if _gui then
-        _gui.Name = "RNGGui"
-        _gui.ResetOnSpawn = false
-        _gui.Parent = _localPlayer:WaitForChild("PlayerGui")
-    end
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 220, 0, 80)
-    frame.Position = UDim2.new(0.5, -110, 0.1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    frame.BorderSizePixel = 0
-    frame.Visible = false
-    frame.Parent = _gui
-    _promptFrame = frame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1,0,1,0)
-    label.Position = UDim2.new(0,0,0,0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.new(1,1,1)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 18
-    label.Text = "Press F to roll"
-    label.Parent = frame
-
-    local sel = Instance.new("TextLabel")
-    sel.Size = UDim2.new(1,0,0,30)
-    sel.Position = UDim2.new(0,0,1,4)
-    sel.BackgroundTransparency = 0
-    sel.BackgroundColor3 = Color3.fromRGB(20,20,20)
-    sel.TextColor3 = Color3.new(1,1,1)
-    sel.Font = Enum.Font.GothamBold
-    sel.TextSize = 16
-    sel.Text = ""
-    sel.Parent = frame
-    sel.Visible = false
-    _selectedLabel = sel
+    _gui.Parent = _localPlayer:WaitForChild("PlayerGui")
+    _gui.Enabled = false
+    _promptFrame = _gui:FindFirstChild("Frame") :: Frame?
+    _selectedLabel = _gui:FindFirstChild("TextLabel", true) :: TextLabel?
 end
 
 local function showPrompt()
-    if not _promptFrame then return end
-    _promptFrame.Visible = true
+    _gui.Enabled = true
+    if _promptFrame then _promptFrame.Visible = true end
     _state.visible = true
 end
 
 local function hidePrompt()
+    _gui.Enabled = false
     if _promptFrame then _promptFrame.Visible = false end
     if _selectedLabel then _selectedLabel.Text = "" end
     _state.visible = false

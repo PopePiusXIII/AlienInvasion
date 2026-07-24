@@ -27,8 +27,8 @@
       "Server": { "$path": "server" },
       "ServerModules": {
         "$className": "Folder",
-        "ProfileService": { "$path": "../../src/common/ProfileService.luau" },
-        "ProfileServiceTypes": { "$path": "../../src/common/ProfileServiceTypes.luau" },
+        "ProfileDb": { "$path": "../../src/common/ProfileDb.luau" },
+        "ProfileDbTypes": { "$path": "../../src/common/ProfileDbTypes.luau" },
         "GunApi": { "$path": "../../src/common/GunApi.luau" },
         "GunMerge": { "$path": "../../src/common/GunMerge.luau" },
         "RngCore": { "$path": "../../src/common/RngCore.luau" }

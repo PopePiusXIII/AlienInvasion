@@ -1,14 +1,14 @@
 --!strict
 --------------------------------------------------------------------------------
--- ProfileService.luau  (src/common → ServerScriptService.ServerModules.ProfileService)
+-- ProfileDb.luau  (src/common → ServerScriptService.ServerModules.ProfileDb)
 -- Wraps ProfileStore for cross-place player data persistence.
 -- Used by both Lobby and Match places — DRY profile session management.
 --
 -- Public API:
---   ProfileService.GetProfile(player): PlayerProfile?
+--   ProfileDb.GetProfile(player): PlayerProfile?
 --     Returns the cached profile for a player, or nil if not loaded.
 --
---   ProfileService.WaitForProfile(player): PlayerProfile
+--   ProfileDb.WaitForProfile(player): PlayerProfile
 --     Blocks until the profile is ready (use during player init).
 --
 -- Lifecycle:
@@ -25,11 +25,11 @@ local Logger    = require(ServerScriptService.ServerModules.Logger)
 local CombatConfig = require(ServerScriptService.ServerModules.CombatConfig)
 local GunCore  = require(ServerScriptService.ServerModules.GunCore)
 local GunMerge   = require(ServerScriptService.ServerModules.GunMerge)
-local pst = require(ServerScriptService.ServerModules.ProfileServiceTypes)
+local pst = require(ServerScriptService.ServerModules.ProfileDbTypes)
 
-local TAG = "ProfileService"
+local TAG = "ProfileDb"
 
-local ProfileService = Framework.CreateService({ Name = TAG })
+local ProfileDb = Framework.CreateService({ Name = TAG })
 
 type PlayerProfile = pst.PlayerProfile
 type EconomySummary = pst.EconomySummary
@@ -76,11 +76,11 @@ local Profiles: { [Player]: any } = {}
 local ProfileLoadedCallbacks: { (player: Player, profile: PlayerProfile) -> () } = {}
 local ProfileChangedCallbacks: { (player: Player, profile: PlayerProfile) -> () } = {}
 
-function ProfileService.OnProfileLoaded(callback: (player: Player, profile: PlayerProfile) -> ())
+function ProfileDb.OnProfileLoaded(callback: (player: Player, profile: PlayerProfile) -> ())
 	table.insert(ProfileLoadedCallbacks, callback)
 end
 
-function ProfileService.OnProfileChanged(callback: (player: Player, profile: PlayerProfile) -> ())
+function ProfileDb.OnProfileChanged(callback: (player: Player, profile: PlayerProfile) -> ())
 	table.insert(ProfileChangedCallbacks, callback)
 end
 
@@ -162,15 +162,13 @@ end
 
 -- ── Service lifecycle ────────────────────────────────────────────────────────
 
-function ProfileService:Init()
+function ProfileDb:Init()
 	initProfileStore()
-	Logger.info(TAG, "ProfileService initialized (ProfileStore backend).")
+	Logger.info(TAG, "ProfileDb initialized (ProfileStore backend).")
 end
 
-function ProfileService:Start()
+function ProfileDb:Start()
 	local Players = game:GetService("Players")
-local GunCore = require(script.Parent.GunCore)
-
 	for _, player in Players:GetPlayers() do
 		task.spawn(onPlayerAdded, player)
 	end
@@ -202,12 +200,12 @@ end
 -- ── Public API ───────────────────────────────────────────────────────────────
 
 --- Returns the cached profile session for a player, or nil if not yet loaded.
-function ProfileService:GetSession(player: Player): any?
+function ProfileDb:GetSession(player: Player): any?
 	return Profiles[player]
 end
 
 --- Returns the cached profile data for a player, or nil if not yet loaded.
-function ProfileService:GetProfile(player: Player): PlayerProfile?
+function ProfileDb:GetProfile(player: Player): PlayerProfile?
 	local session = Profiles[player]
 	if not session then
 		return nil
@@ -217,7 +215,7 @@ end
 
 --- Blocks until the profile session is ready, then returns the profile data.
 --- Returns nil if the timeout (default 30 s) elapses or player left.
-function ProfileService:WaitForProfile(player: Player): PlayerProfile?
+function ProfileDb:WaitForProfile(player: Player): PlayerProfile?
 	local deadline = os.clock() + 30
 	repeat
 		task.wait(0.1)
@@ -236,7 +234,7 @@ end
 -- ── Data operations (merged from DataService) ────────────────────────────────
 
 --- Save the player's profile to DataStore immediately.
-function ProfileService.save(player: Player)
+function ProfileDb.save(player: Player)
 	local session = Profiles[player]
 	if not session then
 		Logger.warn(TAG, "Cannot save for %s — session not active.", player.Name)
@@ -253,8 +251,8 @@ function ProfileService.save(player: Player)
 end
 
 --- Update a player's stats at end of game and save immediately.
-function ProfileService.saveStats(player: Player, waveReached: number, economy: EconomySummary?)
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.saveStats(player: Player, waveReached: number, economy: EconomySummary?)
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		Logger.warn(TAG, "Cannot save stats for %s — profile not loaded.", player.Name)
 		return
@@ -272,12 +270,12 @@ function ProfileService.saveStats(player: Player, waveReached: number, economy: 
 
 	Logger.info(TAG, "Saved stats for %s — wave %d.", player.Name, waveReached)
 	notifyProfileChanged(player, profile)
-	ProfileService.save(player)
+	ProfileDb.save(player)
 end
 
 --- Checks if a weapon is unlocked for the given player.
-function ProfileService.isWeaponUnlocked(player: Player, weaponName: string): boolean
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.isWeaponUnlocked(player: Player, weaponName: string): boolean
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		Logger.warn(TAG, "Cannot unlock %s for %s — profile not loaded.", weaponName, player.Name)
 		return false
@@ -286,7 +284,7 @@ function ProfileService.isWeaponUnlocked(player: Player, weaponName: string): bo
 end
 
 --- Attempts to unlock a weapon using gold. Returns (success, errorCode).
-function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
+function ProfileDb.tryUnlockWeapon(player: Player, weaponName: string): (boolean, string)
     local gun = CombatConfig.GUN_STATS[weaponName] :: GunCore.Gun?
 
     local goldCost = gun and gun.gold_cost
@@ -294,7 +292,7 @@ function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (bo
         return false, "UNKNOWN_WEAPON"
     end
 
-	local profile = ProfileService:GetProfile(player)
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		Logger.warn(TAG, "Cannot unlock %s for %s — profile not loaded.", weaponName, player.Name)
 		return false, "PROFILE_NOT_LOADED"
@@ -316,7 +314,7 @@ function ProfileService.tryUnlockWeapon(player: Player, weaponName: string): (bo
 	return true, "OK"
 end
 
-function ProfileService.buyDeveloperGold(player: Player, dev_product_id: number): (boolean)
+function ProfileDb.buyDeveloperGold(player: Player, dev_product_id: number): (boolean)
 	-- Map developer product IDs to gold amounts.
 	-- Replace the placeholder IDs with your actual product IDs from the Roblox Creator Hub.
 	local goldRewards = {
@@ -331,7 +329,7 @@ function ProfileService.buyDeveloperGold(player: Player, dev_product_id: number)
 		return false
 	end
 
-	local profile = ProfileService:GetProfile(player)
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		Logger.warn(TAG, "Cannot grant gold to %s — profile not loaded.", player.Name)
 		return false
@@ -341,7 +339,7 @@ function ProfileService.buyDeveloperGold(player: Player, dev_product_id: number)
 	Logger.info(TAG, "%s purchased %d gold via dev product %d.", player.Name, goldAmount, dev_product_id)
 
 	-- Save immediately so purchase data isn't lost on server crash.
-	ProfileService.save(player)
+	ProfileDb.save(player)
 	notifyProfileChanged(player, profile)
 
 	return true
@@ -356,8 +354,8 @@ end
 
 --- Grant a gun to the player's inventory at common rarity, level 1.
 --- Returns the new gun instance ID, or nil if profile not loaded.
-function ProfileService.grantGun(player: Player, gunName: string): string?
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.grantGun(player: Player, gunName: string): string?
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		Logger.warn(TAG, "Cannot grant %s to %s — profile not loaded.", gunName, player.Name)
 		return nil
@@ -381,13 +379,13 @@ function ProfileService.grantGun(player: Player, gunName: string): string?
 	}
 
 	Logger.info(TAG, "%s granted %s (id=%s, common).", player.Name, gunName, id)
-	ProfileService.save(player)
+	ProfileDb.save(player)
 	return id
 end
 
 --- Get all gun instances from the player's profile.
-function ProfileService.getInventory(player: Player): { GunInstance }?
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.getInventory(player: Player): { GunInstance }?
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then return nil end
 
 	local result: { GunInstance } = {}
@@ -398,15 +396,15 @@ function ProfileService.getInventory(player: Player): { GunInstance }?
 end
 
 --- Get a single gun instance by ID.
-function ProfileService.getGun(player: Player, gunId: string): GunInstance?
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.getGun(player: Player, gunId: string): GunInstance?
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then return nil end
 	return profile.inventory[gunId] :: GunInstance?
 end
 
 --- Remove a gun from the player's inventory by ID.
-function ProfileService.removeGun(player: Player, gunId: string): boolean
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.removeGun(player: Player, gunId: string): boolean
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		Logger.warn(TAG, "Cannot remove %s from %s — profile not loaded.", gunId, player.Name)
 		return false
@@ -420,15 +418,15 @@ function ProfileService.removeGun(player: Player, gunId: string): boolean
 
 	profile.inventory[gunId] = nil
 	Logger.info(TAG, "%s removed %s (%s).", player.Name, instance.name, gunId)
-	ProfileService.save(player)
+	ProfileDb.save(player)
 	return true
 end
 
 --- Upgrade a gun's rarity by merging multiple same-rarity instances.
 --- Consumes the source guns and grants one at the next rarity tier (level resets to 1).
 --- Returns (success, newGunId?, errorMessage?).
-function ProfileService.mergeGuns(player: Player, gunIds: { string }): (boolean, string?, string?)
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.mergeGuns(player: Player, gunIds: { string }): (boolean, string?, string?)
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		return false, nil, "PROFILE_NOT_LOADED"
 	end
@@ -483,14 +481,14 @@ function ProfileService.mergeGuns(player: Player, gunIds: { string }): (boolean,
 
 	Logger.info(TAG, "%s merged %d %s %s → %s (id=%s).",
 		player.Name, #instances, first.rarity, first.name, newRarity, id)
-	ProfileService.save(player)
+	ProfileDb.save(player)
 	return true, id, nil
 end
 
 --- Upgrade a gun's level (1→2→3→4). In-memory only — not persisted to profile.
 --- Returns (success, newLevel?, errorMessage?).
-function ProfileService.upgradeLevel(player: Player, gunId: string): (boolean, number?, string?)
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.upgradeLevel(player: Player, gunId: string): (boolean, number?, string?)
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then
 		return false, nil, "PROFILE_NOT_LOADED"
 	end
@@ -509,8 +507,8 @@ end
 --- Resolve full stats for a gun instance (base rarity stats + level multipliers).
 --- `level` is passed in by the caller (InventoryService tracks it in-memory per match).
 --- Defaults to 1 if not provided.
-function ProfileService.getGunStats(player: Player, gunId: string, level: number?): GunCore.Gun?
-	local profile = ProfileService:GetProfile(player)
+function ProfileDb.getGunStats(player: Player, gunId: string, level: number?): GunCore.Gun?
+	local profile = ProfileDb:GetProfile(player)
 	if not profile then return nil end
 
 	local instance = profile.inventory[gunId] :: GunInstance?
@@ -546,6 +544,6 @@ function ProfileService.getGunStats(player: Player, gunId: string, level: number
 	}
 end
 
-local ProfileServiceAPI: Framework.Module & pst.API = ProfileService :: (Framework.Module & pst.API)
+local ProfileDbAPI: Framework.Module & pst.API = ProfileDb :: (Framework.Module & pst.API)
 
-return ProfileServiceAPI
+return ProfileDbAPI
