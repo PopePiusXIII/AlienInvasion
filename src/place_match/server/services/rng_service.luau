@@ -1,5 +1,4 @@
 --!strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
@@ -8,13 +7,11 @@ local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local MatchProfileService = require(server_script_service.match.services.skill_service)
-local SkillService = require(server_script_service.match.services.skill_service)
 
-local a = SkillService.
 local TAG = "RngService"
+local RngService = {}
+RngService.Name = TAG
 
-
-local RngService = Framework.CreateService({ Name = TAG })
 
 local _rngActivateRemote:     RemoteFunction
 local _rngTopupRemote:        RemoteEvent
@@ -43,4 +40,5 @@ function RngService:Start()
 	_rngActivateRemote.OnServerInvoke = handleRngActivate
 end
 
+Framework.CreateService(RngService)
 return RngService
