@@ -28,11 +28,10 @@ local MatchAutoStartModule = require(server_script_service.match.modules.game.ma
 local MatchReturnModule = require(server_script_service.match.modules.game.match_return_module)
 
 local TAG = "GameService"
+local GameService = {}
+GameService.Name = TAG
 
 export type MatchState = "WAITING" | "ACTIVE" | "ENDED"
-
-local GameService = Framework.CreateService({ Name = TAG })
-
 local _matchState: MatchState = "WAITING"
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -41,28 +40,14 @@ function GameService:Init()
 	Logger.info(TAG, "Initialized. State: WAITING.")
 end
 
-function GameService:Start()
-	task.spawn(function()
-		local shouldStart = MatchAutoStartModule.waitForMatchStart(
-			Players,
-			Config.MATCH_SIZE,
-			Config.MATCH_WAIT_TIMEOUT
-		)
-		if not shouldStart then return end
+-- ── Public API ────────────────────────────────────────────────────────────────
 
-		if _matchState ~= "WAITING" then
-			-- The GoToGame pad already started the match; do nothing.
-			return
-		end
-		if #Players:GetPlayers() == 0 then return end
-
-		Logger.info(TAG, "Auto-starting with %d/%d players.",
-			#Players:GetPlayers(), Config.MATCH_SIZE)
-		GameService.startMatch()
+--- Teleport all connected players back to the Lobby place.
+function GameService._returnAllToLobby()
+	MatchReturnModule.returnAllToLobby(TeleportService, Config.LOBBY_PLACE_ID, Players, function(message: string, ...: any)
+		Logger.warn(TAG, message, ...)
 	end)
 end
-
--- ── Public API ────────────────────────────────────────────────────────────────
 
 --- Launch one concurrent battle per connected player.
 --- Saves stats and teleports everyone back to the Lobby once all battles finish.
@@ -107,11 +92,26 @@ function GameService.getState(): MatchState
 	return _matchState
 end
 
---- Teleport all connected players back to the Lobby place.
-function GameService._returnAllToLobby()
-	MatchReturnModule.returnAllToLobby(TeleportService, Config.LOBBY_PLACE_ID, Players, function(message: string, ...: any)
-		Logger.warn(TAG, message, ...)
+function GameService:Start()
+	task.spawn(function()
+		local shouldStart = MatchAutoStartModule.waitForMatchStart(
+			Players,
+			Config.MATCH_SIZE,
+			Config.MATCH_WAIT_TIMEOUT
+		)
+		if not shouldStart then return end
+
+		if _matchState ~= "WAITING" then
+			-- The GoToGame pad already started the match; do nothing.
+			return
+		end
+		if #Players:GetPlayers() == 0 then return end
+
+		Logger.info(TAG, "Auto-starting with %d/%d players.",
+			#Players:GetPlayers(), Config.MATCH_SIZE)
+		GameService.startMatch()
 	end)
 end
 
+GameService = Framework.CreateService(GameService)
 return GameService
