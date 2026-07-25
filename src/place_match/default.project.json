@@ -3,15 +3,18 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": {
+      "Match": {
         "$className": "Folder",
-        "Match": {
+        "Shared": {
           "$path": "shared"
-        },
-        "Common": {
-          "$path": "../../src/common/shared"
         }
     },
+      "Common": {
+        "$className": "Folder",
+        "Shared": {
+          "$path": "../../src/common/shared"
+        }
+      },
       "Packages": {
         "$className": "Folder",
         "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
@@ -19,7 +22,6 @@
       }
     },
     "ServerScriptService": {
-      "Server": { "$path": "server" },
       "ServerModules": {
         "$className": "Folder",
         "Match": {

@@ -24,13 +24,11 @@ local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 
 -- ── Shared services (cross-place) ────────────────────────────────────────────
-require(ServerScriptService.ServerModules.ProfileService)
+require(ServerScriptService.ServerModules.Common.ProfileDb)
 
 -- ── Service registration (require triggers Framework.CreateService) ───────────
 
-local services = script.Parent.services
-
-require(services.PhysicsSetupService)
+local services = ServerScriptService.ServerModules.Match.services
 require(services.ZombieService)
 require(services.EconomyService)
 require(services.InventoryService)
