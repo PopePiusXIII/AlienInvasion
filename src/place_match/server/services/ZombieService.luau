@@ -13,7 +13,7 @@
 local ServerStorage     = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
-local GunModule = require(ReplicatedStorage.Shared.GunCore)
+local GunCore = require(ReplicatedStorage.Shared.Common.GunCore)
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
@@ -318,7 +318,7 @@ end
 --- Server-authoritative damage application.
 --- Validates identity, parent, and Humanoid before taking damage.
 --- NEVER trust the client to pass a valid model — always re-validate here.
-function ZombieService.damageZombie(zombieModel: Model?, gun: GunModule.Gun, isHeadshot: boolean?, shooterPos: Vector3?): (boolean, string, Vector3?)
+function ZombieService.damageZombie(zombieModel: Model?, gun: GunCore.Gun, isHeadshot: boolean?, shooterPos: Vector3?): (boolean, string, Vector3?)
 	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
 	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end

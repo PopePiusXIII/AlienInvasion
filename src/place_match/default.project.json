@@ -5,21 +5,12 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "MatchProfile": { "$path": "shared/types/MatchProfile.luau" },
-        "MatchProfileServiceTypes": { "$path": "shared/types/MatchProfileServiceTypes.luau" },
-        "RemoteNames": { "$path": "shared/RemoteNames.luau" },
-        "Logger": { "$path": "../../src/common/shared/Logger.luau" },
-        "Framework": { "$path": "../../src/common/shared/Framework.luau" },
-        "ui": { "$path": "ui" },
-        "Configs": {
-        "$className": "Folder",
         "Match": {
-          "$path": "shared/Configs"
+          "$path": "shared"
         },
         "Common": {
-          "$path": "../../src/common/shared/configs"
+          "$path": "../../src/common/shared"
         }
-      }
     },
       "Packages": {
         "$className": "Folder",
@@ -31,15 +22,12 @@
       "Server": { "$path": "server" },
       "ServerModules": {
         "$className": "Folder",
-        "ProfileDb": { "$path": "../../src/common/server/ProfileDb.luau" },
-        "ProfileDbTypes": { "$path": "../../src/common/shared/ProfileDbTypes.luau" },
-        "Logger": { "$path": "../../src/common/shared/Logger.luau" },
-        "GunCore": { "$path": "../../src/common/shared/GunCore.luau" },
-        "CombatConfig": { "$path": "../../src/common/shared/configs/CombatConfig.luau" },
-        "RngCoreTypes": { "$path": "../../src/common/server/modules/RngCoreTypes.luau" },
-        "GunApi": { "$path": "../../src/common/server/GunApi.luau" },
-        "GunMerge": { "$path": "../../src/common/server/GunMerge.luau" },
-        "RngCore": { "$path": "../../src/common/server/modules/RngCore.luau" }
+        "Match": {
+          "$path": "server"
+        },
+        "Common": {
+          "$path": "../../src/common/server"
+        }
       }
     },
     "ServerStorage": {
