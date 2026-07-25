@@ -298,6 +298,6 @@ function EconomyService.finalizeRun(player: Player): { silverEarned: number, sil
 end
 
 
-local EconomyService = Framework.CreateService(EconomyService)
+Framework.CreateService(EconomyService)
 
 return EconomyService

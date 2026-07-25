@@ -19,7 +19,8 @@ local ProfileService = require(server_script_service.common.services.profile_db)
 
 local TAG = "InventoryService"
 
-local InventoryService = Framework.CreateService({ Name = TAG })
+local InventoryService = {}
+InventoryService.Name = TAG
 
 local _playerInventories: { [number]: { gunIds: { string }, equippedSlot: number? } } = {}
 
@@ -448,5 +449,8 @@ function InventoryService:Start()
 		grantStarterGunsToPlayer(player)
 	end)
 end
+
+ Framework.CreateService(InventoryService)
+
 
 return InventoryService

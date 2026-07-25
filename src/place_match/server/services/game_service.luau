@@ -19,7 +19,7 @@ local server_script_service = game:GetService("ServerScriptService")
 
 local Framework    = require(replicated_storage.common.shared.framework)
 local Logger       = require(replicated_storage.common.shared.logger)
-local Config       = require(replicated_storage.match.shared.configs.game_config)
+local GameConfig       = require(replicated_storage.match.shared.configs.game_config)
 local ProfileService = require(server_script_service.common.services.profile_db)
 local WaveService  = require(server_script_service.match.services.wave_service)
 local EconomyService = require(server_script_service.match.services.economy_service)
@@ -44,7 +44,7 @@ end
 
 --- Teleport all connected players back to the Lobby place.
 function GameService._returnAllToLobby()
-	MatchReturnModule.returnAllToLobby(TeleportService, Config.LOBBY_PLACE_ID, Players, function(message: string, ...: any)
+	MatchReturnModule.returnAllToLobby(TeleportService, GameConfig.LOBBY_PLACE_ID, Players, function(message: string, ...: any)
 		Logger.warn(TAG, message, ...)
 	end)
 end
@@ -96,8 +96,8 @@ function GameService:Start()
 	task.spawn(function()
 		local shouldStart = MatchAutoStartModule.waitForMatchStart(
 			Players,
-			Config.MATCH_SIZE,
-			Config.MATCH_WAIT_TIMEOUT
+			GameConfig.MATCH_SIZE,
+			GameConfig.MATCH_WAIT_TIMEOUT
 		)
 		if not shouldStart then return end
 
@@ -108,7 +108,7 @@ function GameService:Start()
 		if #Players:GetPlayers() == 0 then return end
 
 		Logger.info(TAG, "Auto-starting with %d/%d players.",
-			#Players:GetPlayers(), Config.MATCH_SIZE)
+			#Players:GetPlayers(), GameConfig.MATCH_SIZE)
 		GameService.startMatch()
 	end)
 end
