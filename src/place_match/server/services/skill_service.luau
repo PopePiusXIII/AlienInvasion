@@ -15,7 +15,6 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
 local MatchProfile = require(replicated_storage.match.shared.types.match_profile)
-local SkillServiceTypes = require(replicated_storage.match.shared.types.skill_service_types)
 local Framework      = require(replicated_storage.common.shared.framework)
 local Logger         = require(replicated_storage.common.shared.logger)
 local RemoteNames    = require(replicated_storage.match.shared.remote_names)
@@ -24,7 +23,6 @@ local ModifierConfig = require(replicated_storage.match.shared.configs.match_pro
 local TAG = "SkillService"
 local SkillService = {}
 SkillService.Name = TAG
-
 -- ── State ────────────────────────────────────────────────────────────────────
 
 local _playerModifiers: { [Player]: MatchProfile.MatchProfile } = {}
@@ -124,6 +122,4 @@ end
 
 SkillService = Framework.CreateService(SkillService)
 
-local SkillServiceApi: Framework.Module & SkillServiceTypes.API = SkillService
-
-return SkillServiceApi
+return SkillService
