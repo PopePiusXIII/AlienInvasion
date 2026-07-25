@@ -13,71 +13,71 @@
 --   • Logger.wrapServerEvent() pcall-isolates this handler from the server thread.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
-local Framework     = require(ReplicatedStorage.Common.Shared.Framework)
-local Logger        = require(ReplicatedStorage.Common.Shared.Logger)
-local RemoteNames   = require(ReplicatedStorage.Match.Shared.RemoteNames)
-local ZombieService = require(ServerScriptService.ServerModules.Match.Services.ZombieService)
-local EconomyService = require(ServerScriptService.ServerModules.Match.Services.EconomyService)
-local InventoryService = require(ServerScriptService.ServerModules.Match.Services.InventoryService)
-local GunCore     = require(ReplicatedStorage.Common.Shared.GunCore)
-local SkillService = require(ServerScriptService.ServerModules.Match.Services.SkillService)
-local WaveConfig = require(ReplicatedStorage.Match.Shared.Configs.WaveConfig)
+local framework      = require(replicated_storage.Common.Shared.Framework)
+local logger         = require(replicated_storage.Common.Shared.Logger)
+local remote_names   = require(replicated_storage.Match.Shared.remote_names)
+local zombie_service = require(server_script_service.match.services.zombie_service)
+local economy_service = require(server_script_service.match.services.economy_service)
+local inventory_service = require(server_script_service.match.services.inventory_service)
+local gun_core       = require(replicated_storage.Common.Shared.GunCore)
+local skill_service  = require(server_script_service.match.services.skill_service)
+local wave_config    = require(replicated_storage.Match.Shared.configs.wave_config)
 
-local CombatService = {}
+local combat_service = {}
 local TAG = "CombatService"
-CombatService.Name = TAG
+combat_service.Name = TAG
 
-function CombatService:Init()
-	local shootRemote = Framework.CreateRemote(RemoteNames.SHOOT_GUN)
-	local hitSoundRemote = Framework.CreateRemote(RemoteNames.ZOMBIE_HIT_SOUND)
+function combat_service:Init()
+	local shoot_remote = framework.CreateRemote(remote_names.SHOOT_GUN)
+	local hit_sound_remote = framework.CreateRemote(remote_names.ZOMBIE_HIT_SOUND)
 
-	Logger.wrapServerEvent(shootRemote, TAG, function(player: Player, zombieModel: Instance, isHeadshot: boolean, hitPosition: Vector3)
-		if not zombieModel:IsA("Model") then return end
+	logger.wrapServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
+		if not zombie_model:IsA("Model") then return end
 		local character = player.Character
 
-		-- Resolve equipped gun via InventoryService + SkillService
-		local equippedGunId = InventoryService.getEquippedGunId(player)
-		if not equippedGunId then return end
+		-- Resolve equipped gun via inventory_service + skill_service
+		local equipped_gun_id = inventory_service.getEquippedGunId(player)
+		if not equipped_gun_id then return end
 
 		-- Get current in-memory level for stat resolution
-		local level = InventoryService.getGunLevel(player, equippedGunId)
+		local level = inventory_service.getGunLevel(player, equipped_gun_id)
 
 		-- Get resolved stats (base rarity stats + level multipliers)
-		local gun = SkillService.getGunStats(player, equippedGunId, level) :: GunCore.Gun?
+		local gun = skill_service.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
 		if not gun then return end
 
-		local shooterPos: Vector3?
+		local shooter_pos: Vector3?
 		if character then
 			local hrp = character:FindFirstChild("HumanoidRootPart")
 			if hrp and hrp:IsA("BasePart") then
-				shooterPos = hrp.Position
+				shooter_pos = hrp.Position
 			end
 		end
-		local killed, zombieType, deathPosition = ZombieService.damageZombie(
-			zombieModel,
+		local killed, zombie_type, death_position = zombie_service.damageZombie(
+			zombie_model,
 			gun,
-			isHeadshot,
-			shooterPos
+			is_headshot,
+			shooter_pos
 		)
 
-		Logger.fireClient(hitSoundRemote, player, hitPosition, isHeadshot)
+		logger.fireClient(hit_sound_remote, player, hit_position, is_headshot)
 
 		if killed then
-			local waveNumber = tonumber(player:GetAttribute("CurrentWave")) or WaveConfig.STARTING_WAVE
-			EconomyService.grantKillRewards(player, zombieType, waveNumber, deathPosition)
+			local wave_number = tonumber(player:GetAttribute("CurrentWave")) or wave_config.STARTING_WAVE
+			economy_service.grantKillRewards(player, zombie_type, wave_number, death_position)
 		end
 	end)
 
-	Logger.info(TAG, "ShootGun handler registered.")
+	logger.info(TAG, "ShootGun handler registered.")
 end
 
-function CombatService:Start()
-	-- Any startup logic for the CombatService can go here
+function combat_service:Start()
+	-- Any startup logic for the combat_service can go here
 end
 
-CombatService = Framework.CreateService(CombatService)
+combat_service = framework.CreateService(combat_service)
 
-return CombatService
+return combat_service
