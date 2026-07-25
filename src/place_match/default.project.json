@@ -22,24 +22,14 @@
       }
     },
     "ServerScriptService": {
-      "ServerModules": {
-        "$className": "Folder",
         "Match": {
-          "$className": "Folder",
-          "Services": {
-            "$className": "Folder",
-            "$path": "server/services"
+          "$path": "server"
           },
-          "Modules": {
-            "$className": "Folder",
-            "$path": "server/modules"
-          }
-        },
         "Common": {
           "$path": "../../src/common/server"
         }
       }
-    },
+    ,
     "ServerStorage": {
       "Stories": {
         "$className": "Folder",
