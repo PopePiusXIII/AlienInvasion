@@ -10,8 +10,12 @@
       },
       "Packages": {
         "$className": "Folder",
-        "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
-        "ProfileStore": { "$path": "../../ServerPackages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau" }
+        "vide": {
+          "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src"
+        },
+        "ProfileStore": {
+          "$path": "../../ServerPackages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau"
+        }
       }
     },
     "ServerScriptService": {
@@ -23,4 +27,3 @@
     }
   }
 }
-

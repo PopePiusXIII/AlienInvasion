@@ -1,5 +1,8 @@
 --!strict
-local Configs = script.Parent.Configs
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+
+local Configs = ReplicatedStorage.Shared.Configs
 local result: { [string]: any } = {}
 
 local function absorb(t: { [string]: any })
@@ -8,7 +11,7 @@ local function absorb(t: { [string]: any })
 	end
 end
 
-absorb(require(Configs.CombatConfig)  :: { [string]: any })
+absorb(require(Configs.Common.CombatConfig)  :: { [string]: any })
 
 
 return result

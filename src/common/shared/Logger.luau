@@ -21,7 +21,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --   require(game.ReplicatedStorage.Shared.Logger).DEBUG_NETWORKING = true
 --------------------------------------------------------------------------------
 
-local Config = require(ReplicatedStorage.Shared.configs.LoggerConfig)
+local Config = require(ReplicatedStorage.Shared.Configs.Common.LoggerConfig)
 
 local Logger = {}
 
