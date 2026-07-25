@@ -6,8 +6,8 @@
 -- The server validates and awards currency.
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("Shared")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local Shared = replicated_storage:WaitForChild("Shared")
 local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 
 local Framework = require(Shared.Framework)
@@ -123,7 +123,7 @@ end
 function BoltController:Init()
 	_localPlayer = Players.LocalPlayer
 
-	local templates = ReplicatedStorage:FindFirstChild("BoltTemplates")
+	local templates = replicated_storage:FindFirstChild("BoltTemplates")
 	if templates then
 		_silverTemplate = templates:FindFirstChild("SilverBolt")
 		_goldTemplate   = templates:FindFirstChild("GoldBolt")

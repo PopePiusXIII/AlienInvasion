@@ -17,18 +17,18 @@
 --   GameService          — requires WaveService, EconomyService
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
+local Framework = require(replicated_storage.shared.framework)
+local Logger    = require(replicated_storage.shared.logger)
 
 -- ── Shared services (cross-place) ────────────────────────────────────────────
-require(ServerScriptService.ServerModules.Common.ProfileDb)
+require(server_script_service.Common.ProfileDb)
 
 -- ── Service registration (require triggers Framework.CreateService) ───────────
 
-local services = ServerScriptService.ServerModules.Match.services
+local services = server_script_service.Match.services
 require(services.ZombieService)
 require(services.EconomyService)
 require(services.InventoryService)

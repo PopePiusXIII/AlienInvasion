@@ -14,10 +14,10 @@
 --   ZombieAnimationController — plays zombie walk/run animations
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
+local Framework = require(replicated_storage.shared.framework)
+local Logger    = require(replicated_storage.shared.logger)
 
 -- ── Controller registration (require triggers Framework.CreateController) ─────
 

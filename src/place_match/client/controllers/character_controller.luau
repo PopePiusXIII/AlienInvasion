@@ -13,8 +13,8 @@
 
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("Shared")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local Shared = replicated_storage:WaitForChild("Shared")
 
 local Framework = require(Shared.Framework)
 local Logger    = require(Shared.Logger)

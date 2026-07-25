@@ -1,11 +1,11 @@
 --!strict
--- TeleportHelper.luau  (Lobby Place — ServerScriptService)
+-- TeleportHelper.luau  (Lobby Place — server_script_service)
 -- Wraps TeleportService calls with retry logic and pcall protection.
 
 local TeleportService   = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Config = require(ReplicatedStorage.Shared.Config)
+local Config = require(replicated_storage.shared.Config)
 
 local TeleportHelper = {}
 

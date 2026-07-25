@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- ProfileDb.luau  (src/common → ServerScriptService.ServerModules.ProfileDb)
+-- profile_db.luau  (src/common → server_script_service.profile_db)
 -- Wraps ProfileStore for cross-place player data persistence.
 -- Used by both Lobby and Match places — DRY profile session management.
 --
@@ -16,16 +16,16 @@
 --   Start() — Wires up Players.PlayerAdded / PlayerRemoving.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
-local ServerScriptService = game:GetService("ServerScriptService")
+local server_script_service = game:GetService("ServerScriptService")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local CombatConfig = require(ReplicatedStorage.Shared.configs.CombatConfig)
-local GunCore  = require(ReplicatedStorage.Shared.GunCore)
-local GunMerge   = require(ServerScriptService.ServerModules.GunMerge)
-local ProfileDbType = require(ReplicatedStorage.Shared.ProfileDbTypes)
+local Framework = require(replicated_storage.shared.framework)
+local Logger    = require(replicated_storage.shared.logger)
+local CombatConfig = require(replicated_storage.shared.configs.combat_config)
+local GunCore  = require(replicated_storage.shared.gun_core)
+local GunMerge   = require(server_script_service.gun_merge)
+local ProfileDbType = require(replicated_storage.shared.profile_db_types)
 
 local TAG = "ProfileDb"
 
@@ -63,7 +63,7 @@ local PlayerStore: any     = nil
 local function initProfileStore()
 	if PlayerStore then return end
 
-	local Packages = ReplicatedStorage:WaitForChild("Packages")
+	local Packages = replicated_storage:WaitForChild("Packages")
 	ProfileStore = require(Packages:WaitForChild("ProfileStore"))
 	PlayerStore  = ProfileStore.New("AlienInvasion_Profiles", PROFILE_TEMPLATE)
 	Logger.info(TAG, "ProfileStore initialized.")

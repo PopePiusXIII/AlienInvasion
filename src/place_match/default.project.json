@@ -3,15 +3,15 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Match": {
+      "match": {
         "$className": "Folder",
-        "Shared": {
+        "shared": {
           "$path": "shared"
         }
     },
-      "Common": {
+      "common": {
         "$className": "Folder",
-        "Shared": {
+        "shared": {
           "$path": "../../src/common/shared"
         }
       },

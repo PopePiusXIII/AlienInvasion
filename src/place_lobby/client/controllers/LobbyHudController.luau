@@ -10,13 +10,13 @@
 --------------------------------------------------------------------------------
 
 local Players           = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework  = require(ReplicatedStorage.Shared.Framework)
-local Logger     = require(ReplicatedStorage.Shared.Logger)
+local Framework  = require(replicated_storage.shared.framework)
+local Logger     = require(replicated_storage.shared.logger)
 local ProfileApi = require(script.Parent.Parent.api.ProfileApi)
-local LobbyMainHUD = require(ReplicatedStorage.Shared.vide.LobbyMainHUD)
-local MatchmakingHUDModule     = require(ReplicatedStorage.Shared.vide.MatchmakingHUD)
+local LobbyMainHUD = require(replicated_storage.shared.vide.LobbyMainHUD)
+local MatchmakingHUDModule     = require(replicated_storage.shared.vide.MatchmakingHUD)
 local LobbyHudController = Framework.CreateController({ Name = "LobbyHudController" })
 
 local TAG = "LobbyHudController"

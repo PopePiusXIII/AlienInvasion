@@ -11,15 +11,15 @@
 --   MatchProfileService.apply(player, key)         → apply a modifier pick
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
-local MatchProfile = require(ReplicatedStorage.Shared.MatchProfile)
-local MatchProfileServiceTypes = require(ReplicatedStorage.Shared.MatchProfileServiceTypes)
-local Framework      = require(ReplicatedStorage.Shared.Framework)
-local Logger         = require(ReplicatedStorage.Shared.Logger)
-local RemoteNames    = require(ReplicatedStorage.Shared.RemoteNames)
-local ModifierConfig = require(ReplicatedStorage.Shared.Configs.MatchProfileConfig)
+local MatchProfile = require(replicated_storage.shared.MatchProfile)
+local MatchProfileServiceTypes = require(replicated_storage.shared.MatchProfileServiceTypes)
+local Framework      = require(replicated_storage.shared.framework)
+local Logger         = require(replicated_storage.shared.logger)
+local RemoteNames    = require(replicated_storage.shared.RemoteNames)
+local ModifierConfig = require(replicated_storage.shared.Configs.MatchProfileConfig)
 
 local TAG = "MatchProfileService"
 

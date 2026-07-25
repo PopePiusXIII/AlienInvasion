@@ -9,13 +9,13 @@
 --------------------------------------------------------------------------------
 
 local Players           = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
 
-local Framework   = require(ReplicatedStorage.Shared.Framework)
-local Logger      = require(ReplicatedStorage.Shared.Logger)
-local Config      = require(ReplicatedStorage.Shared.Config)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local Framework   = require(replicated_storage.shared.framework)
+local Logger      = require(replicated_storage.shared.logger)
+local Config      = require(replicated_storage.shared.Config)
+local RemoteNames = require(replicated_storage.shared.RemoteNames)
 local LobbyHudController = require(script.Parent.LobbyHudController)
 
 local TAG = "MatchmakingController"

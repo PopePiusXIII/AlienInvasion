@@ -6,14 +6,14 @@
 -- NO game logic here — belongs in the appropriate service.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
+local Framework = require(replicated_storage.shared.framework)
+local Logger    = require(replicated_storage.shared.logger)
 
 -- ── Shared services (cross-place) ────────────────────────────────────────────
-require(ServerScriptService.ServerModules.ProfileService)
+require(server_script_service.ProfileService)
 
 -- ── Lobby services ───────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ require(services.MatchmakingService)       -- requires MatchQueueService, Telepo
 require(services.LightShowService)         -- no deps
 require(services.FlyoverService)           -- no deps
 require(services.PlayerInitService)        -- requires ProfileService
-require(ReplicatedStorage.Shared.purchase.purchaseFramework)
+require(replicated_storage.shared.purchase.purchaseFramework)
 Logger.info("LobbyServerRuntime", "Booting — 6 services registered.")
 Framework.Start()
 Logger.info("LobbyServerRuntime", "Framework started. All services live.")

@@ -1,7 +1,7 @@
 --!strict
 
-local LobbyMainHUD = require(game.ReplicatedStorage.Shared.vide.LobbyMainHUD)
-local MatchmakingHUD = require(game.ReplicatedStorage.Shared.vide.MatchmakingHUD)
+local LobbyMainHUD = require(game.replicated_storage.shared.vide.LobbyMainHUD)
+local MatchmakingHUD = require(game.replicated_storage.shared.vide.MatchmakingHUD)
 local ProfileApi = require(game.ServerStorage.Shared.UiLabsApi)
 
 

@@ -1,9 +1,9 @@
 --!strict
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 -- RunService not used directly; scheduler handles per-frame loop
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Shared = replicated_storage:WaitForChild("Shared")
 local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
 local Config = require(Shared.Config)
 
@@ -21,7 +21,7 @@ local VIEWMODEL_INPUT_SMOOTH_ENABLED = true
 -- Double the apparent smoothing: lower responsiveness = smoother (slower to track).
 local VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS = (Config.VIEWMODEL_INPUT_SMOOTH_RESPONSIVENESS or 30) * 2 -- doubled smoothing
 
-local ViewModels = ReplicatedStorage:WaitForChild("ViewModels")
+local ViewModels = replicated_storage:WaitForChild("ViewModels")
 
 local activeViewmodel: Model? = nil
 local renderTaskId: string? = nil
@@ -215,7 +215,7 @@ function Module.onGunEquipped(tool: Tool)
     if not tool then return end
     currentTool = tool
 
-    -- Find a ViewModel in ReplicatedStorage matching the tool name
+    -- Find a ViewModel in replicated_storage matching the tool name
     local template: Model? = nil
     if ViewModels then
         template = ViewModels:FindFirstChild(tool.Name)

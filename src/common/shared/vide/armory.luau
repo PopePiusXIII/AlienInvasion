@@ -5,14 +5,14 @@
 -- Clicking an icon opens a breakout detail panel with GunPurchaseCard.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local vide  = require(ReplicatedStorage.Packages.vide)
-local theme = require(ReplicatedStorage.Shared.vide.VideTheme)
-local ui    = require(ReplicatedStorage.Shared.vide.UiConfig)
-local DepressedButton = require(ReplicatedStorage.Shared.vide.DepressedButton)
-local GunPurchaseCard = require(ReplicatedStorage.Shared.vide.GunPurchaseCard)
-local combatCfg = require(ReplicatedStorage.Shared.configs.CombatConfig)
+local vide  = require(replicated_storage.Packages.vide)
+local theme = require(replicated_storage.shared.vide.VideTheme)
+local ui    = require(replicated_storage.shared.vide.UiConfig)
+local DepressedButton = require(replicated_storage.shared.vide.DepressedButton)
+local GunPurchaseCard = require(replicated_storage.shared.vide.GunPurchaseCard)
+local combatCfg = require(replicated_storage.shared.configs.combat_config)
 local create = vide.create
 
 -- ── Weapon grid data ────────────────────────────────────────────────────────

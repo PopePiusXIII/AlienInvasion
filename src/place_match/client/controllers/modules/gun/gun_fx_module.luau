@@ -1,11 +1,11 @@
 --!strict
 
 local Debris = game:GetService("Debris")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
 local GunFxModule = {}
 
-local muzzleFlashTemplate = ReplicatedStorage:FindFirstChild("MuzzleFlash")
+local muzzleFlashTemplate = replicated_storage:FindFirstChild("MuzzleFlash")
 
 -- Cached per-gun references, populated once when a gun is equipped.
 local _cachedMuzzle:    BasePart?        = nil
@@ -141,7 +141,7 @@ function GunFxModule.onGunEquipped(gun: Tool)
 	-- Attempt to preload the reload animation track into the viewmodel animator so
 	-- the track.Length is available immediately when first played.
 	do
-		local viewModelsFolder = ReplicatedStorage:FindFirstChild("ViewModels")
+		local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
 		if viewModelsFolder then
 			local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
 			local animObj = template and (template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation"))
@@ -208,7 +208,7 @@ local function ensureShootAnimationReady(): boolean
 
 	-- Lazy-resolve the animation object from the template if not cached
 	if not _cachedShootAnimObj then
-		local viewModelsFolder = ReplicatedStorage:FindFirstChild("ViewModels")
+		local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
 		if viewModelsFolder then
 			local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
 			if template and template:IsA("Model") then
@@ -287,15 +287,15 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
-	local viewModelsFolder = ReplicatedStorage:FindFirstChild("ViewModels")
+	local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
 	if not viewModelsFolder then
-		warn("GunFxModule.playReloadAnimation: ReplicatedStorage.ViewModels not found")
+		warn("GunFxModule.playReloadAnimation: replicated_storage.ViewModels not found")
 		return
 	end
 
 	local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
 	if not template or not template:IsA("Model") then
-		warn("GunFxModule.playReloadAnimation: no ViewModel template for gun '" .. tostring(_currentGunName) .. "' in ReplicatedStorage.ViewModels")
+		warn("GunFxModule.playReloadAnimation: no ViewModel template for gun '" .. tostring(_currentGunName) .. "' in replicated_storage.ViewModels")
 		return
 	end
 

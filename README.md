@@ -281,7 +281,7 @@ The main matchmaking script. Runs a polling loop every `QUEUE_POLL_RATE` seconds
 
 | File | Service in Roblox |
 |---|---|
-| `places/match/src/shared/Config.luau` | `ReplicatedStorage.Shared.Config` |
+| `places/match/src/shared/Config.luau` | `replicated_storage.shared.Config` |
 | `places/match/src/server/Main.server.luau` | `ServerScriptService.Server` |
 | `places/match/src/server/WaveManager.luau` | `ServerScriptService.Server.WaveManager` |
 | `places/match/src/server/ZombieManager.luau` | `ServerScriptService.Server.ZombieManager` |
@@ -293,7 +293,7 @@ The main matchmaking script. Runs a polling loop every `QUEUE_POLL_RATE` seconds
 
 | File | Service in Roblox |
 |---|---|
-| `places/lobby/src/shared/Config.luau` | `ReplicatedStorage.Shared.Config` |
+| `places/lobby/src/shared/Config.luau` | `replicated_storage.shared.Config` |
 | `places/lobby/src/server/Matchmaker.server.luau` | `ServerScriptService.LobbyServer` |
 | `places/lobby/src/server/MatchmakerService.luau` | `ServerScriptService.LobbyServer.MatchmakerService` |
 | `places/lobby/src/server/TeleportHelper.luau` | `ServerScriptService.LobbyServer.TeleportHelper` |

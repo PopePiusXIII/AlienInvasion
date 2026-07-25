@@ -11,14 +11,14 @@
 --------------------------------------------------------------------------------
 
 local ServerStorage     = game:GetService("ServerStorage")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
-local GunCore = require(ReplicatedStorage.Shared.Common.GunCore)
+local GunCore = require(replicated_storage.c)
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Configs.Match.ZombieConfig)
-local CombatConfig = require(ReplicatedStorage.Common.Shared.configs.CombatConfig)
+local Framework = require(replicated_storage.shared.framework)
+local Logger    = require(replicated_storage.shared.logger)
+local Config    = require(replicated_storage.shared.Configs.Match.ZombieConfig)
+local CombatConfig = require(replicated_storage.Common.Shared.configs.CombatConfig)
 
 local ZombiePathfinderActor = require(script.Parent.modules.zombie.ZombiePathfinderActor)
 
@@ -264,9 +264,9 @@ local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: On
 			deathPos = cf.Position
 		end
 
-		local rngTemplate = ReplicatedStorage:FindFirstChild("RNG BLOCK", true)
+		local rngTemplate = replicated_storage:FindFirstChild("RNG BLOCK", true)
 		if not rngTemplate and not _rngTemplateWarned then
-			Logger.warn(TAG, "RNG BLOCK template not found in ReplicatedStorage — RNG BLOCKs will not spawn.")
+			Logger.warn(TAG, "RNG BLOCK template not found in replicated_storage — RNG BLOCKs will not spawn.")
 			_rngTemplateWarned = true
 		end
 		if rngTemplate and math.random(1, 5) == 1 then

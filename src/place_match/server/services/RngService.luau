@@ -2,11 +2,10 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local RngCore = require(server_script_service.rng_core)
+local RngCore = require(server_script_service.common.modules.rng_core)
 local Framework = require(replicated_storage.shared.framework)
 local Logger    = require(replicated_storage.shared.logger)
 local RemoteNames = require(replicated_storage.shared.RemoteNames)
-local MatchProfileService = require(script.Parent.MatchProfileService)
 local TAG = "RngService"
 
 

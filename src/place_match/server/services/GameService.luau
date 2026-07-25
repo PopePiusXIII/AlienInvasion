@@ -90,11 +90,10 @@ function GameService.startMatch()
 			local economySummary = EconomyService.finalizeRun(player)
 			ProfileService.saveStats(player, waveReached, economySummary)
 
-			remaining -= 1
 			Logger.info(TAG, "%s done on wave %d. %d player(s) remaining.",
 				player.Name, waveReached, remaining)
 
-			if remaining <= 0 and (_matchState :: string) == "ACTIVE" then
+			if remaining < 1 and (_matchState :: string) == "ACTIVE" then
 				_matchState = "ENDED"
 				Logger.info(TAG, "Match ENDED. Returning to lobby in 5s.")
 				task.delay(5, GameService._returnAllToLobby)

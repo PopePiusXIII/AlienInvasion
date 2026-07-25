@@ -11,10 +11,10 @@
 
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Shared = replicated_storage:WaitForChild("Shared")
 local Framework     = require(Shared.Framework)
 local Logger        = require(Shared.Logger)
 local Config        = require(Shared.Config)
@@ -499,7 +499,7 @@ function GunController:Start()
 
 	-- Play hit sound (body or headshot) when server confirms a hit.
 	_hitSoundRemote = Framework.GetRemote(RemoteNames.ZOMBIE_HIT_SOUND)
-	local soundsFolder = ReplicatedStorage:FindFirstChild("Sounds") :: Folder?
+	local soundsFolder = replicated_storage:FindFirstChild("Sounds") :: Folder?
 	_hitSoundRemote.OnClientEvent:Connect(function(hitPosition: Vector3, isHeadshot: boolean)
 		local templateName = isHeadshot and "ZombieHeadshotHit" or "ZombieBodyHit"
 		local template = soundsFolder and soundsFolder:FindFirstChild(templateName) :: Sound?

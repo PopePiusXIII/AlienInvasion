@@ -1,10 +1,10 @@
 --!strict
 
 local ServerStorage = game:GetService("ServerStorage")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger        = require(ReplicatedStorage.Shared.Logger)
+local Framework = require(replicated_storage.shared.framework)
+local Logger        = require(replicated_storage.shared.logger)
 local InventoryService = nil -- Will be lazy-loaded to avoid circular dependency
 
 local LoadoutGrantModule = {}

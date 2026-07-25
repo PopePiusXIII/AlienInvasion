@@ -1,6 +1,6 @@
 --!strict
 
-local Inventory = require(game.ReplicatedStorage.Shared.ui.RngHud)
+local Inventory = require(game.replicated_storage.shared.ui.RngHud)
 
 local function story(target: Instance)
 	Inventory.Parent = target

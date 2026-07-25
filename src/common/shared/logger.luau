@@ -1,7 +1,7 @@
 --!strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 --------------------------------------------------------------------------------
--- Logger.luau  (src/common → ReplicatedStorage.Shared.Logger)
+-- logger.luau  (src/common → replicated_storage.shared.logger)
 -- Centralized structured logging with a network middleware pipeline.
 --
 -- NETWORK MIDDLEWARE — the key observability tool:
@@ -18,10 +18,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 --     Each logs the direction + args when DEBUG_NETWORKING is true.
 --
 -- HOT-TOGGLE in Studio console:
---   require(game.ReplicatedStorage.Shared.Logger).DEBUG_NETWORKING = true
+--   require(game.replicated_storage.shared.logger).DEBUG_NETWORKING = true
 --------------------------------------------------------------------------------
 
-local Config = require(ReplicatedStorage.Shared.Configs.Common.LoggerConfig)
+local Config = require(replicated_storage.shared.Configs.Common.LoggerConfig)
 
 local Logger = {}
 

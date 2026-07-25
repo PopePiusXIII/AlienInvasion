@@ -7,10 +7,10 @@
       "Shared": {
         "$className": "Folder",
         "$path": "../common/shared",
-        "Logger":         { "$path": "../common/shared/Logger.luau" },
-        "GunCore":        { "$path": "../common/shared/GunCore.luau" },
-        "CombatConfig":   { "$path": "../common/shared/configs/CombatConfig.luau" },
-        "ProfileDbTypes": { "$path": "../common/shared/ProfileDbTypes.luau" },
+        "Logger":         { "$path": "../common/shared/logger.luau" },
+        "GunCore":        { "$path": "../common/shared/gun_core.luau" },
+        "CombatConfig":   { "$path": "../common/shared/configs/combat_config.luau" },
+        "ProfileDbTypes": { "$path": "../common/shared/profile_db_types.luau" },
         "RemoteNames":    { "$path": "shared/RemoteNames.luau" },
         "ProfileApiType": { "$path": "shared/ProfileApiType.luau" },
         "Config":         { "$path": "shared/Config.luau" },
@@ -52,13 +52,13 @@
 
       "ServerModules": {
         "$className": "Folder",
-        "ProfileDb": { "$path": "../common/server/ProfileDb.luau" },
-        "Logger": { "$path": "../common/shared/Logger.luau" },
-        "GunCore": { "$path": "../common/shared/GunCore.luau" },
-        "CombatConfig": { "$path": "../common/shared/configs/CombatConfig.luau" },
-        "ProfileDbTypes": { "$path": "../common/shared/ProfileDbTypes.luau" },
-        "GunApi":         { "$path": "../common/server/GunApi.luau" },
-        "GunMerge":       { "$path": "../common/server/GunMerge.luau" }
+        "ProfileDb": { "$path": "../common/server/services/profile_db.luau" },
+        "Logger": { "$path": "../common/shared/logger.luau" },
+        "GunCore": { "$path": "../common/shared/gun_core.luau" },
+        "CombatConfig": { "$path": "../common/shared/configs/combat_config.luau" },
+        "ProfileDbTypes": { "$path": "../common/shared/profile_db_types.luau" },
+        "GunApi":         { "$path": "../common/server/services/gun_api.luau" },
+        "GunMerge":       { "$path": "../common/server/services/gun_merge.luau" }
       }
     },
 

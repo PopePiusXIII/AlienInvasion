@@ -5,9 +5,9 @@
 -- Uses ScaleType.Fit to automatically respect image aspect ratios safely.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local vide = require(ReplicatedStorage.Packages.vide)
+local vide = require(replicated_storage.Packages.vide)
 
 local create = vide.create
 

@@ -1,7 +1,7 @@
 -- !strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local MatchProfile = require(ReplicatedStorage.Shared.MatchProfile)
-local Framework = require(ReplicatedStorage.Shared.Framework)
+local replicated_storage = game:GetService("ReplicatedStorage")
+local MatchProfile = require(replicated_storage.shared.MatchProfile)
+local Framework = require(replicated_storage.shared.framework)
 
 -- export type MatchProfileServiceT = Framework.Module & MatchProfileServiceTypes.API
 export type API = {

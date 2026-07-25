@@ -1,13 +1,13 @@
 --!strict
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger    = require(ReplicatedStorage.Shared.Logger)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local Framework = require(replicated_storage.shared.framework)
+local Logger    = require(replicated_storage.shared.logger)
+local RemoteNames = require(replicated_storage.shared.RemoteNames)
 local InventoryController = require(script.Parent.InventoryController)
-local RngHud = require(ReplicatedStorage.Shared.ui.RngHud)
+local RngHud = require(replicated_storage.shared.ui.RngHud)
 
 local TAG = "RNGController"
 local RNGController = Framework.CreateController({ Name = TAG })

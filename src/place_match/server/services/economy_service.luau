@@ -1,14 +1,14 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
-local EconomyConfig = require(ReplicatedStorage.Match.Shared.Configs.EconomyConfig)
-local ZombieConfig = require(ReplicatedStorage.Match.Shared.Configs.ZombieConfig)
-local Framework     = require(ReplicatedStorage.Common.Shared.Framework)
-local Logger        = require(ReplicatedStorage.Common.Shared.Logger)
-local RemoteNames   = require(ReplicatedStorage.Match.Shared.RemoteNames)
+local EconomyConfig = require(replicated_storage.Match.Shared.Configs.EconomyConfig)
+local ZombieConfig = require(replicated_storage.Match.Shared.Configs.ZombieConfig)
+local Framework     = require(replicated_storage.Common.Shared.Framework)
+local Logger        = require(replicated_storage.Common.Shared.Logger)
+local RemoteNames   = require(replicated_storage.Match.Shared.RemoteNames)
 
 local EconomyService = {}
 local TAG = "EconomyService"
@@ -186,8 +186,8 @@ end
 function EconomyService:Init()
 	-- Templates are no longer used server-side; client handles all visuals.
 	-- Warn if BoltTemplates is missing so the client can find them.
-	if not ReplicatedStorage:FindFirstChild("BoltTemplates") then
-		Logger.warn(TAG, "ReplicatedStorage.BoltTemplates folder not found — client bolt visuals will be missing.")
+	if not replicated_storage:FindFirstChild("BoltTemplates") then
+		Logger.warn(TAG, "replicated_storage.BoltTemplates folder not found — client bolt visuals will be missing.")
 	end
 
 	_runCurrencyUpdatedRemote  = Framework.CreateRemote(RemoteNames.RUN_CURRENCY_UPDATED)

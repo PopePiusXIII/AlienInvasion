@@ -7,8 +7,8 @@
 -- remote or server connection. Stories can use it to exercise UI reactions.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ProfileApiType = require(ReplicatedStorage.Shared.ProfileApiType)
+local replicated_storage = game:GetService("ReplicatedStorage")
+local ProfileApiType = require(replicated_storage.shared.ProfileApiType)
 
 type ProfileSnapshot = ProfileApiType.ProfileSnapshot
 type ProfileChangedCallback = ProfileApiType.ProfileChangedCallback

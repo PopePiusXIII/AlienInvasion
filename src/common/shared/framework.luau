@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- Framework.luau  (src/common → ReplicatedStorage.Shared.Framework)
+-- framework.luau  (src/common → replicated_storage.shared.framework)
 -- Lightweight Service/Controller bootstrapper for AlienInvasion.
 --
 -- SERVER usage:
@@ -58,16 +58,16 @@ local function getRemoteFolder(): Folder
 			folder.Parent = RS
 			f = folder
 		end
-		assert(f:IsA("Folder"), "[Framework] ReplicatedStorage.Remotes is not a Folder")
+		assert(f:IsA("Folder"), "[Framework] replicated_storage.Remotes is not a Folder")
 		_remoteFolder = f
 	else
 		local success, result = pcall(function()
 			return RS:WaitForChild("Remotes", 10)
 		end)
 		if not success or not result then
-			error("[Framework] Could not find Remotes folder in ReplicatedStorage after 10s. Is the server running?")
+			error("[Framework] Could not find Remotes folder in replicated_storage after 10s. Is the server running?")
 		end
-		assert(result:IsA("Folder"), "[Framework] ReplicatedStorage.Remotes is not a Folder")
+		assert(result:IsA("Folder"), "[Framework] replicated_storage.Remotes is not a Folder")
 		_remoteFolder = result
 	end
 
@@ -91,9 +91,9 @@ function Framework.CreateRemote(name: string): RemoteEvent
 	event.Parent = folder
 
 	if not _remoteFolder then
-		error("[Framework] Failed to get Remote folder under ReplicatedStorage")
+		error("[Framework] Failed to get Remote folder under replicated_storage")
 	else
-		warn("[Framework] Created RemoteEvent '" .. name .. "' under ReplicatedStorage.Remotes")
+		warn("[Framework] Created RemoteEvent '" .. name .. "' under replicated_storage.Remotes")
 	end
 
 	return event
@@ -103,7 +103,7 @@ end
 --- Call during Start() after all server Inits have run.
 function Framework.GetRemote(name: string): RemoteEvent
 	assert(not IS_SERVER, "[Framework] GetRemote must be called on the client")
-	warn("[Framework] GetRemote called for '" .. name .. "'; waiting for RemoteEvent under ReplicatedStorage.Remotes")
+	warn("[Framework] GetRemote called for '" .. name .. "'; waiting for RemoteEvent under replicated_storage.Remotes")
 	return getRemoteFolder():WaitForChild(name) :: RemoteEvent
 end
 

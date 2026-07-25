@@ -4,7 +4,7 @@
 -- Shared theming and style constants for all vide-based UI in AlienInvasion.
 --
 -- Usage:
---   local theme = require(ReplicatedStorage.Shared.VideTheme)
+--   local theme = require(replicated_storage.shared.VideTheme)
 --   create "Frame" {
 --       BackgroundColor3 = theme.BACKGROUND,
 --       BorderSizePixel  = 0,

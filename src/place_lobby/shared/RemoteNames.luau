@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- RemoteNames.luau  (src/place_lobby/shared — ReplicatedStorage.Shared.RemoteNames)
+-- RemoteNames.luau  (src/place_lobby/shared — replicated_storage.shared.RemoteNames)
 -- Single source of truth for all RemoteEvent names used in the Lobby Place.
 --------------------------------------------------------------------------------
 

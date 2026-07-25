@@ -5,7 +5,7 @@
 -- Used by all vide components.
 --
 -- Usage:
---   local ui = require(ReplicatedStorage.Shared.vide.UiConfig)
+--   local ui = require(replicated_storage.shared.vide.UiConfig)
 --   create "ImageButton" {
 --       Image = ui.images.ShopButton,
 --   }

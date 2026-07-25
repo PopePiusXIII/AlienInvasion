@@ -1,16 +1,16 @@
 --!strict
 --------------------------------------------------------------------------------
--- GunApi.luau  (src/common → ServerScriptService.ServerModules.GunApi)
+-- gun_api.luau  (src/common → server_script_service.gun_api)
 -- Profile-bound gun operations: resolve stats, manage inventory, merge/upgrade.
 -- All methods require a Player reference — they hit the profile store.
 -- SERVER ONLY. Do not require from client code.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
-local ProfileService = require(ServerScriptService.ServerModules.ProfileDb)
-local GunCore = require(ReplicatedStorage.Shared.GunCore)
+local ProfileService = require(server_script_service.profile_db)
+local GunCore = require(replicated_storage.shared.gun_core)
 
 local GunApi = {}
 

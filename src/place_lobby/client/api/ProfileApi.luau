@@ -7,11 +7,11 @@
 -- the small client API needed by lobby UI and translates calls to remotes.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
-local ProfileApiType = require(ReplicatedStorage.Shared.ProfileApiType)
+local Framework = require(replicated_storage.shared.framework)
+local RemoteNames = require(replicated_storage.shared.RemoteNames)
+local ProfileApiType = require(replicated_storage.shared.ProfileApiType)
 
 type ProfileSnapshot = ProfileApiType.ProfileSnapshot
 type ProfileChangedCallback = ProfileApiType.ProfileChangedCallback

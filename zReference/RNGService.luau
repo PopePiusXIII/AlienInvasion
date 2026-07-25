@@ -7,13 +7,13 @@
 -- Level is tracked in-memory by InventoryService (resets each match).
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework     = require(ReplicatedStorage.Shared.Framework)
-local Logger        = require(ReplicatedStorage.Shared.Logger)
-local Config        = require(ReplicatedStorage.Shared.Config)
-local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
-local ProfileService = require(ReplicatedStorage.Shared.ProfileService)
+local Framework     = require(replicated_storage.shared.framework)
+local Logger        = require(replicated_storage.shared.logger)
+local Config        = require(replicated_storage.shared.Config)
+local RemoteNames   = require(replicated_storage.shared.RemoteNames)
+local ProfileService = require(replicated_storage.shared.ProfileService)
 
 local TAG = "RNGService"
 local RNGService = Framework.CreateService({ Name = TAG })

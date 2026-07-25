@@ -1,6 +1,6 @@
 --!strict
 --------------------------------------------------------------------------------
--- RemoteNames.luau  (src/place_match/shared → ReplicatedStorage.Shared.RemoteNames)
+-- RemoteNames.luau  (src/place_match/shared → replicated_storage.shared.RemoteNames)
 -- Single source of truth for all RemoteEvent name strings (Match Place).
 -- Import this in both Services (server) and Controllers (client) to prevent
 -- typo-induced nil-remote bugs that only surface at runtime.

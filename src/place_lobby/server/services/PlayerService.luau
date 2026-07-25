@@ -6,13 +6,13 @@
 
 local Players           = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
+local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
-local Framework   = require(ReplicatedStorage.Shared.Framework)
-local Logger      = require(ReplicatedStorage.Shared.Logger)
-local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
-local RemoteNames = require(ReplicatedStorage.Shared.RemoteNames)
+local Framework   = require(replicated_storage.shared.framework)
+local Logger      = require(replicated_storage.shared.logger)
+local ProfileService = require(server_script_service.ProfileService)
+local RemoteNames = require(replicated_storage.shared.RemoteNames)
 
 local TAG = "PlayerInitService"
 

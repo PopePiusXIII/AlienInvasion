@@ -1,5 +1,5 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local vide = require(ReplicatedStorage.Packages.vide)
+local replicated_storage = game:GetService("ReplicatedStorage")
+local vide = require(replicated_storage.Packages.vide)
 
 local create = vide.create
 local source = vide.source

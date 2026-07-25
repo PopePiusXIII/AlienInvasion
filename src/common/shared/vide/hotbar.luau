@@ -5,9 +5,9 @@
 -- Shows weapon slots with names and highlights the equipped slot.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local vide  = require(ReplicatedStorage.Packages.vide)
+local vide  = require(replicated_storage.Packages.vide)
 local theme = require(script.Parent.VideTheme)
 local ui    = require(script.Parent.UiConfig)
 

@@ -1,5 +1,5 @@
 --!strict
--- MatchmakerService.luau  (Lobby Place — ServerScriptService)
+-- MatchmakerService.luau  (Lobby Place — server_script_service)
 -- Manages the cross-server player queue using MemoryStoreService SortedMap.
 -- Key   = UserId string  (allows per-player removal when they leave the queue)
 -- Value = { userId, name }
@@ -11,9 +11,9 @@
 -- UserIds are still online before teleporting.
 
 local MemoryStoreService = game:GetService("MemoryStoreService")
-local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+local replicated_storage  = game:GetService("ReplicatedStorage")
 
-local Config = require(ReplicatedStorage.Shared.Config)
+local Config = require(replicated_storage.shared.Config)
 
 local MatchmakerService = {}
 

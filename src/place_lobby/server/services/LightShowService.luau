@@ -9,9 +9,9 @@
 -- 3. Toggles shared SpotLights under LightPart1/2 and UsePartColor on housing.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Framework         = require(ReplicatedStorage.Shared.Framework)
-local Logger            = require(ReplicatedStorage.Shared.Logger)
+local replicated_storage = game:GetService("ReplicatedStorage")
+local Framework         = require(replicated_storage.shared.framework)
+local Logger            = require(replicated_storage.shared.logger)
 
 local TAG = "LightShowService"
 
@@ -93,7 +93,7 @@ function LightShowService:Start()
 	
 	-- Auto-start the Iron Cartilage show
 	task.defer(function()
-		local Config = require(ReplicatedStorage.Shared.LightShowConfig)
+		local Config = require(replicated_storage.shared.LightShowConfig)
 		local baseShow = Config.GetIronCartilageShow()
 		local duration = Config.GetSequenceDuration(baseShow)
 		local sequence = Config.GetLoopedSequence(baseShow, 20, duration)

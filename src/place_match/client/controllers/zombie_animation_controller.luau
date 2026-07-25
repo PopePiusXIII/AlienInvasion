@@ -4,10 +4,10 @@
 -- Thin controller that starts the client-side ZombieAnimationManager.
 --------------------------------------------------------------------------------
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(ReplicatedStorage.Shared.Framework)
-local Logger = require(ReplicatedStorage.Shared.Logger)
+local Framework = require(replicated_storage.shared.framework)
+local Logger = require(replicated_storage.shared.logger)
 
 local TAG = "ZombieAnimationController"
 local ZombieAnimationController = Framework.CreateController({ Name = TAG })
