@@ -17,11 +17,10 @@
           "$path": "shared/Configs"
         },
         "Common": {
-          "$path": "../../src/common/shared/Configs"
+          "$path": "../../src/common/shared/configs"
         }
-      },
-        "Config": { "$path": "shared/Config.luau" }
-      },
+      }
+    },
       "Packages": {
         "$className": "Folder",
         "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },

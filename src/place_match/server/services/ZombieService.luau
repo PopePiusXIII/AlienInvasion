@@ -17,11 +17,13 @@ local GunModule = require(ReplicatedStorage.Shared.GunCore)
 
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
-local Config    = require(ReplicatedStorage.Shared.Config)
+local Config    = require(ReplicatedStorage.Shared.Configs.Match.ZombieConfig)
 
 local ZombiePathfinderActor = require(script.Parent.modules.zombie.ZombiePathfinderActor)
 
 local TAG = "ZombieService"
+local ZombieService = {}
+ZombieService.Name = TAG
 
 export type OnDied = () -> ()
 
@@ -30,7 +32,7 @@ type ZombieSnapshot = {
 	humanoid: Humanoid,
 }
 
-local ZombieService = Framework.CreateService({ Name = TAG })
+
 
 local _zombieTemplates: { [string]: Model } = {}
 
@@ -348,5 +350,7 @@ function ZombieService.cleanupForPlayer(playerName: string)
 		end
 	end
 end
+
+ZombieService = Framework.CreateService(ZombieService)
 
 return ZombieService
