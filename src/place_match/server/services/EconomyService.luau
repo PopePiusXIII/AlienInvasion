@@ -4,14 +4,15 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Framework      = require(ReplicatedStorage.Shared.Framework)
-local Logger         = require(ReplicatedStorage.Shared.Logger)
-local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
-local Config         = require(ReplicatedStorage.Shared.Config)
-local RemoteNames    = require(ReplicatedStorage.Shared.RemoteNames)
+local EconomyConfig = require(ReplicatedStorage.Match.Shared.Configs.EconomyConfig)
+local ZombieConfig = require(ReplicatedStorage.Match.Shared.Configs.ZombieConfig)
+local Framework     = require(ReplicatedStorage.Common.Shared.Framework)
+local Logger        = require(ReplicatedStorage.Common.Shared.Logger)
+local RemoteNames   = require(ReplicatedStorage.Match.Shared.RemoteNames)
 
+local EconomyService = {}
 local TAG = "EconomyService"
-local EconomyService = Framework.CreateService({ Name = TAG })
+EconomyService.Name = TAG
 
 -- Minimal server-side record: just enough to validate a CLAIM_BOLT request.
 type BoltRecord = {
@@ -52,7 +53,7 @@ end
 local function getWallet(player: Player): RunWallet
 	if not _walletByPlayer[player] then
 		_walletByPlayer[player] = {
-			silverStuds  = math.max(0, math.floor(Config.SILVER_START_BALANCE)),
+			silverStuds  = math.max(0, math.floor(EconomyConfig.SILVER_START_BALANCE)),
 			silverEarned = 0,
 			silverSpent  = 0,
 			goldEarned   = 0,
@@ -141,19 +142,19 @@ local function spawnBoltBurst(currencyName: string, player: Player, amount: numb
 end
 
 local function calculateSilverReward(zombieType: string, waveNumber: number): number
-	local byType = Config.SILVER_DROP_BY_ZOMBIE_TYPE :: { [string]: { min: number, max: number } }
-	local bucket = byType[zombieType] or byType[Config.ZOMBIE_DEFAULT_TYPE] or { min = 1, max = 1 }
-	local multiplier = 1 + (waveNumber - 1) * Config.SILVER_WAVE_MULTIPLIER_STEP
+	local byType = EconomyConfig.SILVER_DROP_BY_ZOMBIE_TYPE :: { [string]: { min: number, max: number } }
+	local bucket = byType[zombieType] or byType[ZombieConfig.ZOMBIE_DEFAULT_TYPE] or { min = 1, max = 1 }
+	local multiplier = 1 + (waveNumber - 1) * EconomyConfig.SILVER_WAVE_MULTIPLIER_STEP
 	return math.max(1, math.round(randomInt(bucket.min, bucket.max) * multiplier))
 end
 
 local function rollGoldReward(zombieType: string, waveNumber: number): number
-	local byType = Config.GOLD_DROP_BY_ZOMBIE_TYPE :: { [string]: { chance: number, min: number, max: number } }
-	local bucket = byType[zombieType] or byType[Config.ZOMBIE_DEFAULT_TYPE]
+	local byType = EconomyConfig.GOLD_DROP_BY_ZOMBIE_TYPE :: { [string]: { chance: number, min: number, max: number } }
+	local bucket = byType[zombieType] or byType[ZombieConfig.ZOMBIE_DEFAULT_TYPE]
 	if not bucket then return 0 end
-	local chance = math.clamp(bucket.chance * (1 + (waveNumber - 1) * Config.GOLD_WAVE_CHANCE_STEP), 0, 1)
+	local chance = math.clamp(bucket.chance * (1 + (waveNumber - 1) * EconomyConfig.GOLD_WAVE_CHANCE_STEP), 0, 1)
 	if math.random() > chance then return 0 end
-	local multiplier = 1 + (waveNumber - 1) * Config.GOLD_WAVE_REWARD_STEP
+	local multiplier = 1 + (waveNumber - 1) * EconomyConfig.GOLD_WAVE_REWARD_STEP
 	return math.max(1, math.round(randomInt(bucket.min, bucket.max) * multiplier))
 end
 
@@ -195,10 +196,6 @@ function EconomyService:Init()
 	_boltSpawnedRemote         = Framework.CreateRemote(RemoteNames.BOLT_SPAWNED)
 	_claimBoltRemote           = Framework.CreateRemote(RemoteNames.CLAIM_BOLT)
 
-	Logger.wrapServerEvent(_requestShopPurchaseRemote, TAG, function(player: Player, productId: string)
-		EconomyService._onPurchaseRequest(player, productId)
-	end)
-
 	Logger.wrapServerEvent(_claimBoltRemote, TAG, function(player: Player, boltId: any)
 		onClaimBolt(player, boltId)
 	end)
@@ -239,7 +236,7 @@ function EconomyService.beginRun(player: Player)
 	local persistentGold = profile and profile.goldStuds or 0
 
 	_walletByPlayer[player] = {
-		silverStuds  = math.max(0, math.floor(Config.SILVER_START_BALANCE)),
+		silverStuds  = math.max(0, math.floor(EconomyConfig.SILVER_START_BALANCE)),
 		silverEarned = 0,
 		silverSpent  = 0,
 		goldEarned   = 0, -- Only tracks gold earned during this run.
@@ -276,30 +273,6 @@ function EconomyService.grantKillRewards(player: Player, zombieType: string, wav
 	end
 end
 
-function EconomyService._onPurchaseRequest(player: Player, productId: string)
-	if type(productId) ~= "string" or productId == "" then
-		Logger.fireClient(_shopPurchaseResultRemote, player, false, "INVALID_PRODUCT", 0)
-		return
-	end
-
-	local price = (Config.SHOP_SILVER_PRICES :: { [string]: number })[productId]
-	if not price then
-		Logger.fireClient(_shopPurchaseResultRemote, player, false, "UNKNOWN_PRODUCT", 0)
-		return
-	end
-
-	local wallet = getWallet(player)
-	if wallet.silverStuds < price then
-		Logger.fireClient(_shopPurchaseResultRemote, player, false, "INSUFFICIENT_SILVER", wallet.silverStuds)
-		return
-	end
-
-	wallet.silverStuds -= price
-	wallet.silverSpent += price
-	syncWalletToClient(player)
-	Logger.fireClient(_shopPurchaseResultRemote, player, true, productId, wallet.silverStuds)
-end
-
 function EconomyService.getRunSilver(player: Player): number
 	return getWallet(player).silverStuds
 end
@@ -323,5 +296,8 @@ function EconomyService.finalizeRun(player: Player): { silverEarned: number, sil
 	_walletByPlayer[player] = nil
 	return summary
 end
+
+
+local EconomyService = Framework.CreateService(EconomyService)
 
 return EconomyService

@@ -20,22 +20,15 @@ local Framework     = require(ReplicatedStorage.Common.Shared.Framework)
 local Logger        = require(ReplicatedStorage.Common.Shared.Logger)
 local RemoteNames   = require(ReplicatedStorage.Match.Shared.RemoteNames)
 local ZombieService = require(ServerScriptService.ServerModules.Match.Services.ZombieService)
-local EconomyService = require(ServerScriptService.ServerModules.Match.EconomyService)
-local GunModule     = require(ReplicatedStorage.Shared.GunCore)
-local ProfileService = require(ServerScriptService.ServerModules.Match.ProfileDb)
+local EconomyService = require(ServerScriptService.ServerModules.Match.Services.EconomyService)
+local InventoryService = require(ServerScriptService.ServerModules.Match.Services.InventoryService)
+local GunCore     = require(ReplicatedStorage.Common.Shared.GunCore)
+local SkillService = require(ServerScriptService.ServerModules.Match.Services.SkillService)
+local WaveConfig = require(ReplicatedStorage.Match.Shared.Configs.WaveConfig)
 
+local CombatService = {}
 local TAG = "CombatService"
-
-local CombatService = Framework.CreateService({ Name = TAG })
-
---- Lazy-loaded to avoid circular dependency.
-local InventoryService = nil
-
-local function ensureInventoryService()
-	if not InventoryService then
-		InventoryService = Framework.GetService("InventoryService")
-	end
-end
+CombatService.Name = TAG
 
 function CombatService:Init()
 	local shootRemote = Framework.CreateRemote(RemoteNames.SHOOT_GUN)
@@ -45,8 +38,7 @@ function CombatService:Init()
 		if not zombieModel:IsA("Model") then return end
 		local character = player.Character
 
-		-- Resolve equipped gun via InventoryService + ProfileService
-		ensureInventoryService()
+		-- Resolve equipped gun via InventoryService + SkillService
 		local equippedGunId = InventoryService.getEquippedGunId(player)
 		if not equippedGunId then return end
 
@@ -54,7 +46,7 @@ function CombatService:Init()
 		local level = InventoryService.getGunLevel(player, equippedGunId)
 
 		-- Get resolved stats (base rarity stats + level multipliers)
-		local gun = ProfileService.getGunStats(player, equippedGunId, level) :: GunModule.Gun?
+		local gun = SkillService.getGunStats(player, equippedGunId, level) :: GunCore.Gun?
 		if not gun then return end
 
 		local shooterPos: Vector3?
@@ -74,12 +66,18 @@ function CombatService:Init()
 		Logger.fireClient(hitSoundRemote, player, hitPosition, isHeadshot)
 
 		if killed then
-			local waveNumber = tonumber(player:GetAttribute("CurrentWave")) or Config.STARTING_WAVE
+			local waveNumber = tonumber(player:GetAttribute("CurrentWave")) or WaveConfig.STARTING_WAVE
 			EconomyService.grantKillRewards(player, zombieType, waveNumber, deathPosition)
 		end
 	end)
 
 	Logger.info(TAG, "ShootGun handler registered.")
 end
+
+function CombatService:Start()
+	-- Any startup logic for the CombatService can go here
+end
+
+CombatService = Framework.CreateService(CombatService)
 
 return CombatService
