@@ -1,5 +1,6 @@
 --!strict
-local RngCoreTypes = require(script.Parent.RngCoreTypes)
+local server_script_service = game:GetService("ServerScriptService")
+local RngCoreTypes = require(server_script_service.common.modules.rng_core_types)
 
 --- Selects a random item from an array with uniform distribution.
 -- @param items Array of items to choose from.

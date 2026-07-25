@@ -20,12 +20,12 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local server_script_service = game:GetService("ServerScriptService")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
-local CombatConfig = require(replicated_storage.shared.configs.combat_config)
-local GunCore  = require(replicated_storage.shared.gun_core)
-local GunMerge   = require(server_script_service.gun_merge)
-local ProfileDbType = require(replicated_storage.shared.profile_db_types)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
+local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
+local GunCore  = require(replicated_storage.common.shared.gun_core)
+local GunMerge   = require(server_script_service.common.services.gun_merge)
+local ProfileDbType = require(replicated_storage.common.shared.profile_db_types)
 
 local TAG = "ProfileDb"
 

@@ -8,8 +8,8 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 local vide  = require(replicated_storage.Packages.vide)
-local theme = require(script.Parent.VideTheme)
-local ui    = require(script.Parent.UiConfig)
+local theme = require(replicated_storage.common.shared.vide.vide_theme)
+local ui    = require(replicated_storage.common.shared.vide.ui_config)
 
 local create = vide.create
 local source = vide.source

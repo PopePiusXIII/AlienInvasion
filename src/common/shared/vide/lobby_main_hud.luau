@@ -15,12 +15,12 @@ local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 local vide  = require(replicated_storage.Packages.vide)
-local theme = require(script.Parent.VideTheme)
-local ui    = require(script.Parent.UiConfig)
-local DepressedButton = require(script.Parent.DepressedButton)
-local armoryHud = require(script.Parent.Armory)
-local ProfileInventory = require(script.Parent.ProfileInventory)
-local ProfileDb = require(replicated_storage.shared.profile_db_types)
+local theme = require(replicated_storage.common.shared.vide.vide_theme)
+local ui    = require(replicated_storage.common.shared.vide.ui_config)
+local DepressedButton = require(replicated_storage.common.shared.vide.depressed_button)
+local armoryHud = require(replicated_storage.common.shared.vide.armory)
+local ProfileInventory = require(replicated_storage.common.shared.profile_db_types)
+local ProfileDb = require(replicated_storage.common.shared.profile_db_types)
 
 local create = vide.create
 local source = vide.source

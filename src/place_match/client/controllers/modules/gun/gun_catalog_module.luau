@@ -1,9 +1,9 @@
 --!strict
 
 local replicated_storage = game:GetService("ReplicatedStorage")
-local GunModule = require(replicated_storage.shared.gun_core)
-local CombatConfig = require(replicated_storage.shared.configs.combat_config)
-local Logger = require(replicated_storage.shared.logger)
+local GunModule = require(replicated_storage.common.shared.gun_core)
+local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
+local Logger = require(replicated_storage.common.shared.logger)
 
 local GunCatalogModule = {}
 

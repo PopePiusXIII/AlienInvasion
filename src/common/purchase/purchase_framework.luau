@@ -1,4 +1,5 @@
-local ProfileService = require(script.Parent.Parent.ProfileService)
+local server_script_service = game:GetService("ServerScriptService")
+local ProfileService = require(server_script_service.common.services.profile_db)
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 

@@ -13,14 +13,14 @@
 local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework             = require(replicated_storage.shared.framework)
-local Logger                = require(replicated_storage.shared.logger)
-local Config                = require(replicated_storage.shared.Config)
-local RemoteNames           = require(replicated_storage.shared.RemoteNames)
-local CharacterController   = require(script.Parent.CharacterController)
-local InventoryController   = require(script.Parent.InventoryController)
-local MatchHUD              = require(replicated_storage.shared.vide.MatchHUD)
-local HudUpgradeEchoModule  = require(script.Parent.modules.hud.HudUpgradeEchoModule)
+local Framework             = require(replicated_storage.common.shared.framework)
+local Logger                = require(replicated_storage.common.shared.logger)
+local Config                = require(replicated_storage.match.shared.configs.game_config)
+local RemoteNames           = require(replicated_storage.match.shared.remote_names)
+local CharacterController   = require(replicated_storage.match.client.controllers.character_controller)
+local InventoryController   = require(replicated_storage.match.client.controllers.inventory_controller)
+local MatchHUD              = require(replicated_storage.common.shared.vide.match_hud)
+local HudUpgradeEchoModule  = require(replicated_storage.match.client.controllers.modules.hud.hud_upgrade_echo_module)
 
 local TAG = "HudController"
 

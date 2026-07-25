@@ -2,7 +2,7 @@ local GunMerge = {}
 
 
 local replicated_storage = game:GetService("ReplicatedStorage")
-local Gun = require(replicated_storage.shared.gun_core)
+local Gun = require(replicated_storage.common.shared.gun_core)
 
 type MergeRule = { toRarity: Gun.GunRarity, fromRarity: Gun.GunRarity, quantity: number }
 

@@ -9,13 +9,13 @@
 local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework     = require(replicated_storage.shared.framework)
-local Logger        = require(replicated_storage.shared.logger)
-local Config        = require(replicated_storage.shared.Config)
-local RemoteNames   = require(replicated_storage.shared.RemoteNames)
-local HudController = require(script.Parent.HudController)
-local LobbyPromptViewModule = require(script.Parent.modules.lobby.LobbyPromptViewModule)
-local PadProximityModule = require(script.Parent.modules.lobby.PadProximityModule)
+local Framework     = require(replicated_storage.common.shared.framework)
+local Logger        = require(replicated_storage.common.shared.logger)
+local Config        = require(replicated_storage.match.shared.configs.game_config)
+local RemoteNames   = require(replicated_storage.match.shared.remote_names)
+local HudController = require(replicated_storage.match.client.controllers.hud_controller)
+local LobbyPromptViewModule = require(replicated_storage.match.client.controllers.modules.lobby.lobby_prompt_view_module)
+local PadProximityModule = require(replicated_storage.match.client.controllers.modules.lobby.pad_proximity_module)
 
 local TAG = "LobbyController"
 

@@ -7,12 +7,21 @@
         "$className": "Folder",
         "shared": {
           "$path": "shared"
+        },
+        "client": {
+          "$path": "client"
+        },
+        "ui": {
+          "$path": "ui"
         }
     },
       "common": {
         "$className": "Folder",
         "shared": {
           "$path": "../../src/common/shared"
+        },
+        "purchase": {
+          "$path": "../../src/common/purchase"
         }
       },
       "Packages": {
@@ -30,6 +39,9 @@
       }
     },
     "ServerStorage": {
+      "ui": {
+        "$path": "ui"
+      },
       "Stories": {
         "$className": "Folder",
         "$path": "stories"

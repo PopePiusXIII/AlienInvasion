@@ -13,15 +13,15 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local Framework    = require(replicated_storage.shared.framework)
-local Logger       = require(replicated_storage.shared.logger)
-local WaveConfig   = require(replicated_storage.Match.Shared.Configs.WaveConfig)
-local CombatConfig = require(replicated_storage.Common.Shared.configs.CombatConfig)
-local RemoteNames  = require(replicated_storage.shared.RemoteNames)
-local ProfileService = require(server_script_service.Common.ProfileDb)
-local ZombieService = require(server_script_service.Match.services.ZombieService)
-local EconomyService = require(server_script_service.Match.Services.EconomyService)
-local LoadoutGrantModule = require(server_script_service.Match.Modules.wave.LoadoutGrantModule)
+local Framework    = require(replicated_storage.common.shared.framework)
+local Logger       = require(replicated_storage.common.shared.logger)
+local WaveConfig   = require(replicated_storage.match.shared.configs.wave_config)
+local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
+local RemoteNames  = require(replicated_storage.match.shared.remote_names)
+local ProfileService = require(server_script_service.common.services.profile_db)
+local ZombieService = require(server_script_service.match.services.zombie_service)
+local EconomyService = require(server_script_service.match.services.economy_service)
+local LoadoutGrantModule = require(server_script_service.match.modules.wave.loadout_grant_module)
 
 local TAG = "WaveService"
 

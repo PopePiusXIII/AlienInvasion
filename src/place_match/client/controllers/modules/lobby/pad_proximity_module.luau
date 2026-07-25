@@ -1,8 +1,8 @@
 --!strict
 
 local replicated_storage = game:GetService("ReplicatedStorage")
-local Shared = replicated_storage:WaitForChild("Shared")
-local RenderScheduler = require(Shared:WaitForChild("RenderScheduler"))
+local Shared = replicated_storage.common.shared
+local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 
 local PadProximityModule = {}
 

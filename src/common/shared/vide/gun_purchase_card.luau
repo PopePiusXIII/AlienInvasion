@@ -8,11 +8,11 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 local vide  = require(replicated_storage.Packages.vide)
-local theme = require(script.Parent.VideTheme)
-local ui    = require(script.Parent.UiConfig)
+local theme = require(replicated_storage.common.shared.vide.vide_theme)
+local ui    = require(replicated_storage.common.shared.vide.ui_config)
 
 -- Require the depressed button component
-local DepressedButton = require(script.Parent.DepressedButton)
+local DepressedButton = require(replicated_storage.common.shared.vide.depressed_button)
 
 local create = vide.create
 

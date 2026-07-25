@@ -11,11 +11,11 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 local ServerStorage     = game:GetService("ServerStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
-local Config    = require(replicated_storage.shared.Config)
-local RemoteNames = require(replicated_storage.shared.RemoteNames)
-local ProfileService = require(server_script_service.ProfileService)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
+local Config    = require(replicated_storage.match.shared.configs.game_config)
+local RemoteNames = require(replicated_storage.match.shared.remote_names)
+local ProfileService = require(server_script_service.common.services.profile_db)
 
 local TAG = "InventoryService"
 

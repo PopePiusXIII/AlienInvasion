@@ -14,12 +14,12 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
-local MatchProfile = require(replicated_storage.shared.MatchProfile)
-local MatchProfileServiceTypes = require(replicated_storage.shared.MatchProfileServiceTypes)
-local Framework      = require(replicated_storage.shared.framework)
-local Logger         = require(replicated_storage.shared.logger)
-local RemoteNames    = require(replicated_storage.shared.RemoteNames)
-local ModifierConfig = require(replicated_storage.shared.Configs.MatchProfileConfig)
+local MatchProfile = require(replicated_storage.match.shared.types.match_profile)
+local MatchProfileServiceTypes = require(replicated_storage.match.shared.types.match_profile_service_types)
+local Framework      = require(replicated_storage.common.shared.framework)
+local Logger         = require(replicated_storage.common.shared.logger)
+local RemoteNames    = require(replicated_storage.match.shared.remote_names)
+local ModifierConfig = require(replicated_storage.match.shared.configs.match_profile_config)
 
 local TAG = "MatchProfileService"
 

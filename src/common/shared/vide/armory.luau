@@ -8,11 +8,11 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 local vide  = require(replicated_storage.Packages.vide)
-local theme = require(replicated_storage.shared.vide.VideTheme)
-local ui    = require(replicated_storage.shared.vide.UiConfig)
-local DepressedButton = require(replicated_storage.shared.vide.DepressedButton)
-local GunPurchaseCard = require(replicated_storage.shared.vide.GunPurchaseCard)
-local combatCfg = require(replicated_storage.shared.configs.combat_config)
+local theme = require(replicated_storage.common.shared.vide.vide_theme)
+local ui    = require(replicated_storage.common.shared.vide.ui_config)
+local DepressedButton = require(replicated_storage.common.shared.vide.depressed_button)
+local GunPurchaseCard = require(replicated_storage.common.shared.vide.gun_purchase_card)
+local combatCfg = require(replicated_storage.common.shared.configs.combat_config)
 local create = vide.create
 
 -- ── Weapon grid data ────────────────────────────────────────────────────────

@@ -9,10 +9,10 @@ local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local StarterGui        = game:GetService("StarterGui")
 
-local Framework     = require(replicated_storage.shared.framework)
-local Logger        = require(replicated_storage.shared.logger)
-local RemoteNames   = require(replicated_storage.shared.RemoteNames)
-local GunModule     = require(replicated_storage.shared.gun_core)
+local Framework     = require(replicated_storage.common.shared.framework)
+local Logger        = require(replicated_storage.common.shared.logger)
+local RemoteNames   = require(replicated_storage.match.shared.remote_names)
+local GunModule     = require(replicated_storage.common.shared.gun_core)
 
 local TAG = "InventoryController"
 

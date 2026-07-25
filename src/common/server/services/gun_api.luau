@@ -9,8 +9,8 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local ProfileService = require(server_script_service.profile_db)
-local GunCore = require(replicated_storage.shared.gun_core)
+local ProfileService = require(server_script_service.common.services.profile_db)
+local GunCore = require(replicated_storage.common.shared.gun_core)
 
 local GunApi = {}
 

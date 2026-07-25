@@ -8,8 +8,8 @@
 local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(replicated_storage.)
-local Logger    = require(replicated_storage.shared.logger)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
 
 local TAG = "PlayerService"
 

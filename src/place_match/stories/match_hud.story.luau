@@ -1,6 +1,6 @@
 --!strict
 
-local MatchHUD = require(game.replicated_storage.shared.vide.MatchHUD)
+local MatchHUD = require(game:GetService("ReplicatedStorage").common.shared.vide.match_hud)
 
 local function story(target: Instance)
 	local controls, unmount = MatchHUD.createMatchHUD({

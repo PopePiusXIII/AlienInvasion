@@ -20,22 +20,22 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
 
 -- ── Shared services (cross-place) ────────────────────────────────────────────
-require(server_script_service.Common.ProfileDb)
+require(server_script_service.common.services.profile_db)
 
 -- ── Service registration (require triggers Framework.CreateService) ───────────
 
-local services = server_script_service.Match.services
-require(services.ZombieService)
-require(services.EconomyService)
-require(services.InventoryService)
-require(services.WaveService)
-require(services.CombatService)
-require(services.PlayerService)
-require(services.GameService)
+local services = server_script_service.match.services
+require(services.zombie_service)
+require(services.economy_service)
+require(services.inventory_service)
+require(services.wave_service)
+require(services.combat_service)
+require(services.player_service)
+require(services.game_service)
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 

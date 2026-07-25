@@ -1,7 +1,7 @@
-local replicated_storage = (game.replicated_storage)
+local replicated_storage = game:GetService("ReplicatedStorage")
 local ContextActionService = game:GetService("ContextActionService")
 local vide  = require(replicated_storage.Packages.vide)
-local ImgButtonHighlight = require(replicated_storage.shared.vide.ImgButtonHighlight)
+local ImgButtonHighlight = require(replicated_storage.common.shared.vide.img_button_highlight)
 
 local create = vide.create
 local source = vide.source

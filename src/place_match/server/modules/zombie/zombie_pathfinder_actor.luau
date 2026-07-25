@@ -14,8 +14,8 @@
 local PlayersService    = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Logger = require(replicated_storage.shared.logger)
-local Config = require(replicated_storage.shared.Config)
+local Logger = require(replicated_storage.common.shared.logger)
+local Config = require(replicated_storage.match.shared.configs.game_config)
 
 local TAG = "ZombiePathfinder"
 

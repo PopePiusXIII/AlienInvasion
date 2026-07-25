@@ -13,14 +13,14 @@
 local ServerStorage     = game:GetService("ServerStorage")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
-local GunCore = require(replicated_storage.c)
+local GunCore = require(replicated_storage.common.shared.gun_core)
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
-local Config    = require(replicated_storage.shared.Configs.Match.ZombieConfig)
-local CombatConfig = require(replicated_storage.Common.Shared.configs.CombatConfig)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
+local Config    = require(replicated_storage.match.shared.configs.zombie_config)
+local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
 
-local ZombiePathfinderActor = require(script.Parent.modules.zombie.ZombiePathfinderActor)
+local ZombiePathfinderActor = require(server_script_service.match.modules.zombie.zombie_pathfinder_actor)
 
 local TAG = "ZombieService"
 local ZombieService = {}

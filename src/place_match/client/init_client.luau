@@ -16,8 +16,8 @@
 
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
 
 -- ── Controller registration (require triggers Framework.CreateController) ─────
 
@@ -25,18 +25,17 @@ local Logger    = require(replicated_storage.shared.logger)
 -- `script` refers to it directly and `script.controllers` is its child folder.
 local controllers = script.controllers
 
-require(controllers.CharacterController)      -- no deps
-require(controllers.HudController)            -- requires CharacterController
-require(controllers.InventoryController)      -- custom inventory system
-require(controllers.GunController)            -- requires HudController, InventoryController
+require(controllers.character_controller)      -- no deps
+require(controllers.hud_controller)            -- requires CharacterController
+require(controllers.inventory_controller)      -- custom inventory system
+require(controllers.gun_controller)            -- requires HudController, InventoryController
 -- ShopController removed
-require(controllers.BoltController)           -- no deps
-require(controllers.RNGController)           -- RNG block controller
-require(controllers.ZombieAnimationController) -- no deps
+require(controllers.bolt_controller)           -- no deps
+require(controllers.rng_controller)           -- RNG block controller
+require(controllers.zombie_animation_controller) -- no deps
 
 -- ── Boot ─────────────────────────────────────────────────────────────────────
 
 Logger.info("ClientRuntime", "Booting — 7 controllers registered.")
 Framework.Start()
 Logger.info("ClientRuntime", "Framework started. All controllers live.")
-

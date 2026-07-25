@@ -17,7 +17,7 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 local vide  = require(replicated_storage.Packages.vide)
-local theme = require(script.Parent.VideTheme)
+local theme = require(replicated_storage.common.shared.vide.vide_theme)
 
 local create = vide.create
 local source = vide.source

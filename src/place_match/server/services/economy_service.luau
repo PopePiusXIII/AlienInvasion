@@ -4,11 +4,11 @@ local Players = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local EconomyConfig = require(replicated_storage.Match.Shared.Configs.EconomyConfig)
-local ZombieConfig = require(replicated_storage.Match.Shared.Configs.ZombieConfig)
-local Framework     = require(replicated_storage.Common.Shared.Framework)
-local Logger        = require(replicated_storage.Common.Shared.Logger)
-local RemoteNames   = require(replicated_storage.Match.Shared.RemoteNames)
+local EconomyConfig = require(replicated_storage.match.shared.configs.economy_config)
+local ZombieConfig = require(replicated_storage.match.shared.configs.zombie_config)
+local Framework     = require(replicated_storage.common.shared.framework)
+local Logger        = require(replicated_storage.common.shared.logger)
+local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 
 local EconomyService = {}
 local TAG = "EconomyService"

@@ -16,15 +16,15 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
-local framework      = require(replicated_storage.Common.Shared.Framework)
-local logger         = require(replicated_storage.Common.Shared.Logger)
-local remote_names   = require(replicated_storage.Match.Shared.remote_names)
+local framework      = require(replicated_storage.common.shared.framework)
+local logger         = require(replicated_storage.common.shared.logger)
+local remote_names   = require(replicated_storage.match.shared.remote_names)
 local zombie_service = require(server_script_service.match.services.zombie_service)
 local economy_service = require(server_script_service.match.services.economy_service)
 local inventory_service = require(server_script_service.match.services.inventory_service)
-local gun_core       = require(replicated_storage.Common.Shared.GunCore)
+local gun_core       = require(replicated_storage.common.shared.gun_core)
 local skill_service  = require(server_script_service.match.services.skill_service)
-local wave_config    = require(replicated_storage.Match.Shared.configs.wave_config)
+local wave_config    = require(replicated_storage.match.shared.configs.wave_config)
 
 local combat_service = {}
 local TAG = "CombatService"

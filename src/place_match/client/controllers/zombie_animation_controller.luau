@@ -6,13 +6,13 @@
 
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger = require(replicated_storage.shared.logger)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger = require(replicated_storage.common.shared.logger)
 
 local TAG = "ZombieAnimationController"
 local ZombieAnimationController = Framework.CreateController({ Name = TAG })
 
-local ZombieAnimationManager = require(script.Parent.modules.zombie.ZombieAnimationManager)
+local ZombieAnimationManager = require(replicated_storage.match.client.controllers.modules.zombie.zombie_animation_manager)
 
 function ZombieAnimationController:Init()
     -- no-op
