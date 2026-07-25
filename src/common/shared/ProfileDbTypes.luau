@@ -45,6 +45,7 @@ export type API = {
 	mergeGuns: (player: Player, gunIds: { string }) -> (boolean, string?, string?),
 	upgradeLevel: (player: Player, gunId: string) -> (boolean, number?, string?),
 	getGunStats: (player: Player, gunId: string, level: number?) -> GunCore.Gun?,
+	somefunc:() -> nil
 }
 
 return ProfileServiceTypes

@@ -34,9 +34,8 @@ local Framework = {}
 
 export type Module = {
 	Name:  string,
-	Init:  ((self: Module) -> ())?,
-	Start: ((self: Module) -> ())?,
-	[any]: any,
+	Init:  ((self: any) -> ()),
+	Start: ((self: any) -> ()),
 }
 
 -- ── Internal registry ─────────────────────────────────────────────────────────
@@ -131,16 +130,17 @@ end
 -- ── Registration ──────────────────────────────────────────────────────────────
 
 --- Register a server Service. Call at module level (not inside a function).
-function Framework.CreateService(def: Module): Module
+function Framework.CreateService<T>(def: T & Module): T
 	assert(IS_SERVER, "[Framework] CreateService must be called on the server")
-	assert(def.Name and def.Name ~= "", "[Framework] Service must have a non-empty Name")
+	assert(def.Name ~= "", "[Framework] Service must have a non-empty Name")
 	assert(not _registry[def.Name], "[Framework] Duplicate service: " .. def.Name)
+
 	_registry[def.Name] = def
 	return def
 end
 
 --- Register a client Controller. Call at module level (not inside a function).
-function Framework.CreateController(def: Module): Module
+function Framework.CreateController<T>(def: T & Module): T
 	assert(not IS_SERVER, "[Framework] CreateController must be called on the client")
 	assert(def.Name and def.Name ~= "", "[Framework] Controller must have a non-empty Name")
 	assert(not _registry[def.Name], "[Framework] Duplicate controller: " .. def.Name)

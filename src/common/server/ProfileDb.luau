@@ -29,7 +29,9 @@ local pst = require(ReplicatedStorage.Shared.ProfileDbTypes)
 
 local TAG = "ProfileDb"
 
-local ProfileDb = Framework.CreateService({ Name = TAG })
+-- Keep this table locally inferred while its methods are added below. The API
+-- check at the end of the file then verifies the complete implementation.
+local ProfileDb = { Name = TAG }
 
 type PlayerProfile = pst.PlayerProfile
 type EconomySummary = pst.EconomySummary
@@ -544,6 +546,13 @@ function ProfileDb.getGunStats(player: Player, gunId: string, level: number?): G
 	}
 end
 
-local ProfileDbAPI: Framework.Module & pst.API = ProfileDb :: (Framework.Module & pst.API)
+-- Check the implementation directly against the public API. Keep this check
+-- separate from Framework.Module because Framework.Module intentionally has an
+-- `[any]: any` indexer for generic services.
+local ProfileDbAPI: pst.API = ProfileDb
+
+-- CreateService preserves the concrete service type, so no cast is needed at
+-- the registration boundary.
+Framework.CreateService(ProfileDb)
 
 return ProfileDbAPI
