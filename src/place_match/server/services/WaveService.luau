@@ -15,32 +15,35 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Framework    = require(ReplicatedStorage.Shared.Framework)
 local Logger       = require(ReplicatedStorage.Shared.Logger)
-local Config       = require(ReplicatedStorage.Shared.Config)
+local WaveConfig   = require(ReplicatedStorage.Match.Shared.Configs.WaveConfig)
+local CombatConfig = require(ReplicatedStorage.Common.Shared.configs.CombatConfig)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
-local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
+local ProfileService = require(ServerScriptService.ServerModules.Common.ProfileDb)
 local ZombieService = require(script.Parent.ZombieService)
 local EconomyService = require(script.Parent.EconomyService)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
 local TAG = "WaveService"
 
-local WaveService = Framework.CreateService({ Name = TAG })
-
 local _waveAnnounceRemote:       RemoteEvent
 local _waveClearRemote:          RemoteEvent
 
--- ── Lifecycle ─────────────────────────────────────────────────────────────────
+local WaveService = Framework.CreateService({
+	Name = TAG,
+	Init = function()
+		_waveAnnounceRemote = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
+		_waveClearRemote = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
+	end,
+	Start = function() end,
+})
 
-function WaveService:Init()
-	_waveAnnounceRemote       = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
-	_waveClearRemote          = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
-end
+-- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
 
 local function giveGuns(player: Player, gunNames: { string })
-	local unlockedGunNames: { string } = {Config.STARTER_GUNS[1], Config.STARTER_GUNS[2]}
+	local unlockedGunNames: { string } = {CombatConfig.STARTER_GUNS[1], CombatConfig.STARTER_GUNS[2]}
 	for _, gunName in ipairs(gunNames) do
 		if ProfileService.isWeaponUnlocked(player, gunName) then
 			table.insert(unlockedGunNames, gunName)
@@ -100,7 +103,7 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 		if not player.Parent or humanoid.Health <= 0 then break end
 		ZombieService.spawn(player, onZombieDied, spawnPos, pickZombieType(waveNumber))
 		if i < totalZombies then
-			task.wait(Config.WAVE_SPAWN_INTERVAL)
+			task.wait(WaveConfig.WAVE_SPAWN_INTERVAL)
 		end
 	end
 
@@ -117,7 +120,7 @@ end
 function WaveService.startBattle(player: Player): number
 	Logger.info(TAG, "startBattle: beginning run for %s.", player.Name)
 	EconomyService.beginRun(player)
-	player:SetAttribute("CurrentWave", Config.STARTING_WAVE)
+	player:SetAttribute("CurrentWave", WaveConfig.STARTING_WAVE)
 
 	-- Wait for the player's character and humanoid to be ready before proceeding.
 	Logger.info(TAG, "startBattle: waiting for character (%s).", player.Name)
@@ -128,9 +131,9 @@ function WaveService.startBattle(player: Player): number
 
 	-- Shop clerk/Proximity prompt removed.
 
-	giveGuns(player, Config.STARTER_GUNS)
+	giveGuns(player, CombatConfig.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
-	local waveNumber = Config.STARTING_WAVE
+	local waveNumber = WaveConfig.STARTING_WAVE
 
 	-- The humanoid reference is captured once. Even if the character respawns,
 	-- this humanoid's Health drops to 0 on death, so the loop detects it correctly.
@@ -144,19 +147,15 @@ function WaveService.startBattle(player: Player): number
 		end
 
 		Logger.info(TAG, "Wave %d cleared for %s. Next in %ds.",
-			waveNumber, player.Name, Config.WAVE_BETWEEN_DELAY)
+			waveNumber, player.Name, WaveConfig.WAVE_BETWEEN_DELAY)
 		Logger.fireClient(_waveClearRemote, player)
-		task.wait(Config.WAVE_BETWEEN_DELAY)
+		task.wait(WaveConfig.WAVE_BETWEEN_DELAY)
 		waveNumber += 1
 	end
 
 	player:SetAttribute("CurrentWave", nil)
 	Logger.info(TAG, "Final wave: %d for %s.", waveNumber, player.Name)
 	return waveNumber
-end
-
-function WaveService:Start()
-	-- Shop purchase and free-loadout remotes removed.
 end
 
 return WaveService
