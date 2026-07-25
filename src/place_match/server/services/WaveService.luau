@@ -19,8 +19,8 @@ local WaveConfig   = require(ReplicatedStorage.Match.Shared.Configs.WaveConfig)
 local CombatConfig = require(ReplicatedStorage.Common.Shared.configs.CombatConfig)
 local RemoteNames  = require(ReplicatedStorage.Shared.RemoteNames)
 local ProfileService = require(ServerScriptService.ServerModules.Common.ProfileDb)
-local ZombieService = require(script.Parent.ZombieService)
-local EconomyService = require(script.Parent.EconomyService)
+local ZombieService = require(ServerScriptService.ServerModules.Match.ervices.ZombieService)
+local EconomyService = require(ServerScriptService.ServerModules.Match.services.EconomyService)
 local LoadoutGrantModule = require(script.Parent.modules.wave.LoadoutGrantModule)
 
 local TAG = "WaveService"
