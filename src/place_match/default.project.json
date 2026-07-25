@@ -25,6 +25,14 @@
       "ServerModules": {
         "$className": "Folder",
         "Match": {
+          "Services": {
+            "$className": "Folder",
+            "$path": "server/services",
+            "Modules": {
+              "$className": "Folder",
+              "$path": "server/modules"
+            }
+          },
           "$path": "server"
         },
         "Common": {

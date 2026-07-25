@@ -16,14 +16,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Framework     = require(ReplicatedStorage.Shared.Framework)
-local Logger        = require(ReplicatedStorage.Shared.Logger)
-local Config        = require(ReplicatedStorage.Shared.Config)
-local RemoteNames   = require(ReplicatedStorage.Shared.RemoteNames)
-local ZombieService = require(script.Parent.ZombieService)
-local EconomyService = require(script.Parent.EconomyService)
+local Framework     = require(ReplicatedStorage.Common.Shared.Framework)
+local Logger        = require(ReplicatedStorage.Common.Shared.Logger)
+local RemoteNames   = require(ReplicatedStorage.Match.Shared.RemoteNames)
+local ZombieService = require(ServerScriptService.ServerModules.Match.Services.ZombieService)
+local EconomyService = require(ServerScriptService.ServerModules.Match.EconomyService)
 local GunModule     = require(ReplicatedStorage.Shared.GunCore)
-local ProfileService = require(ServerScriptService.ServerModules.ProfileService)
+local ProfileService = require(ServerScriptService.ServerModules.Match.ProfileDb)
 
 local TAG = "CombatService"
 
