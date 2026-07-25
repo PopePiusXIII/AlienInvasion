@@ -25,7 +25,7 @@ local Logger    = require(ReplicatedStorage.Shared.Logger)
 local CombatConfig = require(ReplicatedStorage.Shared.configs.CombatConfig)
 local GunCore  = require(ReplicatedStorage.Shared.GunCore)
 local GunMerge   = require(ServerScriptService.ServerModules.GunMerge)
-local pst = require(ReplicatedStorage.Shared.ProfileDbTypes)
+local ProfileDbType = require(ReplicatedStorage.Shared.ProfileDbTypes)
 
 local TAG = "ProfileDb"
 
@@ -33,8 +33,8 @@ local TAG = "ProfileDb"
 -- check at the end of the file then verifies the complete implementation.
 local ProfileDb = { Name = TAG }
 
-type PlayerProfile = pst.PlayerProfile
-type EconomySummary = pst.EconomySummary
+type PlayerProfile = ProfileDbType.PlayerProfile
+type EconomySummary = ProfileDbType.EconomySummary
 type GunInstance = GunCore.GunInstance
 -- ── Profile shape ─────────────────────────────────────────────────────────────
 
@@ -549,7 +549,7 @@ end
 -- Check the implementation directly against the public API. Keep this check
 -- separate from Framework.Module because Framework.Module intentionally has an
 -- `[any]: any` indexer for generic services.
-local ProfileDbAPI: pst.API = ProfileDb
+local ProfileDbAPI: ProfileDbType.API = ProfileDb
 
 -- CreateService preserves the concrete service type, so no cast is needed at
 -- the registration boundary.
