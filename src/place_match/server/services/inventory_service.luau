@@ -13,7 +13,7 @@ local server_script_service = game:GetService("ServerScriptService")
 
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
-local Config    = require(replicated_storage.match.shared.configs.game_config)
+local CombatConfig    = require(replicated_storage.common.shared.configs.combat_config)
 local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local ProfileService = require(server_script_service.common.services.profile_db)
 
@@ -104,7 +104,8 @@ end
 -- ── Inventory Logic ──────────────────────────────────────────────────────────
 
 local function getInventorySize(): number
-	return Config.INVENTORY_SIZE or 2
+	-- needs to be filled out
+	return 2
 end
 
 local function getInventory(player: Player): { gunIds: { string }, equippedSlot: number? }
@@ -418,7 +419,7 @@ local function grantStarterGunsToPlayer(player: Player)
 	-- Grant starter guns if inventory is empty (first-time player)
 	local inv = getInventory(player)
 	if #inv.gunIds == 0 then
-		local starterGuns = Config.STARTER_GUNS or {}
+		local starterGuns = CombatConfig.STARTER_GUNS or {}
 		for _, gunName in ipairs(starterGuns) do
 			InventoryService.addWeapon(player, gunName)
 		end
