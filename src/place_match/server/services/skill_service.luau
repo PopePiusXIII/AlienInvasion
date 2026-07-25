@@ -1,29 +1,29 @@
 --!strict
 --------------------------------------------------------------------------------
--- MatchProfileService.luau  (src/server/services)
+-- SkillService.luau  (src/server/services)
 -- Manages cumulative modifier state for in-match stat boosts.
 -- When a player picks an RNG modifier, it compounds multiplicatively into
 -- their modifier profile.
 --
 -- Public API:
---   MatchProfileService.getGunModifiers(player)    → GunModifier table
---   MatchProfileService.getPlayerModifiers(player) → PlayerModifier table
---   MatchProfileService.apply(player, key)         → apply a modifier pick
+--   SkillService.getGunModifiers(player)    → GunModifier table
+--   SkillService.getPlayerModifiers(player) → PlayerModifier table
+--   SkillService.apply(player, key)         → apply a modifier pick
 --------------------------------------------------------------------------------
 
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
 local MatchProfile = require(replicated_storage.match.shared.types.match_profile)
-local MatchProfileServiceTypes = require(replicated_storage.match.shared.types.match_profile_service_types)
+local SkillServiceTypes = require(replicated_storage.match.shared.types.skill_service_types)
 local Framework      = require(replicated_storage.common.shared.framework)
 local Logger         = require(replicated_storage.common.shared.logger)
 local RemoteNames    = require(replicated_storage.match.shared.remote_names)
 local ModifierConfig = require(replicated_storage.match.shared.configs.match_profile_config)
 
-local TAG = "MatchProfileService"
-
-local MatchProfileService = Framework.CreateService({ Name = TAG }) :: MatchProfileServiceTypes.API
+local TAG = "SkillService"
+local SkillService = {}
+SkillService.Name = TAG
 
 -- ── State ────────────────────────────────────────────────────────────────────
 
@@ -66,20 +66,20 @@ end
 -- ── Public API ───────────────────────────────────────────────────────────────
 
 --- Returns the cumulative gun modifier table for a player.
-function MatchProfileService.getGunModifiers(player: Player): MatchProfile.GunModifer
+function SkillService.getGunModifiers(player: Player): MatchProfile.GunModifer
 	ensureModifiers(player)
 	return _playerModifiers[player].gun_modifier :: MatchProfile.GunModifer
 end
 
 --- Returns the cumulative player modifier table for a player.
-function MatchProfileService.getPlayerModifiers(player: Player): MatchProfile.PlayerModifier
+function SkillService.getPlayerModifiers(player: Player): MatchProfile.PlayerModifier
 	ensureModifiers(player)
 	return _playerModifiers[player].player_modifier :: MatchProfile.PlayerModifier
 end
 
 --- Apply a modifier pick to a player's profile.
 --- The key should match a key in ModifierConfig (e.g. "gun_damage", "player_health").
-function MatchProfileService.apply(player: Player, key: string)
+function SkillService.apply(player: Player, key: string)
 	local entry = ModifierConfig[key]
 	if not entry then
 		Logger.warn(TAG, "Unknown modifier key '%s' from %s.", key, player.Name)
@@ -100,27 +100,30 @@ function MatchProfileService.apply(player: Player, key: string)
 	end
 end
 
-function MatchProfileService.getModifierTypes(player: Player): MatchProfile.FlatModifiers
+function SkillService.getModifierTypes(player: Player): MatchProfile.FlatModifiers
 	ensureModifiers(player)
 	return MatchProfile.into(_playerModifiers[player])
 end
-
 -- ── Remote Handlers ──────────────────────────────────────────────────────────
 
 local _rngPickModifierRemote: RemoteEvent? = nil
 
 -- ── Lifecycle ────────────────────────────────────────────────────────────────
 
-function MatchProfileService:Init()
+function SkillService:Init()
 	_rngPickModifierRemote = Framework.CreateRemote(RemoteNames.RNG_PICK_MODIFIER)
 	Logger.info(TAG, "Initialized.")
 end
 
-function MatchProfileService:Start()
+function SkillService:Start()
 	if _rngPickModifierRemote then
-		_rngPickModifierRemote.OnServerEvent:Connect(MatchProfileService.apply)
+		_rngPickModifierRemote.OnServerEvent:Connect(SkillService.apply)
 	end
 	Logger.info(TAG, "Listeners connected.")
 end
 
-return MatchProfileService
+SkillService = Framework.CreateService(SkillService)
+
+local SkillServiceApi: Framework.Module & SkillServiceTypes.API = SkillService
+
+return SkillServiceApi
