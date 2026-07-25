@@ -19,11 +19,7 @@
       }
     },
     "ServerScriptService": {
-      "$className": "ServerScriptService",
-      "ServerModules": {
-        "$className": "Folder",
         "$path": "server"
       }
-    }
   }
 }

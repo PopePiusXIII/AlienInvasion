@@ -22,14 +22,13 @@
       }
     },
     "ServerScriptService": {
-        "Match": {
-          "$path": "server"
-          },
-        "Common": {
-          "$path": "../../src/common/server"
-        }
+      "match": {
+        "$path": "server"
+      },
+      "common": {
+        "$path": "../../src/common/server"
       }
-    ,
+    },
     "ServerStorage": {
       "Stories": {
         "$className": "Folder",
