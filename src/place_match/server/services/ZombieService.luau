@@ -18,6 +18,7 @@ local GunCore = require(ReplicatedStorage.Shared.Common.GunCore)
 local Framework = require(ReplicatedStorage.Shared.Framework)
 local Logger    = require(ReplicatedStorage.Shared.Logger)
 local Config    = require(ReplicatedStorage.Shared.Configs.Match.ZombieConfig)
+local CombatConfig = require(ReplicatedStorage.Common.Shared.configs.CombatConfig)
 
 local ZombiePathfinderActor = require(script.Parent.modules.zombie.ZombiePathfinderActor)
 
@@ -32,6 +33,13 @@ type ZombieSnapshot = {
 	humanoid: Humanoid,
 }
 
+type ZombieTypeConfig = {
+	MaxHealth: number,
+	WalkSpeed: number,
+	TouchDamage: number,
+	Template: string,
+	Animations: { [string]: number },
+}
 
 
 local _zombieTemplates: { [string]: Model } = {}
@@ -95,8 +103,9 @@ end
 
 function ZombieService:Init()
 	-- Cache every zombie template by type name at startup.
-	local types = Config.ZOMBIE_TYPES :: { [string]: { Template: string } }
-	for typeName, data in types do
+	for rawTypeName, rawData in Config.ZOMBIE_TYPES do
+		local typeName = rawTypeName :: string
+		local data = rawData :: ZombieTypeConfig
 		_zombieTemplates[typeName] = ServerStorage:WaitForChild(data.Template) :: Model
 		Logger.info(TAG, "Zombie template cached: %s → %s", typeName, data.Template)
 		setupZombieCollision(_zombieTemplates[typeName])
@@ -296,8 +305,7 @@ end
 --- [zombieType] selects the variant; defaults to ZOMBIE_DEFAULT_TYPE.
 function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?, zombieType: string?)
 	local resolvedType = zombieType or Config.ZOMBIE_DEFAULT_TYPE
-	local types = Config.ZOMBIE_TYPES :: { [string]: { MaxHealth: number, WalkSpeed: number, TouchDamage: number } }
-	local stats = types[resolvedType] or types[Config.ZOMBIE_DEFAULT_TYPE]
+	local stats = Config.ZOMBIE_TYPES[resolvedType] or Config.ZOMBIE_TYPES[Config.ZOMBIE_DEFAULT_TYPE]
 	local zombie   = cloneZombie(target, resolvedType)
 	local humanoid = zombie:FindFirstChildWhichIsA("Humanoid", true) :: Humanoid?
 	if not humanoid then
@@ -333,7 +341,7 @@ function ZombieService.damageZombie(zombieModel: Model?, gun: GunCore.Gun, isHea
 	local rootPart = zombieModel:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local deathPosition = if rootPart then rootPart.Position else zombieModel:GetPivot().Position
 
-	if isHeadshot then amount = math.floor(amount * (Config.HEADSHOT_MULTIPLIER :: number)) end
+	if isHeadshot then amount = math.floor(amount * CombatConfig.HEADSHOT_MULTIPLIER) end
 
 	humanoid:TakeDamage(amount)
 	applyKnockback(zombieModel, knockbackForce, shooterPos)
