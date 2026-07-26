@@ -464,19 +464,6 @@ function GunController:Start()
 			task.spawn(reload)
 			return
 		end
-		
-		-- Number keys for weapon switching (1, 2, etc.)
-		if input.KeyCode == Enum.KeyCode.One then
-			InventoryController.equipSlot(1)
-		elseif input.KeyCode == Enum.KeyCode.Two then
-			InventoryController.equipSlot(2)
-		elseif input.KeyCode == Enum.KeyCode.Three then
-			InventoryController.equipSlot(3)
-		elseif input.KeyCode == Enum.KeyCode.Four then
-			InventoryController.equipSlot(4)
-		elseif input.KeyCode == Enum.KeyCode.Five then
-			InventoryController.equipSlot(5)
-		end
 	end)
 
 	-- Play hit sound (body or headshot) when server confirms a hit.

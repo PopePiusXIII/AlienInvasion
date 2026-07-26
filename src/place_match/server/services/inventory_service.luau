@@ -427,12 +427,6 @@ local function grantStarterGunsToPlayer(player: Player)
 	end
 end
 
-local function grantStarterGunsToAll()
-	for _, player in ipairs(Players:GetPlayers()) do
-		grantStarterGunsToPlayer(player)
-	end
-end
-
 function InventoryService:Start()
 	Logger.wrapServerEvent(_inventoryEquipRemote, TAG, function(player: Player, slot: number?)
 		InventoryService.setEquippedSlot(player, slot)
@@ -442,8 +436,6 @@ function InventoryService:Start()
 		_playerInventories[player.UserId] = nil
 		_gunLevels[player.UserId] = nil
 	end)
-
-	grantStarterGunsToAll()
 
 	Players.PlayerAdded:Connect(function(player: Player)
 		task.wait(0.5)

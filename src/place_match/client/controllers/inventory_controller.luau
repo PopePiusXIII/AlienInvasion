@@ -45,6 +45,10 @@ local _inventoryEquipRemote: RemoteEvent
 
 --- Gets the current guns in the inventory (full synced data)
 function InventoryController.getGuns(): { SyncedGun }
+	if not _guns then
+		_guns = 
+		return {}
+	end
 	return _guns
 end
 
