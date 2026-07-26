@@ -3,10 +3,26 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "$className": "ReplicatedStorage",
-      "shared": {
+      "match": {
         "$className": "Folder",
-        "$path": "shared"
+        "shared": {
+          "$path": "../../src/place_match/shared"
+        },
+        "client": {
+          "$path": "../../src/place_match/client"
+        },
+        "ui": {
+          "$path": "../../src/place_match/ui"
+        }
+      },
+      "common": {
+        "$className": "Folder",
+        "shared": {
+          "$path": "shared"
+        },
+        "purchase": {
+          "$path": "purchase"
+        }
       },
       "Packages": {
         "$className": "Folder",
@@ -19,7 +35,7 @@
       }
     },
     "ServerScriptService": {
-        "$path": "server"
-      }
+      "$path": "server"
+    }
   }
 }
