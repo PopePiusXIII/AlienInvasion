@@ -98,6 +98,14 @@ function LoadoutGrantModule.grant(player: Player, desiredGunNames: { string }, o
 		end
 	end
 
+	-- Adding a gun only updates the custom inventory.  Explicitly equip the
+	-- first slot so the corresponding Tool is cloned into the character.
+	-- This also covers players whose desired guns were already in inventory.
+	local gunIds = InventoryService.getGunIds(player)
+	if #gunIds > 0 then
+		InventoryService.setEquippedSlot(player, 1)
+	end
+
 	if granted == 0 then
 		onWarn("No guns granted to %s (already had weapons or templates missing).", player.Name)
 	end

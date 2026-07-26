@@ -18,7 +18,8 @@ local Framework = require(replicated_storage.common.shared.framework)
 local Logger = require(replicated_storage.common.shared.logger)
 
 local TAG = "ZombieController"
-local ZombieController = Framework.CreateController({ Name = TAG })
+local ZombieController = {}
+ZombieController.Name = TAG
 
 -- Interpolation smoothing factor (0-1). Higher = snappier, lower = smoother.
 -- 0.15 gives good balance between responsiveness and smoothness at ~60fps.
@@ -139,4 +140,5 @@ function ZombieController:Start()
 	Logger.info(TAG, "Zombie smoothing active.")
 end
 
+Framework.CreateController(ZombieController)
 return ZombieController

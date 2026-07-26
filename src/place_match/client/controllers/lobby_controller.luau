@@ -19,7 +19,8 @@ local PadProximityModule = require(replicated_storage.match.client.controllers.m
 
 local TAG = "LobbyController"
 
-local LobbyController = Framework.CreateController({ Name = TAG })
+local LobbyController = {}
+LobbyController.Name = TAG
 
 local _localPlayer  = Players.LocalPlayer
 local _character:   Model?  = nil
@@ -61,4 +62,5 @@ function LobbyController:Start()
 	Logger.info(TAG, "RequestPlay remote acquired; proximity watcher started.")
 end
 
+Framework.CreateController(LobbyController)
 return LobbyController

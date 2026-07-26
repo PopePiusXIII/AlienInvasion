@@ -10,7 +10,8 @@ local InventoryController = require(replicated_storage.match.client.controllers.
 local RngHud = require(replicated_storage.match.ui.rng_hud)
 
 local TAG = "RNGController"
-local RNGController = Framework.CreateController({ Name = TAG })
+local RNGController = {}
+RNGController.Name = TAG
 
 local _localPlayer: Player
 local _rngActivateRemote: RemoteFunction
@@ -175,4 +176,5 @@ function RNGController:Start()
     -- end)
 end
 
+Framework.CreateController(RNGController)
 return RNGController

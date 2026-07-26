@@ -23,7 +23,7 @@ local zombie_service = require(server_script_service.match.services.zombie_servi
 local economy_service = require(server_script_service.match.services.economy_service)
 local inventory_service = require(server_script_service.match.services.inventory_service)
 local gun_core       = require(replicated_storage.common.shared.gun_core)
-local skill_service  = require(server_script_service.match.services.skill_service)
+local profile_service = require(server_script_service.common.services.profile_db)
 local wave_config    = require(replicated_storage.match.shared.configs.wave_config)
 
 local combat_service = {}
@@ -35,10 +35,10 @@ function combat_service:Init()
 	local hit_sound_remote = framework.CreateRemote(remote_names.ZOMBIE_HIT_SOUND)
 
 	logger.wrapServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
-		if not zombie_model:IsA("Model") then return end
+		if not zombie_model or not zombie_model:IsA("Model") then return end
 		local character = player.Character
 
-		-- Resolve equipped gun via inventory_service + skill_service
+		-- Resolve equipped gun via inventory_service + profile_service
 		local equipped_gun_id = inventory_service.getEquippedGunId(player)
 		if not equipped_gun_id then return end
 
@@ -46,7 +46,7 @@ function combat_service:Init()
 		local level = inventory_service.getGunLevel(player, equipped_gun_id)
 
 		-- Get resolved stats (base rarity stats + level multipliers)
-		local gun = skill_service.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
+		local gun = profile_service.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
 		if not gun then return end
 
 		local shooter_pos: Vector3?

@@ -10,7 +10,8 @@ local Framework = require(replicated_storage.common.shared.framework)
 local Logger = require(replicated_storage.common.shared.logger)
 
 local TAG = "ZombieAnimationController"
-local ZombieAnimationController = Framework.CreateController({ Name = TAG })
+local ZombieAnimationController = {}
+ZombieAnimationController.Name = TAG
 
 local ZombieAnimationManager = require(replicated_storage.match.client.controllers.modules.zombie.zombie_animation_manager)
 
@@ -24,4 +25,5 @@ function ZombieAnimationController:Start()
     Logger.info(TAG, "Started ZombieAnimationManager")
 end
 
+Framework.CreateController(ZombieAnimationController)
 return ZombieAnimationController

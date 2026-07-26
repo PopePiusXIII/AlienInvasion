@@ -17,7 +17,9 @@ local GunModule     = require(replicated_storage.common.shared.gun_core)
 local TAG = "InventoryController"
 
 local UserInputService = game:GetService("UserInputService")
-local InventoryController = Framework.CreateController({ Name = TAG })
+
+local InventoryController = {}
+InventoryController.Name = TAG
 
 -- Disable default Roblox backpack UI (we use our custom inventory system)
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
@@ -134,5 +136,5 @@ function InventoryController:Start()
 
 	Logger.info(TAG, "Started. Listening for inventory sync and keybinds.")
 end
-
+Framework.CreateController(InventoryController)
 return InventoryController

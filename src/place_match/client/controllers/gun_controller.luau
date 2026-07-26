@@ -29,7 +29,8 @@ local GunHitScanModule = require(replicated_storage.match.client.controllers.mod
 
 local TAG = "GunController"
 
-local GunController = Framework.CreateController({ Name = TAG })
+local GunController = {}
+GunController.Name = TAG
 
 local _localPlayer  = Players.LocalPlayer
 local _mouse        = _localPlayer:GetMouse()
@@ -208,7 +209,9 @@ local function fire(): boolean
 	GunFxModule.flashMuzzle(Config.GUN_MUZZLE_DELAY)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
-	Logger.fireServer(_shootRemote, hitZombie, isHeadshot, hitPosition)
+	if hitZombie then
+		Logger.fireServer(_shootRemote, hitZombie, isHeadshot, hitPosition)
+	end
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false
@@ -514,4 +517,5 @@ function GunController:Start()
 	Logger.info(TAG, "ShootGun remote acquired; gun watchers connected.")
 end
 
+Framework.CreateController(GunController)
 return GunController

@@ -24,7 +24,8 @@ local HudUpgradeEchoModule  = require(replicated_storage.match.client.controller
 
 local TAG = "HudController"
 
-local HudController = Framework.CreateController({ Name = TAG })
+local HudController = {}
+HudController.Name = TAG
 
 local _localPlayer = Players.LocalPlayer
 local _screenGui:  ScreenGui
@@ -104,4 +105,5 @@ function HudController.getScreenGui(): ScreenGui
 	return _screenGui
 end
 
+Framework.CreateController(HudController)
 return HudController

@@ -33,7 +33,8 @@ export type Stats = {
 	scale:       number,
 }
 
-local CharacterController = Framework.CreateController({ Name = TAG })
+local CharacterController = {}
+CharacterController.Name = TAG
 
 local _localPlayer = Players.LocalPlayer
 local _isSprinting = false
@@ -199,4 +200,5 @@ function CharacterController.getStats(): Stats
 	return table.clone(_stats)
 end
 
+Framework.CreateController(CharacterController)
 return CharacterController

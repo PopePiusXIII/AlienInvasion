@@ -16,7 +16,8 @@ local Config    = require(replicated_storage.match.shared.configs.economy_config
 local RemoteNames = require(replicated_storage.match.shared.remote_names)
 
 local TAG = "BoltController"
-local BoltController = Framework.CreateController({ Name = TAG })
+local BoltController = {}
+BoltController.Name = TAG
 
 type ClientBoltState = {
 	id:           number,
@@ -213,4 +214,5 @@ function BoltController:Start()
 	end, { enabled = false })
 end
 
+Framework.CreateController(BoltController)
 return BoltController
