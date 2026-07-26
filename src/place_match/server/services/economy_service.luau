@@ -9,6 +9,7 @@ local ZombieConfig = require(replicated_storage.match.shared.configs.zombie_conf
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
 local RemoteNames   = require(replicated_storage.match.shared.remote_names)
+local ProfileService = require(server_script_service.common.services.profile_db)
 
 local EconomyService = {}
 local TAG = "EconomyService"

@@ -1,43 +1,37 @@
 --!strict
-local replicated_storage = game:GetService("ReplicatedStorage")
---------------------------------------------------------------------------------
--- logger.luau  (src/common → replicated_storage.shared.logger)
--- Centralized structured logging with a network middleware pipeline.
---
--- NETWORK MIDDLEWARE — the key observability tool:
---   wrapServerEvent(remote, tag, handler)
---     Connects OnServerEvent. Every call is:
---       1. Logged when Config.DEBUG_NETWORKING is true (direction, remote name, args)
---       2. Wrapped in pcall so a crashing handler never freezes the server thread.
---
---   wrapClientEvent(remote, tag, handler)
---     Same as above for client-side OnClientEvent.
---
---   fireClient / fireAllClients / fireServer
---     Drop-in replacements for :FireClient / :FireAllClients / :FireServer.
---     Each logs the direction + args when DEBUG_NETWORKING is true.
---
--- HOT-TOGGLE in Studio console:
---   require(game.replicated_storage.shared.logger).DEBUG_NETWORKING = true
---------------------------------------------------------------------------------
 
-local Config = require(replicated_storage.match.shared.configs.debug_config)
+-- A logger is created from a config ModuleScript with LoggerModule.newLogger(configModule).
+-- The module also returns a default logger so existing callers that do
+-- `require(...logger).info(...)` continue to work.
 
-local Logger = {}
+export type LoggerConfig = {
+	DEBUG_NETWORKING: boolean,
+	DEBUG_VERBOSE: boolean,
+}
 
--- Master network trace toggle. Flip to true in Config or at runtime to see
--- every single RemoteEvent payload passing through the middleware.
-Logger.DEBUG_NETWORKING = Config.DEBUG_NETWORKING
--- High-frequency verbose toggle (e.g. per-frame AI logs).
-Logger.DEBUG_VERBOSE = Config.DEBUG_VERBOSE
+export type Logger = {
+	DEBUG_NETWORKING: boolean,
+	DEBUG_VERBOSE: boolean,
 
--- ── Internal ─────────────────────────────────────────────────────────────────
+	info: (tag: string, msg: string, ...any) -> (),
+	warn: (tag: string, msg: string, ...any) -> (),
+	verbose: (tag: string, msg: string, ...any) -> (),
+	wrapServerEvent: (remote: RemoteEvent, tag: string, handler: (player: Player, ...any) -> ()) -> RBXScriptConnection,
+	wrapClientEvent: (remote: RemoteEvent, tag: string, handler: (...any) -> ()) -> RBXScriptConnection,
+	fireClient: (remote: RemoteEvent, player: Player, ...any) -> (),
+	fireAllClients: (remote: RemoteEvent, ...any) -> (),
+	fireServer: (remote: RemoteEvent, ...any) -> (),
+}
 
-local function ts(): string
+export type LoggerModule = Logger & {
+	new: (configModule: ModuleScript) -> Logger,
+}
+
+local function timestamp(): string
 	return string.format("%.3f", os.clock())
 end
 
-local function format(msg: string, ...: any): string
+local function formatMessage(msg: string, ...: any): string
 	if select("#", ...) > 0 then
 		return string.format(msg, ...)
 	end
@@ -52,83 +46,95 @@ local function serializeArgs(...: any): string
 	return table.concat(parts, " | ")
 end
 
-local function netTrace(direction: string, remoteName: string, ...: any)
-	if not Logger.DEBUG_NETWORKING then return end
-	print(string.format("[NET][%s] %-20s  %-6s  { %s }",
-		ts(), remoteName, direction, serializeArgs(...)))
-end
+local function makeLogger(config: LoggerConfig): Logger
+	local logger: Logger
 
--- ── Public log functions ──────────────────────────────────────────────────────
-
-function Logger.info(tag: string, msg: string, ...: any)
-	print(string.format("[%s][%s] %s", ts(), tag, format(msg, ...)))
-end
-
-function Logger.warn(tag: string, msg: string, ...: any)
-	warn(string.format("[%s][%s] %s", ts(), tag, format(msg, ...)))
-end
-
---- High-frequency log; only prints when Logger.DEBUG_VERBOSE is true.
-function Logger.verbose(tag: string, msg: string, ...: any)
-	if not Logger.DEBUG_VERBOSE then return end
-	print(string.format("[VERBOSE][%s][%s] %s", ts(), tag, format(msg, ...)))
-end
-
--- ── Network middleware ────────────────────────────────────────────────────────
-
---- SERVER — Connect a RemoteEvent.OnServerEvent with:
----   • pcall isolation: a crashing handler will warn but never freeze the thread.
----   • net trace: logged when Logger.DEBUG_NETWORKING == true.
----
---- Use this everywhere instead of remote.OnServerEvent:Connect(handler).
-function Logger.wrapServerEvent(
-	remote:  RemoteEvent,
-	tag:     string,
-	handler: (player: Player, ...any) -> ()
-)
-	remote.OnServerEvent:Connect(function(player: Player, ...)
-		netTrace("C→S", remote.Name, player.Name, ...)
-		local ok, err = pcall(handler :: (Player, ...any) -> any, player, ...)
-		if not ok then
-			Logger.warn(tag, "OnServerEvent CRASHED [%s]: %s", remote.Name, tostring(err))
+	local function netTrace(direction: string, remoteName: string, ...: any)
+		if not logger.DEBUG_NETWORKING then
+			return
 		end
-	end)
+
+		print(string.format("[NET][%s] %-20s  %-6s  { %s }",
+			timestamp(), remoteName, direction, serializeArgs(...)))
+	end
+
+	logger = {
+		DEBUG_NETWORKING = config.DEBUG_NETWORKING,
+		DEBUG_VERBOSE = config.DEBUG_VERBOSE,
+
+		info = function(tag: string, msg: string, ...: any)
+			print(string.format("[%s][%s] %s", timestamp(), tag, formatMessage(msg, ...)))
+		end,
+
+		warn = function(tag: string, msg: string, ...: any)
+			warn(string.format("[%s][%s] %s", timestamp(), tag, formatMessage(msg, ...)))
+		end,
+
+		verbose = function(tag: string, msg: string, ...: any)
+			if not logger.DEBUG_VERBOSE then
+				return
+			end
+			print(string.format("[VERBOSE][%s][%s] %s", timestamp(), tag, formatMessage(msg, ...)))
+		end,
+
+		wrapServerEvent = function(
+			remote: RemoteEvent,
+			tag: string,
+			handler: (player: Player, ...any) -> ()
+		): RBXScriptConnection
+			return remote.OnServerEvent:Connect(function(player: Player, ...)
+				netTrace("C→S", remote.Name, player.Name, ...)
+				local ok, err = pcall(handler :: (Player, ...any) -> any, player, ...)
+				if not ok then
+					logger.warn(tag, "OnServerEvent CRASHED [%s]: %s", remote.Name, tostring(err))
+				end
+			end)
+		end,
+
+		wrapClientEvent = function(
+			remote: RemoteEvent,
+			tag: string,
+			handler: (...any) -> ()
+		): RBXScriptConnection
+			return remote.OnClientEvent:Connect(function(...)
+				netTrace("S→C", remote.Name, ...)
+				local ok, err = pcall(handler :: (...any) -> any, ...)
+				if not ok then
+					logger.warn(tag, "OnClientEvent CRASHED [%s]: %s", remote.Name, tostring(err))
+				end
+			end)
+		end,
+
+		fireClient = function(remote: RemoteEvent, player: Player, ...: any)
+			netTrace("S→" .. player.Name, remote.Name, ...)
+			remote:FireClient(player, ...)
+		end,
+
+		fireAllClients = function(remote: RemoteEvent, ...: any)
+			netTrace("S→ALL", remote.Name, ...)
+			remote:FireAllClients(...)
+		end,
+
+		fireServer = function(remote: RemoteEvent, ...: any)
+			netTrace("C→S", remote.Name, ...)
+			remote:FireServer(...)
+		end,
+
+	}
+
+	return logger
 end
 
---- CLIENT — Connect a RemoteEvent.OnClientEvent with pcall isolation + net trace.
----
---- Use this everywhere instead of remote.OnClientEvent:Connect(handler).
-
-function Logger.wrapClientEvent(
-	remote:  RemoteEvent,
-	tag:     string,
-	handler: (...any) -> ()
-)
-	remote.OnClientEvent:Connect(function(...)
-		netTrace("S→C", remote.Name, ...)
-		local ok, err = pcall(handler :: (...any) -> any, ...)
-		if not ok then
-			Logger.warn(tag, "OnClientEvent CRASHED [%s]: %s", remote.Name, tostring(err))
-		end
-	end)
+local function newLogger(configModule: ModuleScript): Logger
+	local config = require(configModule) :: LoggerConfig
+	return makeLogger(config)
 end
 
---- SERVER — Fire a RemoteEvent to a single client, with net trace.
-function Logger.fireClient(remote: RemoteEvent, player: Player, ...: any)
-	netTrace("S→"..player.Name, remote.Name, ...)
-	remote:FireClient(player, ...)
-end
+-- Safe defaults keep the logger usable in both the lobby and match places.
+local defaultLogger = makeLogger({
+	DEBUG_NETWORKING = false,
+	DEBUG_VERBOSE = false,
+}) :: LoggerModule
+defaultLogger.new = newLogger
 
---- SERVER — Fire a RemoteEvent to all clients, with net trace.
-function Logger.fireAllClients(remote: RemoteEvent, ...: any)
-	netTrace("S→ALL", remote.Name, ...)
-	remote:FireAllClients(...)
-end
-
---- CLIENT — Fire a RemoteEvent to the server, with net trace.
-function Logger.fireServer(remote: RemoteEvent, ...: any)
-	netTrace("C→S", remote.Name, ...)
-	remote:FireServer(...)
-end
-
-return Logger
+return defaultLogger
