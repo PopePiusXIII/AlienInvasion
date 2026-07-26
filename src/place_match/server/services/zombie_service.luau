@@ -320,6 +320,7 @@ function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?
 	setupTouchDamage(zombie, humanoid, stats.TouchDamage)
 	connectDeathCleanup(zombie, humanoid, onDied)
 	registerZombie(zombie, humanoid, target)
+	Logger.info(TAG, "Spawned %s zombie for %s at %s.", resolvedType, target.Name, tostring(zombie:GetPivot().Position))
 end
 
 --- Server-authoritative damage application.

@@ -16,6 +16,7 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 local Framework             = require(replicated_storage.common.shared.framework)
 local Logger                = require(replicated_storage.common.shared.logger)
 local Config                = require(replicated_storage.match.shared.configs.game_config)
+local WaveConfig            = require(replicated_storage.match.shared.configs.wave_config)
 local RemoteNames           = require(replicated_storage.match.shared.remote_names)
 local CharacterController   = require(replicated_storage.match.client.controllers.character_controller)
 local InventoryController   = require(replicated_storage.match.client.controllers.inventory_controller)
@@ -64,9 +65,9 @@ function HudController:Start()
 	Logger.wrapClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
 		-- touches humanoid properties directly (clean separation of concerns).
-		CharacterController.boostStat("walkSpeed",   Config.WAVE_CLEAR_SPEED_BOOST)
-		CharacterController.boostStat("sprintSpeed", Config.WAVE_CLEAR_SPEED_BOOST)
-		CharacterController.boostStat("scale",       Config.WAVE_CLEAR_SCALE_BOOST)
+		CharacterController.boostStat("walkSpeed",   WaveConfig.WAVE_CLEAR_SPEED_BOOST)
+		CharacterController.boostStat("sprintSpeed", WaveConfig.WAVE_CLEAR_SPEED_BOOST)
+		CharacterController.boostStat("scale",       WaveConfig.WAVE_CLEAR_SCALE_BOOST)
 
 		local stats = CharacterController.getStats()
 		Logger.info(TAG, "Stats upgraded — Walk: %.0f  Sprint: %.0f  Scale: %.2f",
@@ -74,8 +75,8 @@ function HudController:Start()
 
 		HudUpgradeEchoModule.show(
 			_screenGui,
-			Config.WAVE_CLEAR_SPEED_BOOST,
-			Config.WAVE_CLEAR_SCALE_BOOST
+			WaveConfig.WAVE_CLEAR_SPEED_BOOST,
+			WaveConfig.WAVE_CLEAR_SCALE_BOOST
 		)
 	end)
 
