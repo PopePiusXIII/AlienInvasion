@@ -35,7 +35,12 @@
       }
     },
     "ServerScriptService": {
-      "$path": "server"
+      "match": {
+        "$path": "../../src/place_match/server"
+      },
+      "common": {
+        "$path": "server"
+      }
     }
   }
 }

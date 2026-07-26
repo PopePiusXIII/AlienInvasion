@@ -23,9 +23,6 @@ local InventoryService = {}
 InventoryService.Name = TAG
 
 local _playerInventories: { [number]: { gunIds: { string }, equippedSlot: number? } } = {}
-
--- In-memory level tracking (resets each match, not persisted to profile).
--- { [userId] = { [gunId] = level (1-4) } }
 local _gunLevels: { [number]: { [string]: number } } = {}
 
 local _inventorySyncRemote:  RemoteEvent
@@ -437,10 +434,10 @@ function InventoryService:Start()
 		_gunLevels[player.UserId] = nil
 	end)
 
-	Players.PlayerAdded:Connect(function(player: Player)
-		task.wait(0.5)
+	ProfileService.OnProfileLoaded(function(player, profile)
 		grantStarterGunsToPlayer(player)
 	end)
+
 end
 
  Framework.CreateService(InventoryService)

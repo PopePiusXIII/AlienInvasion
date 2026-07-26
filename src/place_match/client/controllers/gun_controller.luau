@@ -24,6 +24,8 @@ local GunFxModule = require(replicated_storage.match.client.controllers.modules.
 local GunViewModelModule = require(replicated_storage.match.client.controllers.modules.gun.gun_view_model_module)
 local GunHitScanModule = require(replicated_storage.match.client.controllers.modules.gun.gun_hit_scan_module)
 
+type SyncedGun = InventoryController.SyncedGun
+
 local TAG = "GunController"
 
 local GunController = {}
@@ -55,7 +57,10 @@ local _reserveAmmoByGun: { [string]: number } = {}
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
 
-local function getGunStats(gunName: string): GunModule.Gun
+local function getGunStats(gunName: string?): GunModule.Gun
+    if not gunName then
+        return {} :: GunModule.Gun
+    end
 	local guns = InventoryController.getGuns()
 	for _, g in ipairs(guns) do
 		if g.name == gunName then
@@ -97,7 +102,6 @@ end
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
 local function refreshAmmoDisplay()
-	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
 	local ammo = getCurrentAmmo()
 	if not _equippedGun then
 		HudController.setAmmoText("", Color3.new(1, 1, 1))
@@ -202,7 +206,9 @@ local function fire(): boolean
 	GunFxModule.playShootSound()
 	GunFxModule.playShootAnimation()
 	GunFxModule.drawTracer(origin, hitPosition, stats.tracer)
-	GunFxModule.flashMuzzle(Config.GUN_MUZZLE_DELAY)
+
+	local muzzleDelay = 0.05
+	GunFxModule.flashMuzzle(muzzleDelay)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
 	if hitZombie then
@@ -419,6 +425,36 @@ local function watchCharacter(character: Model)
 	end)
 end
 
+local function onInventoryChanged(guns: { SyncedGun }, equippedSlot: number?)
+    -- Determine target equipped name from inventory
+	
+	if not equippedSlot then
+		Logger.info(TAG, "onInventoryChanged: player is currently not using slot 1 or 2no equipped slot")
+		return
+	end
+
+	if not guns[equippedSlot] then
+		Logger.info(TAG, "onInventoryChanged: no gunin the equipped slot given to gun controller from inventory")
+		return
+	end
+
+	local newGun = guns[equippedSlot]
+	local targetName = newGun.name
+
+	if _equippedGun and _equippedGun.Name == targetName then
+		return
+	end
+
+	-- Try to find the Tool instance on the character and equip it
+	local character = _localPlayer and _localPlayer.Character
+	if character then
+		local tool = character:FindFirstChild(targetName)
+		if tool and tool:IsA("Tool") then
+			onGunEquipped(tool :: Tool)
+			return
+		end
+	end
+end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function GunController:Init()
@@ -443,6 +479,8 @@ function GunController:Start()
 		end
 		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, mag, reserve)
 	end)
+
+	InventoryController.onInventoryChanged(onInventoryChanged)
 
 	_localPlayer.CharacterAdded:Connect(function(character: Model)
 		onCharacterAdded(character)

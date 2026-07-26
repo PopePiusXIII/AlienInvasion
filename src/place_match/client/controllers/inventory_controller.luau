@@ -46,9 +46,9 @@ local _inventoryEquipRemote: RemoteEvent
 --- Gets the current guns in the inventory (full synced data)
 function InventoryController.getGuns(): { SyncedGun }
 	if not _guns then
-		_guns = 
-		return {}
+		return {} :: SyncedGun
 	end
+
 	return _guns
 end
 
@@ -107,6 +107,8 @@ local function updateInventory(guns: { SyncedGun }, equippedSlot: number?)
 		#guns, tostring(equippedSlot))
 	
 	-- Fire all callbacks
+
+	-- add guncontroller call back on inventory change
 	for _, callback in ipairs(_onInventoryChangedCallbacks) do
 		task.spawn(callback, guns, equippedSlot)
 	end

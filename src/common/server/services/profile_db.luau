@@ -364,8 +364,7 @@ function ProfileDb.grantGun(player: Player, gunName: string): string?
 	end
 
 	-- Validate that the base gun exists in GUN_STATS (check common variant)
-	local statsKey = CombatConfig.getGunStatsKey(gunName, "common")
-	if not CombatConfig.GUN_STATS[statsKey] then
+	if not CombatConfig.GUN_STATS[gunName] then
 		Logger.warn(TAG, "Cannot grant %s — no common variant in GUN_STATS.", gunName)
 		return nil
 	end
@@ -377,7 +376,7 @@ function ProfileDb.grantGun(player: Player, gunName: string): string?
 	profile.inventory[id] = {
 		id = id,
 		name = gunName,
-		rarity = "common",
+		rarity = CombatConfig.GUN_STATS[gunName].rarity,
 	}
 
 	Logger.info(TAG, "%s granted %s (id=%s, common).", player.Name, gunName, id)
@@ -517,10 +516,9 @@ function ProfileDb.getGunStats(player: Player, gunId: string, level: number?): G
 	if not instance then return nil end
 
 	-- Look up the rarity-specific base stats
-	local statsKey = CombatConfig.getGunStatsKey(instance.name, instance.rarity)
-	local base = CombatConfig.GUN_STATS[statsKey]
+	local base = CombatConfig.GUN_STATS[instance.name]
 	if not base then
-		Logger.warn(TAG, "No stats for %s.", statsKey)
+		Logger.warn(TAG, "No stats for %s.", instance.name)
 		return nil
 	end
 
