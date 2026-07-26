@@ -12,12 +12,9 @@
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local replicated_storage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
 
-local Shared = replicated_storage.common.shared
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
-local Config        = require(replicated_storage.match.shared.configs.game_config)
 local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 local HudController = require(replicated_storage.match.client.controllers.hud_controller)
@@ -72,8 +69,7 @@ local function getReserveAmmo(gunName: string?): number
 	if not gunName then return 0 end
 	if _reserveAmmoByGun[gunName] == nil then
 		local stats = getGunStats(gunName)
-		local value = (stats and stats.max_ammo) or (Config.DEFAULT_GUN_RESERVE or 0)
-		_reserveAmmoByGun[gunName] = math.max(0, math.floor(value or 0))
+		_reserveAmmoByGun[gunName] = stats.max_ammo
 	end
 	return _reserveAmmoByGun[gunName]
 end
@@ -400,17 +396,6 @@ local function onGunUnequipped()
 	refreshAmmoDisplay()
 end
 
--- ── Custom Inventory Integration ──────────────────────────────────────────────
-
---- Called when inventory changes - we rely on the server to replicate Tool instances.
---- The client just watches character.ChildAdded/ChildRemoved for Tools (like the old Backpack approach).
-local function onInventoryChanged(guns: { any }, equippedSlot: number?)
-	Logger.info(TAG, "Inventory changed: %d guns, equipped slot=%s", 
-		#guns, tostring(equippedSlot))
-	-- Server handles equipping/unequipping Tool instances; they're replicated to us.
-	-- We just watch character.ChildAdded below to detect when they arrive.
-end
-
 --- Watch a character model for the gun being equipped (moved into character by server)
 --- or unequipped (removed). Uses ChildAdded/ChildRemoved on the character.
 local function watchCharacter(character: Model)
@@ -462,19 +447,13 @@ function GunController:Start()
 	_localPlayer.CharacterAdded:Connect(function(character: Model)
 		onCharacterAdded(character)
 		watchCharacter(character)
-		-- Sync with current inventory state when character respawns
-		local guns = InventoryController.getGuns()
-		local equippedSlot = InventoryController.getEquippedSlot()
-		onInventoryChanged(guns, equippedSlot)
 	end)
+
 	_localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 	if _localPlayer.Character then
 		onCharacterAdded(_localPlayer.Character)
 		watchCharacter(_localPlayer.Character)
 	end
-	
-	-- Watch for inventory changes
-	InventoryController.onInventoryChanged(onInventoryChanged)
 	
 	-- Handle number key input for weapon switching
 	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)

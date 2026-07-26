@@ -12,7 +12,7 @@ local StarterGui        = game:GetService("StarterGui")
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
 local RemoteNames   = require(replicated_storage.match.shared.remote_names)
-local GunModule     = require(replicated_storage.common.shared.gun_core)
+local GunCore     = require(replicated_storage.common.shared.gun_core)
 
 local TAG = "InventoryController"
 
@@ -30,7 +30,7 @@ local _localPlayer = Players.LocalPlayer
 export type SyncedGun = {
 	id: string,
 	name: string,
-	stats: GunModule.Gun,
+	stats: GunCore.Gun,
 }
 
 -- Local inventory state
@@ -79,7 +79,7 @@ function InventoryController.getEquippedGun(): SyncedGun?
 end
 
 --- Gets the equipped weapon's resolved stats (nil if nothing equipped)
-function InventoryController.getEquippedStats(): GunModule.Gun?
+function InventoryController.getEquippedStats(): GunCore.Gun?
 	local gun = InventoryController.getEquippedGun()
 	return gun and gun.stats or nil
 end
@@ -119,7 +119,7 @@ function InventoryController:Start()
 	_inventoryEquipRemote = Framework.GetRemote(RemoteNames.INVENTORY_EQUIP)
 
 	-- Listen for inventory sync from server
-    warn(TAG, "INVETORY SYNC REMOTE STARTED")
+    Logger.info(TAG, "INVETORY SYNC REMOTE STARTED")
 	Logger.wrapClientEvent(_inventorySyncRemote, TAG, function(guns: { SyncedGun }, equippedSlot: number?)
 		updateInventory(guns, equippedSlot)
 	end)

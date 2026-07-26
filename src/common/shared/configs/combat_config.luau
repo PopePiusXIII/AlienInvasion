@@ -5,14 +5,14 @@
 return {
 	HEADSHOT_MULTIPLIER = 2.0,
 	STARTER_GUNS = {
-		"M82",
-		"1911",
+		"common_SCAR",
+		"common_1911",
 	},
 	STARTER_UNLOCKED_WEAPONS = {
-		"1911",
-		"HandCannon",
-		"MP5",
-		"SCAR",
+		"common_1911",
+		"common_HandCannon",
+		"common_MP5",
+		"common_SCAR",
 	},
 	GUN_STATS = {
 	common_Deagle = {

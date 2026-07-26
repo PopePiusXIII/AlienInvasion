@@ -1,20 +1,29 @@
 --!strict
 
-local ServerStorage = game:GetService("ServerStorage")
+local server_storage = game:GetService("ServerStorage")
 local replicated_storage = game:GetService("ReplicatedStorage")
+local server_script_service = game:GetService("ServerScriptService")
 
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
-local InventoryService = nil -- Will be lazy-loaded to avoid circular dependency
+local InventoryService = require(server_script_service.match.services.inventory_service)
 
 local LoadoutGrantModule = {}
 
+local function stripPrefixAfterUnderscore(name: string): string
+    local i = string.find(name, "_")
+    if i then
+        return string.sub(name, i + 1)
+    end
+    return name
+end
+
 local function findWeaponSource(gunName: string): Instance?
-	local found = ServerStorage:FindFirstChild(gunName, true)
-	if found and (found:IsA("Tool") or found:IsA("Model")) then
-		return found
-	end
-	return nil
+    local found = server_storage:FindFirstChild(gunName, true)
+    if found and (found:IsA("Tool") or found:IsA("Model")) then
+        return found
+    end
+    return nil
 end
 
 local function ensureHandle(tool: Tool): BasePart?
@@ -68,33 +77,29 @@ local function cloneWeaponAsTool(gunName: string): Tool?
 end
 
 function LoadoutGrantModule.grant(player: Player, desiredGunNames: { string }, onWarn: (message: string, ...any) -> ()): number
-	-- Lazy-load InventoryService to avoid circular dependency
-	if not InventoryService then
-		InventoryService = Framework.GetService("InventoryService")
-	end
-	
+
 	if typeof(desiredGunNames) ~= "table" or #desiredGunNames == 0 then
-		onWarn("No desired gun names provided for %s; nothing to grant.", player.Name)
+		Logger.warn("No desired gun names provided for %s; nothing to grant.", player.Name)
 		return 0
 	end
 
 	local granted = 0
 	for _, gunName in ipairs(desiredGunNames) do
-		onWarn("give '%s' to '%s'", gunName, player.Name)
-		
+		Logger.info("give '%s' to '%s'", gunName, player.Name)
+		local baseGunName = stripPrefixAfterUnderscore(gunName)
 		-- Verify the weapon exists in ServerStorage
-		local weaponSource = findWeaponSource(gunName)
+		local weaponSource = findWeaponSource(baseGunName)
 		if weaponSource then
 			-- Add to custom inventory system (no longer creating Tool instances here)
 			local success = InventoryService.addWeapon(player, gunName)
 			if success then
-				cloneWeaponAsTool(gunName)
+				cloneWeaponAsTool(baseGunName)
 				granted += 1
 			else
-				onWarn("Could not add '%s' to inventory for %s (inventory full or already owned).", gunName, player.Name)
+				Logger.info("Could not add '%s' to inventory for %s (inventory full or already owned).", gunName, player.Name)
 			end
 		else
-			onWarn("Configured weapon '%s' (Tool or Model) was not found in ServerStorage.", gunName)
+			Logger.warn("Configured weapon '%s' (Tool or Model) was not found in ServerStorage.", gunName)
 		end
 	end
 

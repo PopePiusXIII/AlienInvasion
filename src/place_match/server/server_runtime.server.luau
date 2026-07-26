@@ -7,10 +7,9 @@ local server_script_service = game:GetService("ServerScriptService")
 local logger_config = 	replicated_storage.match.shared.configs.debug_config
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger = require(replicated_storage.common.shared.logger).new(logger_config)
+local services = server_script_service.match.services
 
 require(server_script_service.common.services.profile_db)
-
-local services = server_script_service.match.services
 require(services.zombie_service)
 require(services.economy_service)
 require(services.inventory_service)
