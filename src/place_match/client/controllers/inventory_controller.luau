@@ -107,8 +107,6 @@ local function updateInventory(guns: { SyncedGun }, equippedSlot: number?)
 		#guns, tostring(equippedSlot))
 	
 	-- Fire all callbacks
-
-	-- add guncontroller call back on inventory change
 	for _, callback in ipairs(_onInventoryChangedCallbacks) do
 		task.spawn(callback, guns, equippedSlot)
 	end
