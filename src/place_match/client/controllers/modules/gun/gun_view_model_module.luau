@@ -215,10 +215,15 @@ function Module.onGunEquipped(tool: Tool)
     if not tool then return end
     currentTool = tool
 
+    local function removePrefix(inventoryName: string): string
+	-- transform common_name to just name
+    	return inventoryName:match("^[^_]+_(.+)$") or inventoryName
+	end
+    local viewModelName = removePrefix(tool.Name)
     -- Find a ViewModel in replicated_storage matching the tool name
     local template: Model? = nil
     if ViewModels then
-        template = ViewModels:FindFirstChild(tool.Name)
+        template = ViewModels:FindFirstChild(viewModelName)
     end
 
     currentTemplate = (template and template:IsA("Model")) and template or nil
