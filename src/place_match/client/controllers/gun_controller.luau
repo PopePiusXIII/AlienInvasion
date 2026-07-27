@@ -440,7 +440,7 @@ local function onInventoryChanged(guns: { SyncedGun }, equippedSlot: number?)
 
 	local newGun = guns[equippedSlot]
 	local targetName = newGun.name
-
+	
 	if _equippedGun and _equippedGun.Name == targetName then
 		return
 	end

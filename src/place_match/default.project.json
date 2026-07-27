@@ -9,7 +9,10 @@
           "$path": "shared"
         },
         "client": {
-          "$path": "client"
+          "$className": "Folder",
+          "controllers": {
+            "$path": "client/controllers"
+          }
         },
         "ui": {
           "$path": "ui"
@@ -49,7 +52,10 @@
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "client" }
+        "$className": "StarterPlayerScripts",
+        "ClientRuntime": {
+          "$path": "client/runtime.client.luau"
+        }
       }
     },
     "Workspace": {

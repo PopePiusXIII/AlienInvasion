@@ -30,12 +30,20 @@ local _inventoryEquipRemote: RemoteEvent
 
 -- ── Weapon Helper Functions ──────────────────────────────────────────────────
 
---- Find a Tool/Model in ServerStorage by base gun name (e.g. "1911", not "rare_1911").
-local function findWeaponSource(gunName: string): Instance?
+local function findWeaponModel(gunName: string): Instance?
+	
+	local function getToolName(inventoryName: string): string
+	-- transform common_name to just name
+    	return inventoryName:match("^[^_]+_(.+)$") or inventoryName
+	end
+
+	gunName = getToolName(gunName)
+
 	local found = ServerStorage:FindFirstChild(gunName, true)
 	if found and (found:IsA("Tool") or found:IsA("Model")) then
 		return found
 	end
+	Logger.warn(TAG, "No weapon model found named %s", gunName)
 	return nil
 end
 
@@ -77,7 +85,7 @@ local function normalizeToolPhysics(tool: Tool)
 end
 
 local function cloneWeaponAsTool(gunName: string): Tool?
-	local source = findWeaponSource(gunName)
+	local source = findWeaponModel(gunName)
 	if not source then return nil end
 
 	if source:IsA("Tool") then
