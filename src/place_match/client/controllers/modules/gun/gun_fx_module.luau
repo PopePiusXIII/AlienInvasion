@@ -126,8 +126,13 @@ function GunFxModule.onGunEquipped(gun: Tool)
 		_cachedReloadSnd = reloadSnd :: Sound
 	end
 
+	local function removePrefix(inventoryName: string): string
+	-- transform common_name to just name
+    	return inventoryName:match("^[^_]+_(.+)$") or inventoryName
+	end
+
 	-- remember current gun name for viewmodel animation lookup
-	_currentGunName = gun and gun.Name or nil
+	_currentGunName = gun and removePrefix(gun.Name) or nil
 
 	-- clear cached animator/track for the newly equipped gun (will be lazily initialized)
 	_cachedShootAnimObj = nil
