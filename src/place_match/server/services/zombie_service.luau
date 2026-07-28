@@ -115,7 +115,9 @@ function ZombieService:Init()
 	-- Ensure the group exists
 	pcall(function()
 		PhysicsService:RegisterCollisionGroup("Zombies")
+		PhysicsService:RegisterCollisionGroup("ZombiePassthrough")
 		PhysicsService:CollisionGroupSetCollidable("Zombies", "Zombies", false)
+		PhysicsService:CollisionGroupSetCollidable("Zombies", "ZombiePassthrough", false)
 	end)
 end
 
