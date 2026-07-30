@@ -2,11 +2,13 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
+local SkillService = require(server_script_service.match.services.skill_service)
 local RngCore = require(server_script_service.common.modules.rng_core)
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local MatchProfileService = require(server_script_service.match.services.skill_service)
+local SkillTypes = require(replicated_storage.match.shared.types.skill_types)
 
 local TAG = "RngService"
 local RngService = {}
@@ -36,8 +38,14 @@ function handleRngActivate(player: Player)
 
 end
 
+function random_3_items(player: Player): SkillTypes.ModifierOptions
+	return SkillService.getModifierTypes(player)
+	
+end
+
 function RngService:Start()
 	_rngActivateRemote.OnServerInvoke = handleRngActivate
+	_rngActivateRemote.OnServerInvoke = random_3_items
 end
 
 Framework.CreateService(RngService)

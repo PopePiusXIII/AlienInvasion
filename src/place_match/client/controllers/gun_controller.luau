@@ -6,7 +6,7 @@
 -- Visual effects (muzzle flash, particles) play locally; damage is server-auth.
 --
 -- Single Responsibility: gun input handling and local visual feedback.
--- Ammo display is delegated to HudController.setAmmoText() — no direct UI here.
+-- Ammo display is delegated to HudController — no direct UI here.
 --------------------------------------------------------------------------------
 
 local Players           = game:GetService("Players")
@@ -105,14 +105,18 @@ local function refreshAmmoDisplay()
 	local ammo = getCurrentAmmo()
 	if not _equippedGun then
 		HudController.setAmmoText("", Color3.new(1, 1, 1))
+		HudController.setActiveWeaponAmmo(0, 0)
 		return
 	end
+
+	local reserve = getReserveAmmo(_equippedGun.Name)
+	HudController.setActiveWeaponAmmo(ammo, reserve)
+
 	if _isReloading then
 		HudController.setAmmoText("RELOADING...", Color3.new(1, 0.6, 0))
 		return
 	end
 	local color = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
-	local reserve = getReserveAmmo(_equippedGun and _equippedGun.Name or nil)
 	HudController.setAmmoText(string.format("%d / %d", ammo, math.max(0, math.floor(reserve))), color)
 end
 

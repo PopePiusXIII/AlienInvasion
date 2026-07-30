@@ -6,7 +6,7 @@
 -- CharacterController. Single Responsibility: UI presentation only.
 --
 -- Public API:
---   HudController.setAmmoText(text, color)  — called by GunController
+--   HudController.setActiveWeaponAmmo(current, max) — called by GunController
 --   HudController.getScreenGui()            — called by LobbyController to parent its UI
 --------------------------------------------------------------------------------
 
@@ -99,6 +99,11 @@ end
 --- Keeps ammo rendering decoupled from gun state logic.
 function HudController.setAmmoText(text: string, color: Color3)
 	_controls.setAmmoText(text, color)
+end
+
+--- Called by GunController to update the active weapon's numeric ammo display.
+function HudController.setActiveWeaponAmmo(current: number, maxMag: number)
+	_controls.setActiveWeaponAmmo(current, maxMag)
 end
 
 --- Expose the ScreenGui so other controllers can parent their own UI into it.

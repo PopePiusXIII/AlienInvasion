@@ -30,8 +30,6 @@ local _attachedRngParts: { [Instance]: RBXScriptConnection } = {}
 local function buildGui()
     _gui.Parent = _localPlayer:WaitForChild("PlayerGui")
     _gui.Enabled = false
-    _promptFrame = _gui:FindFirstChild("Frame") :: Frame?
-    _selectedLabel = _gui:FindFirstChild("TextLabel", true) :: TextLabel?
 end
 
 local function showPrompt()

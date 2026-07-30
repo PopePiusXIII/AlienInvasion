@@ -14,7 +14,7 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
-local MatchProfile = require(replicated_storage.match.shared.types.match_profile)
+local SkillProfile = require(replicated_storage.match.shared.types.skill_types)
 local Framework      = require(replicated_storage.common.shared.framework)
 local Logger         = require(replicated_storage.common.shared.logger)
 local RemoteNames    = require(replicated_storage.match.shared.remote_names)
@@ -25,12 +25,12 @@ local SkillService = {}
 SkillService.Name = TAG
 -- ── State ────────────────────────────────────────────────────────────────────
 
-local _playerModifiers: { [Player]: MatchProfile.MatchProfile } = {}
+local _playerModifiers: { [Player]: SkillProfile.SkillProfile } = {}
 
 ---------------------------------- Helper Functions -------------------------------------
 
-local function buildEmptyModifierProfile(): MatchProfile.MatchProfile
-	local gun_modifier: MatchProfile.GunModifer = {
+local function buildEmptyModifierProfile(): SkillProfile.SkillProfile
+	local gun_modifier: SkillProfile.GunModifier = {
 		reload_speed = 1.0,
 		ammo_capacity = 1.0,
 		damage = 1.0,
@@ -42,7 +42,7 @@ local function buildEmptyModifierProfile(): MatchProfile.MatchProfile
 		end
 	end
 
-	local player_modifier: MatchProfile.PlayerModifier = {
+	local player_modifier: SkillProfile.PlayerModifier = {
 		health = 1.0,
 		speed = 1.0,
 	}
@@ -64,15 +64,15 @@ end
 -- ── Public API ───────────────────────────────────────────────────────────────
 
 --- Returns the cumulative gun modifier table for a player.
-function SkillService.getGunModifiers(player: Player): MatchProfile.GunModifer
+function SkillService.getGunModifiers(player: Player): SkillProfile.GunModifier
 	ensureModifiers(player)
-	return _playerModifiers[player].gun_modifier :: MatchProfile.GunModifer
+	return _playerModifiers[player].gun_modifier :: SkillProfile.GunModifier
 end
 
 --- Returns the cumulative player modifier table for a player.
-function SkillService.getPlayerModifiers(player: Player): MatchProfile.PlayerModifier
+function SkillService.getPlayerModifiers(player: Player): SkillProfile.PlayerModifier
 	ensureModifiers(player)
-	return _playerModifiers[player].player_modifier :: MatchProfile.PlayerModifier
+	return _playerModifiers[player].player_modifier :: SkillProfile.PlayerModifier
 end
 
 --- Apply a modifier pick to a player's profile.
@@ -88,19 +88,19 @@ function SkillService.apply(player: Player, key: string)
 	local profile = _playerModifiers[player]
 
 	if entry.category == "gun" then
-		local gunMod = profile.gun_modifier :: MatchProfile.GunModifer
+		local gunMod = profile.gun_modifier :: SkillProfile.GunModifier
 		gunMod[entry.property] = (gunMod[entry.property] or 1.0) * entry.value
 		Logger.info(TAG, "%s applied %s → gun.%s = %.2f", player.Name, key, entry.property, gunMod[entry.property])
 	elseif entry.category == "player" then
-		local playerMod = profile.player_modifier :: MatchProfile.PlayerModifier
+		local playerMod = profile.player_modifier :: SkillProfile.PlayerModifier
 		playerMod[entry.property] = (playerMod[entry.property] or 1.0) * entry.value
 		Logger.info(TAG, "%s applied %s → player.%s = %.2f", player.Name, key, entry.property, playerMod[entry.property])
 	end
 end
 
-function SkillService.getModifierTypes(player: Player): MatchProfile.FlatModifiers
+function SkillService.getModifierTypes(player: Player): SkillProfile.ModifierOptions
 	ensureModifiers(player)
-	return MatchProfile.into(_playerModifiers[player])
+	return SkillProfile.into(_playerModifiers[player])
 end
 -- ── Remote Handlers ──────────────────────────────────────────────────────────
 
