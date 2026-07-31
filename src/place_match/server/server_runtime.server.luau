@@ -10,6 +10,9 @@ local Logger = require(replicated_storage.common.shared.logger).new(logger_confi
 local services = server_script_service.match.services
 
 require(server_script_service.common.services.profile_db)
+require(services.skill_service)
+require(services.character_service)
+require(services.health_service)
 require(services.zombie_service)
 require(services.economy_service)
 require(services.inventory_service)

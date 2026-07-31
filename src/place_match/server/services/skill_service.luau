@@ -12,6 +12,7 @@
 --------------------------------------------------------------------------------
 
 local replicated_storage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 -- ── Type imports (compile-time only) ────────────────────────────────────────
 local SkillProfile = require(replicated_storage.match.shared.types.skill_types)
@@ -26,8 +27,8 @@ SkillService.Name = TAG
 -- ── State ────────────────────────────────────────────────────────────────────
 
 local _playerModifiers: { [Player]: SkillProfile.SkillProfile } = {}
+local _healthModifierChanged = Instance.new("BindableEvent")
 
----------------------------------- Helper Functions -------------------------------------
 
 local function buildEmptyModifierProfile(): SkillProfile.SkillProfile
 	local gun_modifier: SkillProfile.GunModifier = {
@@ -75,6 +76,12 @@ function SkillService.getPlayerModifiers(player: Player): SkillProfile.PlayerMod
 	return _playerModifiers[player].player_modifier :: SkillProfile.PlayerModifier
 end
 
+function SkillService.onHealthModifierChanged(
+	callback: (Player, number) -> ()
+): RBXScriptConnection
+	return _healthModifierChanged.Event:Connect(callback)
+end
+
 --- Apply a modifier pick to a player's profile.
 --- The key should match a key in ModifierConfig (e.g. "gun_damage", "player_health").
 function SkillService.apply(player: Player, key: string)
@@ -95,6 +102,9 @@ function SkillService.apply(player: Player, key: string)
 		local playerMod = profile.player_modifier :: SkillProfile.PlayerModifier
 		playerMod[entry.property] = (playerMod[entry.property] or 1.0) * entry.value
 		Logger.info(TAG, "%s applied %s → player.%s = %.2f", player.Name, key, entry.property, playerMod[entry.property])
+		if entry.property == "health" then
+			_healthModifierChanged:Fire(player, playerMod.health)
+		end
 	end
 end
 
@@ -115,8 +125,13 @@ end
 
 function SkillService:Start()
 	if _rngPickModifierRemote then
-		_rngPickModifierRemote.OnServerEvent:Connect(SkillService.apply)
+		Logger.wrapServerEvent(_rngPickModifierRemote, TAG, function(player: Player, key: string)
+			SkillService.apply(player, key)
+		end)
 	end
+	Players.PlayerRemoving:Connect(function(player: Player)
+		_playerModifiers[player] = nil
+	end)
 	Logger.info(TAG, "Listeners connected.")
 end
 

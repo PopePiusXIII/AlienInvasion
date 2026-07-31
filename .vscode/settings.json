@@ -3,5 +3,9 @@
   "luau-lsp.sourcemap.autogenerate": false,
   "luau-lsp.sourcemap.includeNonScripts": true,
   "luau-lsp.studioPlugin.enabled": true,
-  "luau-lsp.studioPlugin.port": 3667
+  "luau-lsp.studioPlugin.port": 3667,
+  "github.copilot.advanced": {
+  "inlineSuggestProvider": "ollama"
+	}
 }
+

@@ -19,6 +19,7 @@ local WaveConfig   = require(replicated_storage.match.shared.configs.wave_config
 local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
 local RemoteNames  = require(replicated_storage.match.shared.remote_names)
 local ProfileService = require(server_script_service.common.services.profile_db)
+local CharacterService = require(server_script_service.match.services.character_service)
 local ZombieService = require(server_script_service.match.services.zombie_service)
 local EconomyService = require(server_script_service.match.services.economy_service)
 local LoadoutGrantModule = require(server_script_service.match.modules.wave.loadout_grant_module)
@@ -122,12 +123,8 @@ function WaveService.startBattle(player: Player): number
 	EconomyService.beginRun(player)
 	player:SetAttribute("CurrentWave", WaveConfig.STARTING_WAVE)
 
-	-- Wait for the player's character and humanoid to be ready before proceeding.
-	Logger.info(TAG, "startBattle: waiting for character (%s).", player.Name)
-	local character = player.Character or player.CharacterAdded:Wait()
-	Logger.info(TAG, "startBattle: character ready, waiting for humanoid (%s).", player.Name)
-	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-	Logger.info(TAG, "startBattle: humanoid ready, starting waves (%s).", player.Name)
+	local humanoid = CharacterService.waitFor(player).humanoid
+	Logger.info(TAG, "startBattle: character ready, starting waves (%s).", player.Name)
 
 	-- Shop clerk/Proximity prompt removed.
 
