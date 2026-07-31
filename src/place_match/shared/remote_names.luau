@@ -11,6 +11,7 @@ return {
 	WAVE_ANNOUNCE = "WaveAnnounce",
 	WAVE_CLEAR    = "WaveClear",
 	RUN_CURRENCY_UPDATED  = "RunCurrencyUpdated",
+	COINS_EARNED_UPDATED  = "CoinsEarnedUpdated",
 	REQUEST_SHOP_PURCHASE = "RequestShopPurchase",
 	SHOP_PURCHASE_RESULT  = "ShopPurchaseResult",
 	LOBBY_ECONOMY_SYNC    = "LobbyEconomySync",

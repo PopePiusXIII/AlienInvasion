@@ -43,8 +43,8 @@ function HudController:Init()
 end
 
 function HudController:Start()
-	local waveClearRemote    = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
-	local runCurrencyRemote  = Framework.GetRemote(RemoteNames.RUN_CURRENCY_UPDATED)
+	local waveClearRemote = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
+	local coinsEarnedUpdatedRemote = Framework.GetRemote(RemoteNames.COINS_EARNED_UPDATED)
 
 	Logger.wrapClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
@@ -64,8 +64,8 @@ function HudController:Start()
 		)
 	end)
 
-	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number, _goldEarned: number)
-		_sources.coins(math.max(0, math.floor(silverStuds)))
+	Logger.wrapClientEvent(coinsEarnedUpdatedRemote, TAG, function(totalCoinsEarned: number)
+		_sources.xpPercent(math.max(0, math.floor(totalCoinsEarned)/50))
 	end)
 
 	Logger.info(TAG, "HUD event listeners connected.")

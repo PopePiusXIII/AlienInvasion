@@ -92,11 +92,11 @@ local function XpBar(props: Props): Frame
 
 		create "Frame" {
 			Name = "Purple_HealthBar",
-			AnchorPoint = Vector2.new(0.5, 0.5),
+			AnchorPoint = Vector2.new(0, 0.5),
 			BackgroundColor3 = props.colors.purple,
 			BorderColor3 = props.colors.black,
 			BorderSizePixel = 0,
-			Position = UDim2.fromScale(0.5, 0.5),
+			Position = UDim2.fromScale(0.05, 0.5),
 			Size = function()
 				return UDim2.fromScale(0.9 * math.clamp(props.xpPercent(), 0, 1), 0.85)
 			end,

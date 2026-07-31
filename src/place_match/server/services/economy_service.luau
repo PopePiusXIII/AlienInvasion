@@ -38,6 +38,7 @@ export type RunWallet = {
 
 local _walletByPlayer: { [Player]: RunWallet } = {}
 local _runCurrencyUpdatedRemote:  RemoteEvent
+local _coinsEarnedUpdatedRemote:  RemoteEvent
 local _requestShopPurchaseRemote: RemoteEvent
 local _shopPurchaseResultRemote:  RemoteEvent
 local _boltSpawnedRemote:         RemoteEvent
@@ -66,7 +67,6 @@ end
 
 local function syncWalletToClient(player: Player)
 	local wallet = getWallet(player)
-	-- Total gold = cached persistent balance + newly earned this run.
 	local totalGold = wallet.persistentGold + wallet.goldEarned
 	Logger.fireClient(_runCurrencyUpdatedRemote, player, wallet.silverStuds, totalGold)
 end
@@ -78,6 +78,7 @@ local function awardSilver(player: Player, amount: number)
 	wallet.silverStuds += gain
 	wallet.silverEarned += gain
 	syncWalletToClient(player)
+	Logger.fireClient(_coinsEarnedUpdatedRemote, player, wallet.silverEarned)
 end
 
 local function awardGold(player: Player, amount: number)
@@ -192,6 +193,7 @@ function EconomyService:Init()
 	end
 
 	_runCurrencyUpdatedRemote  = Framework.CreateRemote(RemoteNames.RUN_CURRENCY_UPDATED)
+	_coinsEarnedUpdatedRemote  = Framework.CreateRemote(RemoteNames.COINS_EARNED_UPDATED)
 	_requestShopPurchaseRemote = Framework.CreateRemote(RemoteNames.REQUEST_SHOP_PURCHASE)
 	_shopPurchaseResultRemote  = Framework.CreateRemote(RemoteNames.SHOP_PURCHASE_RESULT)
 	_boltSpawnedRemote         = Framework.CreateRemote(RemoteNames.BOLT_SPAWNED)
@@ -247,6 +249,7 @@ function EconomyService.beginRun(player: Player)
 	_boltsByPlayer[player] = {}
 	_nextBoltId[player] = 0
 	syncWalletToClient(player)
+	Logger.fireClient(_coinsEarnedUpdatedRemote, player, 0)
 end
 
 function EconomyService.grantKillRewards(player: Player, zombieType: string, waveNumber: number, deathPosition: Vector3?)
@@ -294,6 +297,7 @@ function EconomyService.finalizeRun(player: Player): { silverEarned: number, sil
 	local wallet = getWallet(player)
 	local summary = { silverEarned = wallet.silverEarned, silverSpent = wallet.silverSpent, goldEarned = wallet.goldEarned }
 	Logger.fireClient(_runCurrencyUpdatedRemote, player, 0)
+	Logger.fireClient(_coinsEarnedUpdatedRemote, player, 0)
 	_walletByPlayer[player] = nil
 	return summary
 end
