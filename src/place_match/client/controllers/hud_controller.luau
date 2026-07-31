@@ -1,8 +1,8 @@
 --!strict
 --------------------------------------------------------------------------------
 -- HudController.luau  (src/client/controllers)
--- Owns all in-game HUD via the reactive vide MatchHUD component.
--- Listens to WaveAnnounce and WaveClear, delegates stat boosts to
+-- Owns the match-specific reactive Vide HUD.
+-- Listens to WaveClear, delegates stat boosts to
 -- CharacterController. Single Responsibility: UI presentation only.
 --
 -- Public API:
@@ -12,15 +12,14 @@
 
 local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
+local StarterGui        = game:GetService("StarterGui")
 
 local Framework             = require(replicated_storage.common.shared.framework)
 local Logger                = require(replicated_storage.common.shared.logger)
-local Config                = require(replicated_storage.match.shared.configs.game_config)
 local WaveConfig            = require(replicated_storage.match.shared.configs.wave_config)
 local RemoteNames           = require(replicated_storage.match.shared.remote_names)
 local CharacterController   = require(replicated_storage.match.client.controllers.character_controller)
-local InventoryController   = require(replicated_storage.match.client.controllers.inventory_controller)
-local MatchHUD              = require(replicated_storage.common.shared.vide.match_hud)
+local MatchHUD              = require(replicated_storage.match.ui.match_hud)
 local HudUpgradeEchoModule  = require(replicated_storage.match.client.controllers.modules.hud.hud_upgrade_echo_module)
 
 local TAG = "HudController"
@@ -30,37 +29,22 @@ HudController.Name = TAG
 
 local _localPlayer = Players.LocalPlayer
 local _screenGui:  ScreenGui
-local _controls
-local _unmount: () -> ()
+local _sources
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function HudController:Init()
-	_screenGui              = Instance.new("ScreenGui")
-	_screenGui.Name         = "AlienInvasionHud"
-	_screenGui.ResetOnSpawn = false
-	_screenGui.Parent       = _localPlayer.PlayerGui
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 
-	local inventorySize = Config.INVENTORY_SIZE or 2
-	_controls, _unmount = MatchHUD.createMatchHUD({ 
-		parentGui = _screenGui,
-		inventorySize = inventorySize,
-	})
+	_screenGui = MatchHUD.gui
+	_sources = MatchHUD.sources
+	_screenGui.Parent = _localPlayer.PlayerGui
 
-	Logger.info(TAG, "ScreenGui created; MatchHUD mounted via vide.")
+	Logger.info(TAG, "Match HUD parented to PlayerGui.")
 end
 
 function HudController:Start()
-	local waveAnnounceRemote = Framework.GetRemote(RemoteNames.WAVE_ANNOUNCE)
 	local waveClearRemote    = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
 	local runCurrencyRemote  = Framework.GetRemote(RemoteNames.RUN_CURRENCY_UPDATED)
-
-	-- Logger.wrapClientEvent: pcall-isolated + net trace when DEBUG_NETWORKING = true.
-	Logger.wrapClientEvent(waveAnnounceRemote, TAG, function(waveNumber: number)
-		_controls.setWaveText("WAVE " .. tostring(waveNumber))
-		task.delay(3, function()
-			_controls.clearWaveText()
-		end)
-	end)
 
 	Logger.wrapClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
@@ -80,17 +64,11 @@ function HudController:Start()
 		)
 	end)
 
-	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number, goldEarned: number)
-		_controls.setSilverAmount(silverStuds)
-		_controls.setGoldAmount(goldEarned or 0)
-	end)
-	
-	-- Listen to inventory changes and update the HUD
-	InventoryController.onInventoryChanged(function(weapons: { string }, equippedSlot: number?)
-		_controls.setInventory(weapons, equippedSlot)
+	Logger.wrapClientEvent(runCurrencyRemote, TAG, function(silverStuds: number, _goldEarned: number)
+		_sources.coins(math.max(0, math.floor(silverStuds)))
 	end)
 
-	Logger.info(TAG, "Wave event listeners connected.")
+	Logger.info(TAG, "HUD event listeners connected.")
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
@@ -98,12 +76,13 @@ end
 --- Called by GunController to update the ammo display.
 --- Keeps ammo rendering decoupled from gun state logic.
 function HudController.setAmmoText(text: string, color: Color3)
-	_controls.setAmmoText(text, color)
+	_sources.activeWeaponAmmoText(text)
+	_sources.activeWeaponAmmoColor(color)
 end
 
 --- Called by GunController to update the active weapon's numeric ammo display.
 function HudController.setActiveWeaponAmmo(current: number, maxMag: number)
-	_controls.setActiveWeaponAmmo(current, maxMag)
+	_sources.activeWeaponAmmoText(string.format("%d/%d", current, maxMag))
 end
 
 --- Expose the ScreenGui so other controllers can parent their own UI into it.

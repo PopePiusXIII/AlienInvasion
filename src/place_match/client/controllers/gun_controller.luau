@@ -15,6 +15,7 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
+local CombatConfig  = require(replicated_storage.common.shared.configs.combat_config)
 local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 local HudController = require(replicated_storage.match.client.controllers.hud_controller)
@@ -56,18 +57,31 @@ local _camera = workspace.CurrentCamera
 local _reserveAmmoByGun: { [string]: number } = {}
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
+local DEFAULT_GUN_STATS = CombatConfig.GUN_STATS["common_1911"] :: GunModule.Gun
 
 local function getGunStats(gunName: string?): GunModule.Gun
-    if not gunName then
-        return {} :: GunModule.Gun
-    end
+	if not gunName then
+		return DEFAULT_GUN_STATS
+	end
+
 	local guns = InventoryController.getGuns()
 	for _, g in ipairs(guns) do
 		if g.name == gunName then
 			return g.stats
 		end
 	end
-	return {} :: GunModule.Gun
+
+	-- A Tool can equip before the initial InventorySync reaches the client.
+	-- Use its base common stats until the server-resolved stats are available.
+	local baseStats = CombatConfig.GUN_STATS[gunName]
+		or CombatConfig.GUN_STATS["common_" .. gunName]
+
+	if baseStats then
+		return baseStats :: GunModule.Gun
+	end
+
+	Logger.warn(TAG, "No stats found for equipped gun '%s'; using 1911 defaults.", gunName)
+	return DEFAULT_GUN_STATS
 end
 
 local function getReserveAmmo(gunName: string?): number
