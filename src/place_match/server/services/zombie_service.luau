@@ -19,6 +19,8 @@ local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local Config    = require(replicated_storage.match.shared.configs.zombie_config)
 local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
+local CharacterService = require(server_script_service.match.services.character_service)
+local HealthService = require(server_script_service.match.services.health_service)
 local ZombiePathfinderActor = require(server_script_service.match.modules.zombie.zombie_pathfinder_actor)
 
 local TAG = "ZombieService"
@@ -189,10 +191,10 @@ local function setupTouchDamage(zombie: Model, humanoid: Humanoid, touchDamage: 
 		if damageCooldown then return end
 		local hitModel = hit.Parent
 		if not hitModel or hitModel.Name == "Zombie" then return end
-		local playerHumanoid = hitModel:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
-		if playerHumanoid and humanoid.Health > 0 then
+		local player = CharacterService.getPlayer(hitModel)
+		if player and humanoid.Health > 0 then
 			damageCooldown = true
-			playerHumanoid:TakeDamage(touchDamage)
+			HealthService.take_damage(player, touchDamage)
 			task.delay(Config.ZOMBIE_DAMAGE_COOLDOWN, function()
 				damageCooldown = false
 			end)

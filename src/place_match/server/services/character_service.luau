@@ -69,6 +69,15 @@ function CharacterService.get(player: Player): CharacterContext?
 	return _contexts[player]
 end
 
+function CharacterService.getPlayer(character: Model): Player?
+	for player, context in pairs(_contexts) do
+		if context.character == character then
+			return player
+		end
+	end
+	return nil
+end
+
 function CharacterService.waitFor(player: Player): CharacterContext
 	local context = _contexts[player]
 	while not context do
@@ -95,6 +104,8 @@ function CharacterService.onCharacterRemoved(
 ): RBXScriptConnection
 	return _characterRemoved.Event:Connect(callback)
 end
+
+function CharacterService:Init() end
 
 function CharacterService:Start()
 	Players.PlayerAdded:Connect(watchPlayer)
