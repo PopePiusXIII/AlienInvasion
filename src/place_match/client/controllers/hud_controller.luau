@@ -42,11 +42,16 @@ function HudController:Init()
 	Logger.info(TAG, "Match HUD parented to PlayerGui.")
 end
 
+local function onHealthUpdated(health: number, maxHealth: number)
+	_sources.healthPercent(health / math.max(1, maxHealth) * 100)
+end
+
 function HudController:Start()
 	local waveClearRemote = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
 	local coinsEarnedUpdatedRemote = Framework.GetRemote(RemoteNames.COINS_EARNED_UPDATED)
+	local healthUpdatedRemote = Framework.GetRemote(RemoteNames.PLAYER_HEALTH_UPDATED)
 
-	Logger.wrapClientEvent(waveClearRemote, TAG, function()
+	Logger.onClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
 		-- touches humanoid properties directly (clean separation of concerns).
 		CharacterController.boostStat("walkSpeed",   WaveConfig.WAVE_CLEAR_SPEED_BOOST)
@@ -64,9 +69,12 @@ function HudController:Start()
 		)
 	end)
 
-	Logger.wrapClientEvent(coinsEarnedUpdatedRemote, TAG, function(totalCoinsEarned: number)
+	Logger.onClientEvent(coinsEarnedUpdatedRemote, TAG, function(totalCoinsEarned: number)
 		_sources.xpPercent(math.max(0, math.floor(totalCoinsEarned)/50))
 	end)
+
+	Logger.onClientEvent(healthUpdatedRemote, TAG, onHealthUpdated)
+	
 
 	Logger.info(TAG, "HUD event listeners connected.")
 end

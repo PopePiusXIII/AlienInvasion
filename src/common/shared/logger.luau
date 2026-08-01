@@ -16,8 +16,8 @@ export type Logger = {
 	info: (tag: string, msg: string, ...any) -> (),
 	warn: (tag: string, msg: string, ...any) -> (),
 	verbose: (tag: string, msg: string, ...any) -> (),
-	wrapServerEvent: (remote: RemoteEvent, tag: string, handler: (player: Player, ...any) -> ()) -> RBXScriptConnection,
-	wrapClientEvent: (remote: RemoteEvent, tag: string, handler: (...any) -> ()) -> RBXScriptConnection,
+	onServerEvent: (remote: RemoteEvent, tag: string, handler: (player: Player, ...any) -> ()) -> RBXScriptConnection,
+	onClientEvent: (remote: RemoteEvent, tag: string, handler: (...any) -> ()) -> RBXScriptConnection,
 	fireClient: (remote: RemoteEvent, player: Player, ...any) -> (),
 	fireAllClients: (remote: RemoteEvent, ...any) -> (),
 	fireServer: (remote: RemoteEvent, ...any) -> (),
@@ -77,7 +77,7 @@ local function makeLogger(config: LoggerConfig): Logger
 			print(string.format("[VERBOSE][%s][%s] %s", timestamp(), tag, formatMessage(msg, ...)))
 		end,
 
-		wrapServerEvent = function(
+		onServerEvent = function(
 			remote: RemoteEvent,
 			tag: string,
 			handler: (player: Player, ...any) -> ()
@@ -91,7 +91,7 @@ local function makeLogger(config: LoggerConfig): Logger
 			end)
 		end,
 
-		wrapClientEvent = function(
+		onClientEvent = function(
 			remote: RemoteEvent,
 			tag: string,
 			handler: (...any) -> ()

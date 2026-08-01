@@ -113,6 +113,10 @@ local function getInventorySize(): number
 	return 2
 end
 
+local function getGunFamily(gunName: string): string
+	return gunName:match("^[^_]+_(.+)$") or gunName
+end
+
 local function getInventory(player: Player): { gunIds: { string }, equippedSlot: number? }
 	local uid = player.UserId
 	if not _playerInventories[uid] then
@@ -147,15 +151,48 @@ local function syncToClient(player: Player)
 		player.Name, #inv.gunIds, tostring(inv.equippedSlot))
 end
 
---- Rebuild in-match inventory from the player's profile.
-local function syncFromProfile(player: Player)
+--- Rebuild the two-slot in-match inventory from the player's profile.
+local function syncFromProfile(player: Player): number
 	local profileInventory = ProfileService.getInventory(player)
-	if not profileInventory then return end
+	if not profileInventory then return 0 end
 
 	local inv = getInventory(player)
 	inv.gunIds = {}
-	for _, instance in ipairs(profileInventory) do
+	local maxSize = getInventorySize()
+	local candidates = table.clone(profileInventory)
+	table.sort(candidates, function(left, right)
+		if left.name == right.name then
+			return left.id < right.id
+		end
+		return left.name < right.name
+	end)
+
+	local selectedIds: { [string]: boolean } = {}
+	local selectedFamilies: { [string]: boolean } = {}
+	local function selectGun(instance)
+		if #inv.gunIds >= maxSize or selectedIds[instance.id] then return end
 		table.insert(inv.gunIds, instance.id)
+		selectedIds[instance.id] = true
+		selectedFamilies[getGunFamily(instance.name)] = true
+	end
+
+	-- A profile is UUID-keyed, so use configured starters rather than table order.
+	for _, starterGunName in ipairs(CombatConfig.STARTER_GUNS) do
+		local starterFamily = getGunFamily(starterGunName)
+		for _, instance in ipairs(candidates) do
+			if getGunFamily(instance.name) == starterFamily then
+				selectGun(instance)
+				break
+			end
+		end
+	end
+
+	-- Fill open slots with one instance of each remaining gun family.
+	for _, instance in ipairs(candidates) do
+		if #inv.gunIds >= maxSize then break end
+		if not selectedFamilies[getGunFamily(instance.name)] then
+			selectGun(instance)
+		end
 	end
 	inv.equippedSlot = #inv.gunIds > 0 and 1 or nil
 
@@ -167,6 +204,7 @@ local function syncFromProfile(player: Player)
 	end
 
 	syncToClient(player)
+	return #profileInventory
 end
 
 --- Add a gun to the player's inventory.
@@ -293,7 +331,13 @@ function InventoryService.setEquippedSlot(player: Player, slot: number?)
         local tool = cloneWeaponAsTool(instance.name)
         if tool then
 			tool.Name = instance.name
-            tool.Parent = character
+			tool.Parent = player.Backpack
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				humanoid:EquipTool(tool)
+			else
+				tool.Parent = character
+			end
         end
     end
 
@@ -418,12 +462,11 @@ function InventoryService:Init()
 end
 
 local function grantStarterGunsToPlayer(player: Player)
-	-- Sync from profile first (restores persistent inventory)
-	syncFromProfile(player)
+	-- Persistent ownership is independent of the two-slot match hotbar.
+	local profileGunCount = syncFromProfile(player)
 
-	-- Grant starter guns if inventory is empty (first-time player)
-	local inv = getInventory(player)
-	if #inv.gunIds == 0 then
+	-- Grant starters only for a first-time profile, not for a full match hotbar.
+	if profileGunCount == 0 then
 		local starterGuns = CombatConfig.STARTER_GUNS or {}
 		for _, gunName in ipairs(starterGuns) do
 			InventoryService.addWeapon(player, gunName)
@@ -433,7 +476,7 @@ local function grantStarterGunsToPlayer(player: Player)
 end
 
 function InventoryService:Start()
-	Logger.wrapServerEvent(_inventoryEquipRemote, TAG, function(player: Player, slot: number?)
+	Logger.onServerEvent(_inventoryEquipRemote, TAG, function(player: Player, slot: number?)
 		InventoryService.setEquippedSlot(player, slot)
 	end)
 

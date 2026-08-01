@@ -125,7 +125,7 @@ end
 
 function SkillService:Start()
 	if _rngPickModifierRemote then
-		Logger.wrapServerEvent(_rngPickModifierRemote, TAG, function(player: Player, key: string)
+		Logger.onServerEvent(_rngPickModifierRemote, TAG, function(player: Player, key: string)
 			SkillService.apply(player, key)
 		end)
 	end

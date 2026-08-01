@@ -199,7 +199,7 @@ function EconomyService:Init()
 	_boltSpawnedRemote         = Framework.CreateRemote(RemoteNames.BOLT_SPAWNED)
 	_claimBoltRemote           = Framework.CreateRemote(RemoteNames.CLAIM_BOLT)
 
-	Logger.wrapServerEvent(_claimBoltRemote, TAG, function(player: Player, boltId: any)
+	Logger.onServerEvent(_claimBoltRemote, TAG, function(player: Player, boltId: any)
 		onClaimBolt(player, boltId)
 	end)
 end

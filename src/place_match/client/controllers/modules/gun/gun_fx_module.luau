@@ -32,8 +32,12 @@ local function findViewModelInstance(): Model?
 	if not _currentGunName then return nil end
 	local cam = workspace.CurrentCamera
 	if not cam then return nil end
-	local vm = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
+	local vm = cam:FindFirstChild(_currentGunName)
 	return (vm and vm:IsA("Model")) and vm :: Model or nil
+end
+
+local function removePrefix(inventoryName: string): string
+	return inventoryName:match("^[^_]+_(.+)$") or inventoryName
 end
 
 -- Helper: obtain or create an Animator for a viewmodel instance.
@@ -126,13 +130,7 @@ function GunFxModule.onGunEquipped(gun: Tool)
 		_cachedReloadSnd = reloadSnd :: Sound
 	end
 
-	local function removePrefix(inventoryName: string): string
-	-- transform common_name to just name
-    	return inventoryName:match("^[^_]+_(.+)$") or inventoryName
-	end
-
-	-- remember current gun name for viewmodel animation lookup
-	_currentGunName = gun and removePrefix(gun.Name) or nil
+	_currentGunName = removePrefix(gun.Name)
 
 	-- clear cached animator/track for the newly equipped gun (will be lazily initialized)
 	_cachedShootAnimObj = nil
@@ -148,12 +146,12 @@ function GunFxModule.onGunEquipped(gun: Tool)
 	do
 		local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
 		if viewModelsFolder then
-			local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
+			local template = viewModelsFolder:FindFirstChild(_currentGunName)
 			local animObj = template and (template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation"))
 			if animObj and animObj:IsA("Animation") then
 				local cam = workspace.CurrentCamera
 				if cam then
-					local vmInstance = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
+					local vmInstance = cam:FindFirstChild(_currentGunName)
 					if vmInstance and vmInstance:IsA("Model") then
 						local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
 						local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
@@ -215,7 +213,7 @@ local function ensureShootAnimationReady(): boolean
 	if not _cachedShootAnimObj then
 		local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
 		if viewModelsFolder then
-			local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
+			local template = viewModelsFolder:FindFirstChild(_currentGunName)
 			if template and template:IsA("Model") then
 				local animObj = template:FindFirstChild("shootAnimation") or template:FindFirstChild("ShootAnimation")
 				if animObj and animObj:IsA("Animation") then
@@ -298,7 +296,7 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
-	local template = viewModelsFolder:FindFirstChild(_currentGunName) or viewModelsFolder:FindFirstChild(string.lower(_currentGunName))
+	local template = viewModelsFolder:FindFirstChild(_currentGunName)
 	if not template or not template:IsA("Model") then
 		warn("GunFxModule.playReloadAnimation: no ViewModel template for gun '" .. tostring(_currentGunName) .. "' in replicated_storage.ViewModels")
 		return
@@ -328,7 +326,7 @@ function GunFxModule.playReloadAnimation()
 		return
 	end
 
-	local vmInstance = cam:FindFirstChild(_currentGunName) or cam:FindFirstChild(string.lower(_currentGunName))
+	local vmInstance = cam:FindFirstChild(_currentGunName)
 	if not vmInstance or not vmInstance:IsA("Model") then
 		warn("GunFxModule.playReloadAnimation: no viewmodel instance named '" .. tostring(_currentGunName) .. "' parented to Camera")
 		return

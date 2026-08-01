@@ -5,8 +5,8 @@
 return {
 	HEADSHOT_MULTIPLIER = 2.0,
 	STARTER_GUNS = {
-		"common_SCAR",
 		"common_1911",
+		"common_SCAR",
 	},
 	STARTER_UNLOCKED_WEAPONS = {
 		"common_1911",

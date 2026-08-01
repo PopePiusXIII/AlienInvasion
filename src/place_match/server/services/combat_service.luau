@@ -34,7 +34,7 @@ function combat_service:Init()
 	local shoot_remote = framework.CreateRemote(remote_names.SHOOT_GUN)
 	local hit_sound_remote = framework.CreateRemote(remote_names.ZOMBIE_HIT_SOUND)
 
-	logger.wrapServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
+	logger.onServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
 		if not zombie_model or not zombie_model:IsA("Model") then return end
 		local character = player.Character
 

@@ -124,7 +124,7 @@ function InventoryController:Start()
 
 	-- Listen for inventory sync from server
     Logger.info(TAG, "INVETORY SYNC REMOTE STARTED")
-	Logger.wrapClientEvent(_inventorySyncRemote, TAG, function(guns: { SyncedGun }, equippedSlot: number?)
+	Logger.onClientEvent(_inventorySyncRemote, TAG, function(guns: { SyncedGun }, equippedSlot: number?)
 		updateInventory(guns, equippedSlot)
 	end)
 
