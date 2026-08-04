@@ -14,7 +14,7 @@ local RNGController = {}
 RNGController.Name = TAG
 
 local _localPlayer: Player
-local _rngActivateRemote: RemoteFunction
+local _rngActivateRemote: RemoteEvent
 local _rngRequestGiveRemote: RemoteEvent
 
 local _gui: ScreenGui = RngHud
@@ -81,10 +81,14 @@ function RNGController:Init()
 end
 
 function RNGController:Start()
-    _rngActivateRemote = Framework.GetRemoteFunction(RemoteNames.RNG_ACTIVATE)
+    _rngActivateRemote = Framework.GetRemote(RemoteNames.RNG_ACTIVATE)
     _rngRequestGiveRemote = Framework.GetRemote(RemoteNames.RNG_REQUEST_GIVE)
 
     buildGui()
+
+    _rngActivateRemote.OnClientEvent:Connect(function()
+        showPrompt()
+    end)
 
     -- Read unlocked weapons from Player attribute (set by RNGService on server)
     local function readUnlockedList(): { string }
@@ -111,9 +115,8 @@ function RNGController:Start()
             local char = _localPlayer.Character
             if not char then return end
             if hit and hit:IsDescendantOf(char) then
-                Logger.info(TAG, "Touched RNG BLOCK — showing prompt + firing activate remote")
-                local items = _rngActivateRemote:InvokeServer()
-                showPrompt(items)
+                Logger.info(TAG, "Touched RNG BLOCK — showing prompt")
+                showPrompt()
             end
         end)
         _attachedRngParts[part] = conn

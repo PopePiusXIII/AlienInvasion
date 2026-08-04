@@ -21,31 +21,18 @@ local _rngRequestGiveRemote:  RemoteEvent
 
 function RngService:Init()
 	Logger.info(TAG, "Initialized.")
-	    _rngActivateRemote     = Framework.CreateRemoteFunction(RemoteNames.RNG_ACTIVATE)
+	    _rngActivateRemote     = Framework.CreateRemote(RemoteNames.RNG_ACTIVATE)
         _rngTopupRemote        = Framework.CreateRemote(RemoteNames.RNG_TOPUP_AMMO)
         _rngRequestGiveRemote  = Framework.CreateRemote(RemoteNames.RNG_REQUEST_GIVE)
 end
 
-function handleRngActivate(player: Player)
-	local player_modifiers = MatchProfileService.getModifierTypes(player)
-	local modifierNames: { string } = {}
-	for modifierName in pairs(player_modifiers) do
-		table.insert(modifierNames, modifierName)
-	end
-
-	local _random_3 = RngCore.selectRandom3(modifierNames)
-	
-
-end
-
-function random_3_items(player: Player): SkillTypes.ModifierOptions
-	return SkillService.getModifierTypes(player)
-	
+function RngService.activate(player: Player): SkillTypes.ModifierOptions
+	local modifierOptions = SkillService.getModifierTypes(player)
+	_rngActivateRemote:FireClient(player, modifierOptions)
+	return modifierOptions
 end
 
 function RngService:Start()
-	_rngActivateRemote.OnServerInvoke = handleRngActivate
-	_rngActivateRemote.OnServerInvoke = random_3_items
 end
 
 Framework.CreateService(RngService)

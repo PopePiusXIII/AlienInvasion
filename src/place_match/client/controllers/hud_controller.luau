@@ -46,10 +46,18 @@ local function onHealthUpdated(health: number, maxHealth: number)
 	_sources.healthPercent(health / math.max(1, maxHealth) * 100)
 end
 
+local function onExperienceUpdated(level: number, currentExperience: number, requiredExperience: number)
+	local normalizedRequiredExperience = math.max(1, math.floor(requiredExperience))
+	local normalizedCurrentExperience = math.max(0, math.floor(currentExperience))
+	_sources.currentXP(normalizedCurrentExperience)
+	_sources.requiredXP(normalizedRequiredExperience)
+	_sources.xpPercent(math.clamp(normalizedCurrentExperience / normalizedRequiredExperience, 0, 1))
+end
+
 function HudController:Start()
 	local waveClearRemote = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
-	local coinsEarnedUpdatedRemote = Framework.GetRemote(RemoteNames.COINS_EARNED_UPDATED)
 	local healthUpdatedRemote = Framework.GetRemote(RemoteNames.PLAYER_HEALTH_UPDATED)
+	local experienceUpdatedRemote = Framework.GetRemote(RemoteNames.EXPERIENCE_UPDATED)
 
 	Logger.onClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
@@ -69,12 +77,8 @@ function HudController:Start()
 		)
 	end)
 
-	Logger.onClientEvent(coinsEarnedUpdatedRemote, TAG, function(totalCoinsEarned: number)
-		_sources.xpPercent(math.max(0, math.floor(totalCoinsEarned)/50))
-	end)
-
 	Logger.onClientEvent(healthUpdatedRemote, TAG, onHealthUpdated)
-	
+	Logger.onClientEvent(experienceUpdatedRemote, TAG, onExperienceUpdated)
 
 	Logger.info(TAG, "HUD event listeners connected.")
 end

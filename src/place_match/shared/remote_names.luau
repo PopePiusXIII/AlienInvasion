@@ -13,6 +13,7 @@ return {
 	RUN_CURRENCY_UPDATED  = "RunCurrencyUpdated",
 	COINS_EARNED_UPDATED  = "CoinsEarnedUpdated",
 	PLAYER_HEALTH_UPDATED = "PlayerHealthUpdated",
+	EXPERIENCE_UPDATED    = "ExperienceUpdated",
 	REQUEST_SHOP_PURCHASE = "RequestShopPurchase",
 	SHOP_PURCHASE_RESULT  = "ShopPurchaseResult",
 	LOBBY_ECONOMY_SYNC    = "LobbyEconomySync",

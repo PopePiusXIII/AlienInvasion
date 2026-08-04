@@ -37,6 +37,7 @@ export type RunWallet = {
 }
 
 local _walletByPlayer: { [Player]: RunWallet } = {}
+local _boltCollected = Instance.new("BindableEvent")
 local _runCurrencyUpdatedRemote:  RemoteEvent
 local _coinsEarnedUpdatedRemote:  RemoteEvent
 local _requestShopPurchaseRemote: RemoteEvent
@@ -183,6 +184,7 @@ local function onClaimBolt(player: Player, boltId: any)
 	else
 		awardGold(player, record.amount)
 	end
+	_boltCollected:Fire(player, record.currencyName, record.amount)
 end
 
 function EconomyService:Init()
@@ -279,6 +281,10 @@ end
 
 function EconomyService.getRunSilver(player: Player): number
 	return getWallet(player).silverStuds
+end
+
+function EconomyService.onBoltCollected(callback: (Player, string, number) -> ()): RBXScriptConnection
+	return _boltCollected.Event:Connect(callback)
 end
 
 function EconomyService.spendSilver(player: Player, amount: number): (boolean, number)
