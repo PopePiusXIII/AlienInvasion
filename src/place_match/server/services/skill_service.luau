@@ -18,8 +18,8 @@ local Players = game:GetService("Players")
 local SkillProfile = require(replicated_storage.match.shared.types.skill_types)
 local Framework      = require(replicated_storage.common.shared.framework)
 local Logger         = require(replicated_storage.common.shared.logger)
-local RemoteNames    = require(replicated_storage.match.shared.remote_names)
 local ModifierConfig = require(replicated_storage.match.shared.configs.match_profile_config)
+local ModifierCategory = require(replicated_storage.match.shared.modifier_category)
 
 local TAG = "SkillService"
 local SkillService = {}
@@ -36,9 +36,11 @@ local function buildEmptyModifierProfile(): SkillProfile.SkillProfile
 		ammo_capacity = 1.0,
 		damage = 1.0,
 		fire_rate = 1.0,
+		bullet_penetration = false,
+		knockback = 1.0,
 	}
 	for _, entry in pairs(ModifierConfig) do
-		if entry.category == "gun" then
+		if entry.category == ModifierCategory.gun then
 			gun_modifier[entry.property] = 1.0
 		end
 	end
@@ -48,7 +50,7 @@ local function buildEmptyModifierProfile(): SkillProfile.SkillProfile
 		speed = 1.0,
 	}
 	for _, entry in pairs(ModifierConfig) do
-		if entry.category == "player" then
+		if entry.category == ModifierCategory.player then
 			player_modifier[entry.property] = 1.0
 		end
 	end
@@ -94,11 +96,11 @@ function SkillService.apply(player: Player, key: string)
 	ensureModifiers(player)
 	local profile = _playerModifiers[player]
 
-	if entry.category == "gun" then
+	if entry.category == ModifierCategory.gun then
 		local gunMod = profile.gun_modifier :: SkillProfile.GunModifier
 		gunMod[entry.property] = (gunMod[entry.property] or 1.0) * entry.value
 		Logger.info(TAG, "%s applied %s → gun.%s = %.2f", player.Name, key, entry.property, gunMod[entry.property])
-	elseif entry.category == "player" then
+	elseif entry.category == ModifierCategory.player then
 		local playerMod = profile.player_modifier :: SkillProfile.PlayerModifier
 		playerMod[entry.property] = (playerMod[entry.property] or 1.0) * entry.value
 		Logger.info(TAG, "%s applied %s → player.%s = %.2f", player.Name, key, entry.property, playerMod[entry.property])
@@ -110,25 +112,20 @@ end
 
 function SkillService.getModifierTypes(player: Player): SkillProfile.ModifierOptions
 	ensureModifiers(player)
-	return SkillProfile.into(_playerModifiers[player])
+	local modifiers: SkillProfile.ModifierOptions = {}
+	for key in pairs(ModifierConfig) do
+		table.insert(modifiers, key)
+	end
+	return modifiers
 end
--- ── Remote Handlers ──────────────────────────────────────────────────────────
-
-local _rngPickModifierRemote: RemoteEvent? = nil
 
 -- ── Lifecycle ────────────────────────────────────────────────────────────────
 
 function SkillService:Init()
-	_rngPickModifierRemote = Framework.CreateRemote(RemoteNames.RNG_PICK_MODIFIER)
 	Logger.info(TAG, "Initialized.")
 end
 
 function SkillService:Start()
-	if _rngPickModifierRemote then
-		Logger.onServerEvent(_rngPickModifierRemote, TAG, function(player: Player, key: string)
-			SkillService.apply(player, key)
-		end)
-	end
 	Players.PlayerRemoving:Connect(function(player: Player)
 		_playerModifiers[player] = nil
 	end)

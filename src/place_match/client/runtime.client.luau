@@ -17,7 +17,7 @@ require(controllers.hud_controller)
 require(controllers.inventory_controller)
 require(controllers.gun_controller)
 require(controllers.bolt_controller)
-require(controllers.rng_controller)
+require(controllers.rng_skill_controller)
 require(controllers.zombie_animation_controller)
 
 Logger.info("ClientRuntime", "Booting — 7 controllers registered.")

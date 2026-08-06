@@ -2,30 +2,29 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 local ContextActionService = game:GetService("ContextActionService")
 local vide  = require(replicated_storage.Packages.vide)
 local ImgButtonHighlight = require(replicated_storage.common.shared.vide.img_button_highlight)
+local MatchHUD = require(replicated_storage.match.ui.match_hud)
+local ModifierConfig = require(replicated_storage.match.shared.configs.match_profile_config)
 
 local create = vide.create
 local source = vide.source
-local effect = vide.effect
-local mount  = vide.mount
 local root   = vide.root
 local cleanup = vide.cleanup
 
 local ACTION_NAME = "RngHud_Select"
-
-local rngHud = create "ScreenGui" {
-    Name = "RngHud",
-    ResetOnSpawn = false,
-}
+local optionLabels = source({ "", "", "" })
+local selectionHandler: ((string) -> ())? = nil
+local optionImageButtons: { ImageButton } = {}
 
 local rngHudFrame = create "Frame" {
     Name = "Frame",
-    Parent = rngHud,
+    Parent = MatchHUD.gui,
     AnchorPoint = Vector2.new(0.5, 0.5),
     BackgroundColor3 = Color3.new(1, 1, 1),
     BorderColor3 = Color3.new(),
     BorderSizePixel = 0,
     Position = UDim2.fromScale(0.505834, 0.274347),
     Size = UDim2.fromScale(0.483333, 0.24537),
+	Visible = false,
 
     create "ImageLabel" {
         Name = "Black_Stud_Background",
@@ -138,9 +137,14 @@ local destroyRoot = root(function()
         },
     } do
         local index = #buttons + 1
-        local onActivated = function() print("scionara") end
+        local onActivated = function()
+            local option = optionLabels()[index]
+            if option and selectionHandler then
+                selectionHandler(option)
+            end
+        end
 
-        ImgButtonHighlight({
+        local imageButton = ImgButtonHighlight({
             parent = rngHudFrame,
             image = button.image,
             position = button.position,
@@ -151,10 +155,16 @@ local destroyRoot = root(function()
             end,
         })
 
+        table.insert(optionImageButtons, imageButton)
+
         table.insert(buttons, onActivated)
     end
 
     local function handleF(_, inputState)
+        if not rngHudFrame.Visible then
+            return Enum.ContextActionResult.Pass
+        end
+
         if inputState == Enum.UserInputState.Begin then
             if fHeld then
                 return Enum.ContextActionResult.Sink
@@ -201,6 +211,21 @@ local destroyRoot = root(function()
     end)
 end)
 
-rngHud.Destroying:Once(destroyRoot)
+MatchHUD.gui.Destroying:Once(destroyRoot)
 
-return rngHud
+local RngHud = {}
+
+function RngHud.show(options: { string }, onSelected: (string) -> ())
+    optionLabels(options)
+    for index, key in ipairs(options) do
+        optionImageButtons[index].Image = ModifierConfig[key].image
+    end
+    selectionHandler = function(option: string)
+        selectionHandler = nil
+        rngHudFrame.Visible = false
+        onSelected(option)
+    end
+    rngHudFrame.Visible = true
+end
+
+return RngHud
