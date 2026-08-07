@@ -14,6 +14,17 @@ local ACTION_NAME = "RngHud_Select"
 local optionLabels = source({ "", "", "" })
 local selectionHandler: ((string) -> ())? = nil
 local optionImageButtons: { ImageButton } = {}
+local inputState = {
+    fHeld = false,
+    holdToken = 0,
+    holdActivated = false,
+}
+
+local function resetInputState()
+    inputState.fHeld = false
+    inputState.holdActivated = false
+    inputState.holdToken += 1
+end
 
 local rngHudFrame = create "Frame" {
     Name = "Frame",
@@ -118,9 +129,6 @@ local rngHudFrame = create "Frame" {
 local destroyRoot = root(function()
     local selectedIndex = source(1)
     local buttons = {}
-    local fHeld = false
-    local holdToken = 0
-    local holdActivated = false
 
     for _, button in {
         {
@@ -160,37 +168,37 @@ local destroyRoot = root(function()
         table.insert(buttons, onActivated)
     end
 
-    local function handleF(_, inputState)
+    local function handleF(_, actionInputState)
         if not rngHudFrame.Visible then
             return Enum.ContextActionResult.Pass
         end
 
-        if inputState == Enum.UserInputState.Begin then
-            if fHeld then
+        if actionInputState == Enum.UserInputState.Begin then
+            if inputState.fHeld then
                 return Enum.ContextActionResult.Sink
             end
 
-            fHeld = true
-            holdActivated = false
-            holdToken += 1
-            local token = holdToken
+            inputState.fHeld = true
+            inputState.holdActivated = false
+            inputState.holdToken += 1
+            local token = inputState.holdToken
 
             task.delay(0.5, function()
-                if fHeld and holdToken == token then
-                    holdActivated = true
+                if inputState.fHeld and inputState.holdToken == token then
+                    inputState.holdActivated = true
                     buttons[selectedIndex()]()
                 end
             end)
-        elseif inputState == Enum.UserInputState.End then
-            if not fHeld then
+        elseif actionInputState == Enum.UserInputState.End or actionInputState == Enum.UserInputState.Cancel then
+            if not inputState.fHeld then
                 return Enum.ContextActionResult.Sink
             end
 
-            fHeld = false
-            holdToken += 1
+            inputState.fHeld = false
+            inputState.holdToken += 1
 
-            if not holdActivated then
-                selectedIndex(selectedIndex() % #buttons + 1)
+            if not inputState.holdActivated then
+                     selectedIndex(selectedIndex() % #buttons + 1)
             end
         end
 
@@ -222,6 +230,7 @@ function RngHud.show(options: { string }, onSelected: (string) -> ())
     end
     selectionHandler = function(option: string)
         selectionHandler = nil
+		resetInputState()
         rngHudFrame.Visible = false
         onSelected(option)
     end

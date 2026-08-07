@@ -15,9 +15,4 @@ export type ColorSources = {
 	bossStrokeRed: vide.Source<Color3>,
 }
 
-export type Skill = {
-	name: string,
-	image: string,
-}
-
 return {}

@@ -7,6 +7,8 @@ local KillsCoins = require(components.kills_coins)
 local SkillsTree = require(components.skills_tree)
 local Timer = require(components.timer)
 local XpBar = require(components.xp_bar)
+local ComponentTypes = require(components.component_types)
+local SkillTypes = require(replicated_storage.match.shared.types.skill_types)
 
 local create = vide.create
 local root = vide.root
@@ -33,28 +35,7 @@ local kills = source(1000)
 local coins = source(0)
 local activeWeaponAmmoText = source("10/30")
 local activeWeaponAmmoColor = source(colors.black())
-local skills = source({
-	{
-		name = "Skill 1",
-		image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
-	},
-	{
-		name = "Skill 2",
-		image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
-	},
-	{
-		name = "Skill 3",
-		image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
-	},
-	{
-		name = "Skill 4",
-		image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
-	},
-	{
-		name = "Skill 5",
-		image = "rbxasset://textures/ui/GuiImagePlaceholder.png",
-	},
-})
+local skills = source({} :: SkillTypes.OwnedSkills)
 
 local destroyRoot, matchHud = root(function()
 	return create "ScreenGui" {

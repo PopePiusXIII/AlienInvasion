@@ -6,6 +6,10 @@ export type GunModifier = {
 	ammo_capacity: number,
 	damage: number,
 	fire_rate: number,
+	bullet_penetration: boolean,
+	knockback: number,
+	
+
 }
 
 export type PlayerModifier = {
@@ -14,6 +18,13 @@ export type PlayerModifier = {
 }
 
 export type ModifierOptions = { string } -- Array of strings
+
+export type OwnedSkill = {
+	key: string,
+	level: number,
+}
+
+export type OwnedSkills = { OwnedSkill }
 
 export type SkillProfile = {
 	gun_modifier: GunModifier,

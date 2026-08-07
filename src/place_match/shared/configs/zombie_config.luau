@@ -2,7 +2,7 @@
 return {
 	ZOMBIE_TYPES = {
 		Normal  = {
-			MaxHealth = 50,
+			MaxHealth = 5,
 			WalkSpeed = 14,
 			TouchDamage = 10,
 			Template = "Normal_Zombie",

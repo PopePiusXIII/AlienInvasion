@@ -26,6 +26,7 @@ return {
 	RNG_REQUEST_GIVE       = "RNGRequestGive",
 	RNG_TOPUP_AMMO         = "RNGTopupAmmo",
 	RNG_PICK_MODIFIER      = "RNGPickModifier",
+	SKILLS_SYNC            = "SkillsSync",
 	BOLT_SPAWNED           = "BoltSpawned",
 	CLAIM_BOLT             = "ClaimBolt",
 	ZOMBIE_HIT_SOUND       = "ZombieHitSound",

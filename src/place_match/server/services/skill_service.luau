@@ -20,6 +20,7 @@ local Framework      = require(replicated_storage.common.shared.framework)
 local Logger         = require(replicated_storage.common.shared.logger)
 local ModifierConfig = require(replicated_storage.match.shared.configs.match_profile_config)
 local ModifierCategory = require(replicated_storage.match.shared.modifier_category)
+local RemoteNames = require(replicated_storage.match.shared.remote_names)
 
 local TAG = "SkillService"
 local SkillService = {}
@@ -27,7 +28,10 @@ SkillService.Name = TAG
 -- ── State ────────────────────────────────────────────────────────────────────
 
 local _playerModifiers: { [Player]: SkillProfile.SkillProfile } = {}
+local _ownedSkillLevels: { [Player]: { [string]: number } } = {}
+local _ownedSkillOrder: { [Player]: { string } } = {}
 local _healthModifierChanged = Instance.new("BindableEvent")
+local _skillsSyncRemote: RemoteEvent
 
 
 local function buildEmptyModifierProfile(): SkillProfile.SkillProfile
@@ -61,7 +65,28 @@ end
 local function ensureModifiers(player: Player)
 	if _playerModifiers[player] then return end
 	_playerModifiers[player] = buildEmptyModifierProfile()
+	_ownedSkillLevels[player] = {}
+	_ownedSkillOrder[player] = {}
 	Logger.info(TAG, "Initialized modifier profile for %s.", player.Name)
+end
+
+local function getOwnedSkills(player: Player): SkillProfile.OwnedSkills
+	ensureModifiers(player)
+	local skills: SkillProfile.OwnedSkills = {}
+	local levels = _ownedSkillLevels[player]
+
+	for _, key in ipairs(_ownedSkillOrder[player]) do
+		table.insert(skills, {
+			key = key,
+			level = levels[key],
+		})
+	end
+
+	return skills
+end
+
+local function syncOwnedSkills(player: Player)
+	_skillsSyncRemote:FireClient(player, getOwnedSkills(player))
 end
 
 -- ── Public API ───────────────────────────────────────────────────────────────
@@ -95,6 +120,12 @@ function SkillService.apply(player: Player, key: string)
 
 	ensureModifiers(player)
 	local profile = _playerModifiers[player]
+	local levels = _ownedSkillLevels[player]
+	if not levels[key] then
+		levels[key] = 0
+		table.insert(_ownedSkillOrder[player], key)
+	end
+	levels[key] += 1
 
 	if entry.category == ModifierCategory.gun then
 		local gunMod = profile.gun_modifier :: SkillProfile.GunModifier
@@ -108,6 +139,8 @@ function SkillService.apply(player: Player, key: string)
 			_healthModifierChanged:Fire(player, playerMod.health)
 		end
 	end
+
+	syncOwnedSkills(player)
 end
 
 function SkillService.getModifierTypes(player: Player): SkillProfile.ModifierOptions
@@ -122,13 +155,18 @@ end
 -- ── Lifecycle ────────────────────────────────────────────────────────────────
 
 function SkillService:Init()
+	_skillsSyncRemote = Framework.CreateRemote(RemoteNames.SKILLS_SYNC)
 	Logger.info(TAG, "Initialized.")
 end
 
+local function onPlayerRemoving(player: Player)
+	_playerModifiers[player] = nil
+	_ownedSkillLevels[player] = nil
+	_ownedSkillOrder[player] = nil
+end
+
 function SkillService:Start()
-	Players.PlayerRemoving:Connect(function(player: Player)
-		_playerModifiers[player] = nil
-	end)
+	Players.PlayerRemoving:Connect(onPlayerRemoving)
 	Logger.info(TAG, "Listeners connected.")
 end
 
