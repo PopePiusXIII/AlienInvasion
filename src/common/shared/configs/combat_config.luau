@@ -108,7 +108,7 @@ return {
 	["common_1911"] = {
 		rarity           = "common",
 		damage           = 28,
-		image            = "rbxassetid://0",
+		image            = "rbxassetid://87276978756456",
 		range            = 400,
 		fireCooldown     = 0.2,
 		magSize          = 8,
@@ -1104,7 +1104,7 @@ return {
 		rarity           = "common",
 		damage           = 35,
 		gold_cost        = 550,
-		image            = "rbxassetid://0",
+		image            = "rbxassetid://85630207697247",
 		range            = 1500,
 		fireCooldown     = 0.09,
 		magSize          = 30,

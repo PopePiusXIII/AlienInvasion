@@ -15,7 +15,6 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
-local CombatConfig  = require(replicated_storage.common.shared.configs.combat_config)
 local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 local HudController = require(replicated_storage.match.client.controllers.hud_controller)
@@ -57,13 +56,8 @@ local _camera = workspace.CurrentCamera
 local _reserveAmmoByGun: { [string]: number } = {}
 
 local MAX_VERTICAL_AIM_RADIANS = math.rad(35)
-local DEFAULT_GUN_STATS = CombatConfig.GUN_STATS["common_1911"] :: GunModule.Gun
 
-local function getGunStats(gunName: string?): GunModule.Gun
-	if not gunName then
-		return DEFAULT_GUN_STATS
-	end
-
+local function getGunStats(gunName: string): GunModule.Gun
 	local guns = InventoryController.getGuns()
 	for _, g in ipairs(guns) do
 		if g.name == gunName then
@@ -71,21 +65,10 @@ local function getGunStats(gunName: string?): GunModule.Gun
 		end
 	end
 
-	-- A Tool can equip before the initial InventorySync reaches the client.
-	-- Use its base common stats until the server-resolved stats are available.
-	local baseStats = CombatConfig.GUN_STATS[gunName]
-		or CombatConfig.GUN_STATS["common_" .. gunName]
-
-	if baseStats then
-		return baseStats :: GunModule.Gun
-	end
-
-	Logger.warn(TAG, "No stats found for equipped gun '%s'; using 1911 defaults.", gunName)
-	return DEFAULT_GUN_STATS
+	error(string.format("Missing synchronized stats for gun '%s'", gunName))
 end
 
-local function getReserveAmmo(gunName: string?): number
-	if not gunName then return 0 end
+local function getReserveAmmo(gunName: string): number
 	if _reserveAmmoByGun[gunName] == nil then
 		local stats = getGunStats(gunName)
 		_reserveAmmoByGun[gunName] = stats.max_ammo
@@ -93,14 +76,11 @@ local function getReserveAmmo(gunName: string?): number
 	return _reserveAmmoByGun[gunName]
 end
 
-local function setReserveAmmo(gunName: string?, value: number)
-	if not gunName then return end
-	_reserveAmmoByGun[gunName] = math.max(0, math.floor(value or 0))
+local function setReserveAmmo(gunName: string, value: number)
+	_reserveAmmoByGun[gunName] = math.max(0, math.floor(value))
 end
 
-local function getCurrentAmmo(): number
-	if not _equippedGun then return 0 end
-	local gunName = _equippedGun.Name
+local function getCurrentAmmo(gunName: string): number
 	local stats = getGunStats(gunName)
 	if _ammoByGun[gunName] == nil then
 		_ammoByGun[gunName] = stats.magSize
@@ -108,83 +88,98 @@ local function getCurrentAmmo(): number
 	return _ammoByGun[gunName]
 end
 
-local function setCurrentAmmo(value: number)
-	if not _equippedGun then return end
-	_ammoByGun[_equippedGun.Name] = value
+local function setCurrentAmmo(gunName: string, value: number)
+	_ammoByGun[gunName] = value
 end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
+local function refreshGunAmmoDisplay(gunName: string)
+	local ammo = getCurrentAmmo(gunName)
+	local reserve = getReserveAmmo(gunName)
+	local color = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
+	HudController.setActiveWeaponAmmo(gunName, ammo, reserve)
+	HudController.setAmmoText(gunName, string.format("%d / %d", ammo, math.max(0, math.floor(reserve))), color)
+end
+
 local function refreshAmmoDisplay()
-	local ammo = getCurrentAmmo()
 	if not _equippedGun then
-		HudController.setAmmoText("", Color3.new(1, 1, 1))
-		HudController.setActiveWeaponAmmo(0, 0)
 		return
 	end
 
-	local reserve = getReserveAmmo(_equippedGun.Name)
-	HudController.setActiveWeaponAmmo(ammo, reserve)
+	local gunName = _equippedGun.Name
 
 	if _isReloading then
-		HudController.setAmmoText("RELOADING...", Color3.new(1, 0.6, 0))
+		local ammo = getCurrentAmmo(gunName)
+		local reserve = getReserveAmmo(gunName)
+		HudController.setActiveWeaponAmmo(gunName, ammo, reserve)
+		HudController.setAmmoText(gunName, "RELOADING...", Color3.new(1, 0.6, 0))
 		return
 	end
-	local color = ammo > 0 and Color3.new(1, 1, 1) or Color3.new(1, 0.2, 0.2)
-	HudController.setAmmoText(string.format("%d / %d", ammo, math.max(0, math.floor(reserve))), color)
+	refreshGunAmmoDisplay(gunName)
+end
+
+local function playReloadCycle(duration: number)
+	local track = GunFxModule.playReloadAnimation(duration)
+	track.Stopped:Wait()
 end
 
 local function reload()
 	if not _equippedGun then return end
 	local reloadingGun = _equippedGun
-	local stats = getGunStats(reloadingGun.Name)
-	if _isReloading or getCurrentAmmo() == stats.magSize then return end
+	local reloadingGunName = reloadingGun.Name
+	local stats = getGunStats(reloadingGunName)
+	if _isReloading or getCurrentAmmo(reloadingGunName) == stats.magSize then return end
 	-- Nothing to reload from reserve for this gun
-	local reserve = getReserveAmmo(reloadingGun.Name)
+	local reserve = getReserveAmmo(reloadingGunName)
 	if reserve <= 0 then return end
 	_isReloading = true
 	refreshAmmoDisplay()
 
 	if stats.isShotgun then
 		-- Shotgun: play reload animation once per shell needed to fill the mag.
-		local shellsNeeded = stats.magSize - getCurrentAmmo()
+		local shellsNeeded = stats.magSize - getCurrentAmmo(reloadingGunName)
 		local timePerShell = stats.reloadTime / stats.magSize
 		for _i = 1, shellsNeeded do
-			local reserveNow = getReserveAmmo(reloadingGun.Name)
+			if _equippedGun ~= reloadingGun then
+				_isReloading = false
+				refreshGunAmmoDisplay(reloadingGunName)
+				return
+			end
+
+			local reserveNow = getReserveAmmo(reloadingGunName)
 			if reserveNow <= 0 then break end
-			local track = GunFxModule.playReloadAnimation()
+			playReloadCycle(timePerShell)
+			if _equippedGun ~= reloadingGun then
+				_isReloading = false
+				refreshGunAmmoDisplay(reloadingGunName)
+				return
+			end
 			-- consume one shell from reserve
 			local loadAmount = math.min(1, reserveNow)
-			setCurrentAmmo(getCurrentAmmo() + loadAmount)
-			setReserveAmmo(reloadingGun.Name, reserveNow - loadAmount)
+			setCurrentAmmo(reloadingGunName, getCurrentAmmo(reloadingGunName) + loadAmount)
+			setReserveAmmo(reloadingGunName, reserveNow - loadAmount)
 			refreshAmmoDisplay()
-			local waitTime
-			if track and track.Length and track.Length > 0 then
-				waitTime = track.Length
-			else
-				waitTime = timePerShell
-			end
-			task.wait(waitTime)
 		end
 	else
 		-- Standard gun: single reload animation for the whole mag.
-		local missing = stats.magSize - getCurrentAmmo()
-		local reserveNow = getReserveAmmo(reloadingGun.Name)
+		local missing = stats.magSize - getCurrentAmmo(reloadingGunName)
+		local reserveNow = getReserveAmmo(reloadingGunName)
 		local amountToLoad = math.min(missing, math.max(0, math.floor(reserveNow)))
 		if amountToLoad <= 0 then
 			_isReloading = false
 			refreshAmmoDisplay()
 			return
 		end
-		local track = GunFxModule.playReloadAnimation()
-		local waitTime = stats.reloadTime
-		if track and track.Length and track.Length > 0 then
-			waitTime = track.Length
+		playReloadCycle(stats.reloadTime)
+		if _equippedGun ~= reloadingGun then
+			_isReloading = false
+			refreshGunAmmoDisplay(reloadingGunName)
+			return
 		end
-		task.wait(waitTime)
 		-- apply loaded ammo after animation
-		setCurrentAmmo(getCurrentAmmo() + amountToLoad)
-		setReserveAmmo(reloadingGun.Name, reserveNow - amountToLoad)
+		setCurrentAmmo(reloadingGunName, getCurrentAmmo(reloadingGunName) + amountToLoad)
+		setReserveAmmo(reloadingGunName, reserveNow - amountToLoad)
 		refreshAmmoDisplay()
 	end
 
@@ -192,31 +187,33 @@ local function reload()
 	refreshAmmoDisplay()
 end
 
-local function castShot(origin: Vector3)
-	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
+local function castShot(origin: Vector3, gunName: string)
+	local stats = getGunStats(gunName)
 	return GunHitScanModule.castShot(_mouse, _localPlayer.Character, origin, stats.range)
 end
 
 local function fire(): boolean
-	local stats = getGunStats(_equippedGun and _equippedGun.Name or nil)
 	local character = _localPlayer.Character
 	if _isOnFireCooldown or _isReloading or not _equippedGun or not character then return false end
 
 	local hrp = _cachedHrp
 	if not hrp then return false end
 
-	local ammo = getCurrentAmmo()
+	local gunName = _equippedGun.Name
+	local stats = getGunStats(gunName)
+	local ammo = getCurrentAmmo(gunName)
 	if ammo <= 0 then
 		task.spawn(reload)
 		return false
 	end
 
 	_isOnFireCooldown = true
-	setCurrentAmmo(ammo - 1)
+	setCurrentAmmo(gunName, ammo - 1)
 	refreshAmmoDisplay()
 
-	local origin: Vector3 = _cachedMuzzle and _cachedMuzzle.Position or (hrp :: BasePart).Position
-	local result = castShot(origin)
+	local muzzle = assert(_cachedMuzzle, string.format("Missing muzzle for gun '%s'", gunName))
+	local origin = muzzle.Position
+	local result = castShot(origin, gunName)
 	local hitPosition = result.hitPosition
 	local hitZombie = result.hitZombie
 	local isHeadshot = result.isHeadshot
@@ -399,6 +396,9 @@ local function onGunEquipped(gun: Tool)
 	GunFxModule.setCachedMuzzle(_cachedMuzzle)
 	startAimPitchTracking(gun)
 	refreshAmmoDisplay()
+	if getCurrentAmmo(gun.Name) == 0 then
+		task.spawn(reload)
+	end
 end
 
 local function onGunUnequipped()
@@ -414,6 +414,7 @@ local function onGunUnequipped()
 	stopAimPitchTracking()
 	stopViewModeTracking()
 	_cachedMuzzle = nil
+	GunFxModule.stopReloadAnimation()
 	GunViewModelModule.onGunUnequipped()
 	GunFxModule.onGunUnequipped()
 	_equippedGun = nil
@@ -485,17 +486,16 @@ function GunController:Start()
 
 	-- Top-up ammo remote for RNG hits where player rolled an already-equipped weapon
 	local _rngTopupRemote: RemoteEvent = Framework.GetRemote(RemoteNames.RNG_TOPUP_AMMO)
-	_rngTopupRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number?, maxAmmo: number?)
-		if type(weaponName) ~= "string" then return end
-		local stats = getGunStats(weaponName)
-		local mag = magSize or (stats and stats.magSize) or 0
-		local reserve = maxAmmo or (stats and stats.max_ammo) or getReserveAmmo(weaponName)
-		setReserveAmmo(weaponName, reserve)
+	_rngTopupRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number, maxAmmo: number)
+		assert(type(weaponName) == "string", "RNG top-up requires a weapon name")
+		assert(type(magSize) == "number", "RNG top-up requires a magazine size")
+		assert(type(maxAmmo) == "number", "RNG top-up requires a reserve ammo count")
+		setReserveAmmo(weaponName, maxAmmo)
 		if _equippedGun and _equippedGun.Name == weaponName then
-			setCurrentAmmo(mag)
+			setCurrentAmmo(weaponName, magSize)
 			refreshAmmoDisplay()
 		end
-		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, mag, reserve)
+		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, magSize, maxAmmo)
 	end)
 
 	InventoryController.onInventoryChanged(onInventoryChanged)

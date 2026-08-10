@@ -74,6 +74,15 @@ local function tryLoadAnimationTrack(animator: Animator, animObj: Animation): An
 	return nil
 end
 
+local function hasValidCachedReloadTrack(): boolean
+	if not _cachedReloadTrack or not _cachedReloadAnimator then
+		return false
+	end
+
+	local animatorParent = _cachedReloadAnimator.Parent
+	return animatorParent ~= nil and animatorParent.Parent ~= nil
+end
+
 local function spawnTemplateMuzzleFlash(muzzle: BasePart, muzzleDelay: number): boolean
 	if not muzzleFlashTemplate then return false end
 	if not muzzleFlashTemplate:IsA("BasePart") then return false end
@@ -284,85 +293,64 @@ function GunFxModule.playShootAnimation()
 	end
 end
 
-function GunFxModule.playReloadAnimation()
-	if not _currentGunName then
-		warn("GunFxModule.playReloadAnimation: no current gun name set")
-		return
+function GunFxModule.playReloadAnimation(targetDuration: number): AnimationTrack
+	assert(targetDuration > 0, string.format("Reload duration must be positive, got %f", targetDuration))
+
+	local gunName = assert(_currentGunName, "Cannot play reload animation without an equipped gun")
+	local viewModelsFolder = assert(
+		replicated_storage:FindFirstChild("ViewModels"),
+		"Missing replicated_storage.ViewModels required for reload animation"
+	)
+	local template = assert(
+		viewModelsFolder:FindFirstChild(gunName),
+		string.format("Missing ViewModel template for gun '%s'", gunName)
+	)
+	assert(template:IsA("Model"), string.format("ViewModel template for gun '%s' must be a Model", gunName))
+
+	local animation = template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation")
+	assert(
+		animation and animation:IsA("Animation"),
+		string.format("ViewModel template for gun '%s' is missing a reload Animation", gunName)
+	)
+
+	local track: AnimationTrack
+	if hasValidCachedReloadTrack() then
+		track = assert(_cachedReloadTrack, "Validated reload track unexpectedly missing")
+	else
+		local cam = assert(workspace.CurrentCamera, "Missing workspace.CurrentCamera for reload animation")
+		local vmInstance = assert(
+			cam:FindFirstChild(gunName),
+			string.format("Missing camera-mounted ViewModel instance for gun '%s'", gunName)
+		)
+		assert(vmInstance:IsA("Model"), string.format("Camera ViewModel for gun '%s' must be a Model", gunName))
+		local animator = assert(
+			getAnimatorForVm(vmInstance),
+			string.format("Missing Animator for ViewModel '%s'", vmInstance.Name)
+		)
+		track = animator:LoadAnimation(animation :: Animation)
+		_cachedReloadAnimator = animator
+		_cachedReloadTrack = track
 	end
 
-	local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
-	if not viewModelsFolder then
-		warn("GunFxModule.playReloadAnimation: replicated_storage.ViewModels not found")
-		return
-	end
-
-	local template = viewModelsFolder:FindFirstChild(_currentGunName)
-	if not template or not template:IsA("Model") then
-		warn("GunFxModule.playReloadAnimation: no ViewModel template for gun '" .. tostring(_currentGunName) .. "' in replicated_storage.ViewModels")
-		return
-	end
-
-	local animObj = template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation")
-	if not animObj or not animObj:IsA("Animation") then
-		warn("GunFxModule.playReloadAnimation: ViewModel template for '" .. tostring(_currentGunName) .. "' has no Animation named 'reloadAnimation' or 'ReloadAnimation'")
-		return
-	end
-
-	-- If we already have a cached reload track with a valid animator, reuse it
-	if _cachedReloadTrack and _cachedReloadAnimator and _cachedReloadAnimator.Parent and _cachedReloadAnimator.Parent.Parent then
-		_cachedReloadTrack:Play()
-		-- Play reload sound alongside the animation if available
-		if _cachedReloadSnd then
-			_cachedReloadSnd.TimePosition = 0
-			_cachedReloadSnd:Play()
-		end
-		return _cachedReloadTrack
-	end
-
-	-- Play the animation on the camera-mounted viewmodel instance (if present)
-	local cam = workspace.CurrentCamera
-	if not cam then
-		warn("GunFxModule.playReloadAnimation: workspace.CurrentCamera is nil")
-		return
-	end
-
-	local vmInstance = cam:FindFirstChild(_currentGunName)
-	if not vmInstance or not vmInstance:IsA("Model") then
-		warn("GunFxModule.playReloadAnimation: no viewmodel instance named '" .. tostring(_currentGunName) .. "' parented to Camera")
-		return
-	end
-
-	-- Use shared helpers to resolve animator and load the reload track
-	local vm = findViewModelInstance()
-	if not vm then
-		warn("GunFxModule.playReloadAnimation: no viewmodel instance named '" .. tostring(_currentGunName) .. "' parented to Camera")
-		return
-	end
-
-	local animator = getAnimatorForVm(vm)
-	if not animator then
-		warn("GunFxModule.playReloadAnimation: failed to obtain Animator for viewmodel '" .. tostring(vm.Name) .. "'")
-		return
-	end
-
-	local track = tryLoadAnimationTrack(animator, animObj)
-	if not track then
-		warn("GunFxModule.playReloadAnimation: failed to load animation track for '" .. tostring(_currentGunName) .. "'")
-		return
-	end
-
-	_cachedReloadAnimator = animator
-	_cachedReloadTrack = track
-
+	assert(track.Length > 0, string.format("Reload animation for gun '%s' has no duration", gunName))
+	track:Stop(0)
+	track.TimePosition = 0
+	track:AdjustSpeed(track.Length / targetDuration)
 	track:Play()
 
-	-- Play reload sound alongside the animation
 	if _cachedReloadSnd then
 		_cachedReloadSnd.TimePosition = 0
 		_cachedReloadSnd:Play()
 	end
 
 	return track
+end
+
+function GunFxModule.stopReloadAnimation()
+	if _cachedReloadTrack then
+		_cachedReloadTrack:Stop(0)
+		_cachedReloadTrack.TimePosition = 0
+	end
 end
 
 function GunFxModule.drawTracer(origin: Vector3, hitPosition: Vector3, tracerStyle: GunTracerStyle)

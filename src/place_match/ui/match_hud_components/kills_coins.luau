@@ -16,7 +16,7 @@ local function KillsCoins(props: Props): Frame
 	return create "Frame" {
 		Name = "Kills",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromScale(0.0108309, 0.0549432),
+		Position = UDim2.fromScale(0.0108309, 0.07),
 		Size = UDim2.fromScale(0.130317, 0.0825394),
 
 		create "UIAspectRatioConstraint" {

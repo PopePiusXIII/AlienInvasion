@@ -6,6 +6,7 @@ local HealthBar = require(components.health_bar)
 local KillsCoins = require(components.kills_coins)
 local SkillsTree = require(components.skills_tree)
 local Timer = require(components.timer)
+local WeaponTiles = require(components.weapon_tiles)
 local XpBar = require(components.xp_bar)
 local ComponentTypes = require(components.component_types)
 local SkillTypes = require(replicated_storage.match.shared.types.skill_types)
@@ -33,9 +34,10 @@ local xpPercent = source(0.3)
 local timerSeconds = source(300)
 local kills = source(1000)
 local coins = source(0)
-local activeWeaponAmmoText = source("10/30")
-local activeWeaponAmmoColor = source(colors.black())
+local ammoTextByGun = source({} :: { [string]: string })
+local ammoColorByGun = source({} :: { [string]: Color3 })
 local skills = source({} :: SkillTypes.OwnedSkills)
+local guns = source({} :: { WeaponTiles.GunSlot })
 
 local destroyRoot, matchHud = root(function()
 	return create "ScreenGui" {
@@ -69,136 +71,12 @@ local destroyRoot, matchHud = root(function()
 				xpPercent = xpPercent,
 			}),
 
-			create "Frame" {
-				Name = "Weapons",
-				AnchorPoint = Vector2.new(0.5, 0),
-				BackgroundTransparency = 1,
-				Position = UDim2.fromScale(0.5, 0.898148),
-				Size = UDim2.fromOffset(338, 110),
-
-				create "CanvasGroup" {
-					Name = "CanvasGroup",
-					AnchorPoint = Vector2.new(0, 0.5),
-					BackgroundColor3 = colors.white,
-					Position = UDim2.fromScale(0, 0.5),
-					Size = UDim2.fromOffset(100, 100),
-
-					create "UICorner" {
-						Name = "UICorner",
-						BottomLeftRadius = UDim.new(0.1, 0),
-						BottomRightRadius = UDim.new(0.1, 0),
-						TopLeftRadius = UDim.new(0.1, 0),
-						TopRightRadius = UDim.new(0.1, 0),
-					},
-
-					create "TextLabel" {
-						Name = "TextLabel",
-						AnchorPoint = Vector2.new(0.5, 0),
-						BackgroundTransparency = 1,
-						FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json"),
-					Position = UDim2.fromScale(0.5, 0.538128),
-					Size = UDim2.fromOffset(200, 50),
-					Text = activeWeaponAmmoText,
-					TextColor3 = activeWeaponAmmoColor,
-						TextSize = 14,
-						ZIndex = 2,
-					},
-
-					create "ImageButton" {
-						Name = "ImageButton",
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundColor3 = colors.white,
-						BorderColor3 = colors.black,
-						BorderSizePixel = 0,
-						Image = "rbxassetid://83770969993177",
-						ImageColor3 = colors.white,
-						Position = UDim2.fromScale(0.5, 0.5),
-						Size = UDim2.fromScale(1, 1),
-					},
-				},
-
-				create "CanvasGroup" {
-					Name = "CanvasGroup",
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					BackgroundColor3 = colors.white,
-					Position = UDim2.fromScale(0.5, 0.5),
-					Size = UDim2.fromOffset(100, 100),
-
-					create "UICorner" {
-						Name = "UICorner",
-						BottomLeftRadius = UDim.new(0.1, 0),
-						BottomRightRadius = UDim.new(0.1, 0),
-						TopLeftRadius = UDim.new(0.1, 0),
-						TopRightRadius = UDim.new(0.1, 0),
-					},
-
-					create "TextLabel" {
-						Name = "TextLabel",
-						AnchorPoint = Vector2.new(0.5, 0),
-						BackgroundTransparency = 1,
-						FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json"),
-						Position = UDim2.fromScale(0.5, 0.538128),
-						Size = UDim2.fromOffset(200, 50),
-						Text = "10/30",
-						TextColor3 = colors.black,
-						TextSize = 14,
-						ZIndex = 2,
-					},
-
-					create "ImageButton" {
-						Name = "ImageButton",
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundColor3 = colors.white,
-						BorderColor3 = colors.black,
-						BorderSizePixel = 0,
-						Image = "rbxassetid://83770969993177",
-						ImageColor3 = colors.white,
-						Position = UDim2.fromScale(0.5, 0.5),
-						Size = UDim2.fromScale(1, 1),
-					},
-				},
-
-				create "CanvasGroup" {
-					Name = "CanvasGroup",
-					AnchorPoint = Vector2.new(1, 0.5),
-					BackgroundColor3 = colors.white,
-					Position = UDim2.fromScale(1, 0.5),
-					Size = UDim2.fromOffset(100, 100),
-
-					create "UICorner" {
-						Name = "UICorner",
-						BottomLeftRadius = UDim.new(0.1, 0),
-						BottomRightRadius = UDim.new(0.1, 0),
-						TopLeftRadius = UDim.new(0.1, 0),
-						TopRightRadius = UDim.new(0.1, 0),
-					},
-
-					create "TextLabel" {
-						Name = "TextLabel",
-						AnchorPoint = Vector2.new(0.5, 0),
-						BackgroundTransparency = 1,
-						FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json"),
-						Position = UDim2.fromScale(0.5, 0.538128),
-						Size = UDim2.fromOffset(200, 50),
-						Text = "10/30",
-						TextColor3 = colors.black,
-						TextSize = 14,
-						ZIndex = 2,
-					},
-
-					create "ImageButton" {
-						Name = "ImageButton",
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundColor3 = colors.white,
-						BorderColor3 = colors.black,
-						BorderSizePixel = 0,
-						Image = "rbxassetid://83770969993177",
-						ImageColor3 = colors.white,
-						Position = UDim2.fromScale(0.5, 0.5),
-						Size = UDim2.fromScale(1, 1),
-					},
-				},
-			},
+			WeaponTiles({
+				ammoColorByGun = ammoColorByGun,
+				ammoTextByGun = ammoTextByGun,
+				colors = colors,
+				guns = guns,
+			}),
 
 			KillsCoins({
 				coins = coins,
@@ -303,14 +181,15 @@ matchHud.Destroying:Once(destroyRoot)
 return {
 	gui = matchHud,
 	sources = {
-		activeWeaponAmmoColor = activeWeaponAmmoColor,
-		activeWeaponAmmoText = activeWeaponAmmoText,
+		ammoColorByGun = ammoColorByGun,
+		ammoTextByGun = ammoTextByGun,
 		colors = colors,
 		coins = coins,
 		currentXP = currentXP,
 		healthPercent = healthPercent,
 		kills = kills,
 		requiredXP = requiredXP,
+		guns = guns,
 		skills = skills,
 		timerSeconds = timerSeconds,
 		xpPercent = xpPercent,

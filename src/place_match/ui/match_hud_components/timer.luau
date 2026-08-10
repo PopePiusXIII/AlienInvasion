@@ -24,7 +24,7 @@ local function Timer(props: Props): Frame
 		BackgroundColor3 = props.colors.white,
 		BorderColor3 = props.colors.black,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0.498798, 0, 0.0635531, -10),
+		Position = UDim2.fromScale(0.498798, 0.07),
 		Size = UDim2.fromScale(0.130317, 0.0825394),
 
 		create "UIAspectRatioConstraint" {

@@ -23,8 +23,8 @@ local function XpBar(props: Props): Frame
 		Name = "XP_Frame",
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0.5, 0, 0, 10),
-		Size = UDim2.fromOffset(1877, 46),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromScale(0.99, 1),
 
 		create "ImageLabel" {
 			Name = "Purple_Background",
