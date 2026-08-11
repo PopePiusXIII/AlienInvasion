@@ -16,13 +16,11 @@ local server_script_service = game:GetService("ServerScriptService")
 local Framework    = require(replicated_storage.common.shared.framework)
 local Logger       = require(replicated_storage.common.shared.logger)
 local WaveConfig   = require(replicated_storage.match.shared.configs.wave_config)
-local CombatConfig = require(replicated_storage.common.shared.configs.combat_config)
 local RemoteNames  = require(replicated_storage.match.shared.remote_names)
 local ProfileService = require(server_script_service.common.services.profile_db)
 local CharacterService = require(server_script_service.match.services.character_service)
 local ZombieService = require(server_script_service.match.services.zombie_service)
 local EconomyService = require(server_script_service.match.services.economy_service)
-local LoadoutGrantModule = require(server_script_service.match.modules.wave.loadout_grant_module)
 
 local TAG = "WaveService"
 
@@ -41,20 +39,6 @@ local WaveService = Framework.CreateService({
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
-
-
-local function giveGuns(player: Player, gunNames: { string })
-	local unlockedGunNames: { string } = {CombatConfig.STARTER_GUNS[1], CombatConfig.STARTER_GUNS[2]}
-	for _, gunName in ipairs(gunNames) do
-		if ProfileService.isWeaponUnlocked(player, gunName) then
-			table.insert(unlockedGunNames, gunName)
-		end
-	end
-
-	LoadoutGrantModule.grant(player, unlockedGunNames, function(message: string, ...: any)
-		Logger.warn(TAG, message, ...)
-	end)
-end
 
 local function findZombieSpawnPosition(): Vector3
 	local spawnPart = workspace:FindFirstChild("Spawn_Mob", true)
@@ -126,9 +110,6 @@ function WaveService.startBattle(player: Player): number
 	local humanoid = CharacterService.waitFor(player).humanoid
 	Logger.info(TAG, "startBattle: character ready, starting waves (%s).", player.Name)
 
-	-- Shop clerk/Proximity prompt removed.
-
-	giveGuns(player, CombatConfig.STARTER_GUNS)
 	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = WaveConfig.STARTING_WAVE
 
