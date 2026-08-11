@@ -244,6 +244,7 @@ local function ragdollAndExplode(zombieModel: Model, explosionForce: number)
 		if part:IsA("BasePart") then
 			part.Anchored = false
 			part.CanCollide = true
+			part.CanQuery = false
 
 			-- Dampen inherited knockback velocity so pieces don't fly off too far,
 			-- then add an impulse along the shot direction plus small random spread.
@@ -327,15 +328,16 @@ function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?
 end
 
 --- Server-authoritative damage application.
+--- Returns kill data and the server-calculated damage amount when successful.
 --- Validates identity, parent, and Humanoid before taking damage.
 --- NEVER trust the client to pass a valid model — always re-validate here.
-function ZombieService.damageZombie(zombieModel: Model?, gun: GunCore.Gun, isHeadshot: boolean?, shooterPos: Vector3?): (boolean, string, Vector3?)
-	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
-	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
-	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
+function ZombieService.damageZombie(zombieModel: Model?, gun: GunCore.Gun, isHeadshot: boolean?, shooterPos: Vector3?): (boolean, string, Vector3?, number?)
+	if not zombieModel then return false, Config.ZOMBIE_DEFAULT_TYPE, nil, nil end
+	if zombieModel.Name ~= "Zombie" then return false, Config.ZOMBIE_DEFAULT_TYPE, nil, nil end
+	if zombieModel.Parent ~= workspace then return false, Config.ZOMBIE_DEFAULT_TYPE, nil, nil end
 	local humanoid = zombieModel:FindFirstChildWhichIsA("Humanoid", true) :: Humanoid?
-	if not humanoid then return false, Config.ZOMBIE_DEFAULT_TYPE, nil end
-	if humanoid.Health <= 0 then return false, tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE), nil end
+	if not humanoid then return false, Config.ZOMBIE_DEFAULT_TYPE, nil, nil end
+	if humanoid.Health <= 0 then return false, tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE), nil, nil end
 
 	local amount = gun.damage
 	local knockbackForce = gun.knockbackForce
@@ -350,7 +352,7 @@ function ZombieService.damageZombie(zombieModel: Model?, gun: GunCore.Gun, isHea
 	applyKnockback(zombieModel, knockbackForce, shooterPos)
 	local zombieType = tostring(zombieModel:GetAttribute("ZombieType") or Config.ZOMBIE_DEFAULT_TYPE)
 	local killed = healthBefore > 0 and amount >= healthBefore
-	return killed, zombieType, killed and deathPosition or nil
+	return killed, zombieType, killed and deathPosition or nil, amount
 end
 
 --- Destroy all workspace zombies owned by [playerName].

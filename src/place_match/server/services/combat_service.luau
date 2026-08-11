@@ -33,6 +33,7 @@ combat_service.Name = TAG
 function combat_service:Init()
 	local shoot_remote = framework.CreateRemote(remote_names.SHOOT_GUN)
 	local hit_sound_remote = framework.CreateRemote(remote_names.ZOMBIE_HIT_SOUND)
+	local damage_dealt_remote = framework.CreateRemote(remote_names.ZOMBIE_DAMAGE_DEALT)
 
 	logger.onServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
 		if not zombie_model or not zombie_model:IsA("Model") then return end
@@ -56,7 +57,7 @@ function combat_service:Init()
 				shooter_pos = hrp.Position
 			end
 		end
-		local killed, zombie_type, death_position = zombie_service.damageZombie(
+		local killed, zombie_type, death_position, damage_amount = zombie_service.damageZombie(
 			zombie_model,
 			gun,
 			is_headshot,
@@ -64,6 +65,9 @@ function combat_service:Init()
 		)
 
 		logger.fireClient(hit_sound_remote, player, hit_position, is_headshot)
+		if damage_amount then
+			logger.fireClient(damage_dealt_remote, player, zombie_model, damage_amount, is_headshot)
+		end
 
 		if killed then
 			local wave_number = tonumber(player:GetAttribute("CurrentWave")) or wave_config.STARTING_WAVE

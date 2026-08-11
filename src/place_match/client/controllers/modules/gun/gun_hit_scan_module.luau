@@ -26,9 +26,11 @@ function GunHitScanModule.castShot(mouse: Mouse, character: Model?, origin: Vect
 	end
 
 	local params = RaycastParams.new()
+	local filterDescendants: { Instance } = {}
 	if character then
-		params.FilterDescendantsInstances = { character }
+		table.insert(filterDescendants, character)
 	end
+	params.FilterDescendantsInstances = filterDescendants
 	params.FilterType = Enum.RaycastFilterType.Exclude
 
 	local remaining = range
@@ -54,6 +56,14 @@ function GunHitScanModule.castShot(mouse: Mouse, character: Model?, origin: Vect
 		local zombie = (ancestor and ancestor.Name == "Zombie") and ancestor :: Model or nil
 
 		if zombie then
+			local humanoid = zombie:FindFirstChildWhichIsA("Humanoid", true)
+			assert(humanoid, "Zombie hit by hitscan is missing a Humanoid")
+			if humanoid.Health <= 0 then
+				table.insert(filterDescendants, zombie)
+				params.FilterDescendantsInstances = filterDescendants
+				continue
+			end
+
 			local isHeadshot = hitPart and hitPart.Name:lower():find("head") ~= nil or false
 			return {
 				hitPosition = result.Position,

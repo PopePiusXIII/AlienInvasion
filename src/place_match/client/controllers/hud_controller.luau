@@ -22,6 +22,7 @@ local CharacterController   = require(replicated_storage.match.client.controller
 local InventoryController   = require(replicated_storage.match.client.controllers.inventory_controller)
 local MatchHUD              = require(replicated_storage.match.ui.match_hud)
 local HudUpgradeEchoModule  = require(replicated_storage.match.client.controllers.modules.hud.hud_upgrade_echo_module)
+local ZombieDamageHud       = require(replicated_storage.match.ui.match_hud_components.zombie_damage_hud)
 
 local TAG = "HudController"
 
@@ -87,10 +88,15 @@ local function setGunAmmoColor(gunName: string, color: Color3)
 	_sources.ammoColorByGun(ammoColorByGun)
 end
 
+local function onZombieDamageDealt(zombieModel: Model, damageAmount: number, isHeadshot: boolean)
+	ZombieDamageHud.show(zombieModel, damageAmount, isHeadshot)
+end
+
 function HudController:Start()
 	local waveClearRemote = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
 	local healthUpdatedRemote = Framework.GetRemote(RemoteNames.PLAYER_HEALTH_UPDATED)
 	local experienceUpdatedRemote = Framework.GetRemote(RemoteNames.EXPERIENCE_UPDATED)
+	local damageDealtRemote = Framework.GetRemote(RemoteNames.ZOMBIE_DAMAGE_DEALT)
 
 	Logger.onClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
@@ -112,6 +118,7 @@ function HudController:Start()
 
 	Logger.onClientEvent(healthUpdatedRemote, TAG, onHealthUpdated)
 	Logger.onClientEvent(experienceUpdatedRemote, TAG, onExperienceUpdated)
+	Logger.onClientEvent(damageDealtRemote, TAG, onZombieDamageDealt)
 	InventoryController.onInventoryChanged(onInventoryChanged)
 	onInventoryChanged(InventoryController.getGuns(), InventoryController.getEquippedSlot())
 
