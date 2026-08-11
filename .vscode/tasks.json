@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Generate Sourcemap - Match",
+      "type": "shell",
+      "command": "cd src/place_match && rojo sourcemap default.project.json --include-non-scripts --output sourcemap.json",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "Generates the match place sourcemap"
+    },
+    {
+      "label": "Generate Sourcemap - Lobby",
+      "type": "shell",
+      "command": "cd src/place_lobby && rojo sourcemap default.project.json --include-non-scripts --output sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Generates the lobby place sourcemap"
+    },
+    {
+      "label": "Generate All Sourcemaps",
+      "type": "shell",
+      "dependsOrder": "parallel",
+      "depends": [
+        "Generate Sourcemap - Match",
+        "Generate Sourcemap - Lobby",
+        "Generate Sourcemap - Common"
+      ],
+      "problemMatcher": [],
+      "detail": "Generates sourcemaps for all nested projects"
+    },
+    {
+      "label": "Generate Sourcemap - Common",
+      "type": "shell",
+      "command": "cd src/common && rojo sourcemap default.project.json --include-non-scripts --output sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Generates the common folder sourcemap used by Luau LSP"
+    },
+    {
+      "label": "Generate Sourcemap (Watch) - Match",
+      "type": "shell",
+      "command": "cd src/place_match && rojo sourcemap --watch default.project.json --include-non-scripts --output sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Watches match place and regenerates sourcemap automatically",
+      "isBackground": true
+    },
+    {
+      "label": "Generate Sourcemap (Watch) - Lobby",
+      "type": "shell",
+      "command": "cd src/place_lobby && rojo sourcemap --watch default.project.json --include-non-scripts --output sourcemap.json",
+      "problemMatcher": [],
+      "detail": "Watches lobby place and regenerates sourcemap automatically",
+      "isBackground": true
+    }
+  ]
+}

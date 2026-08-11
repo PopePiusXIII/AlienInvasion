@@ -1,0 +1,91 @@
+{
+  "name": "AlienInvasion",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "match": {
+        "$className": "Folder",
+        "shared": {
+          "$path": "shared"
+        },
+        "client": {
+          "$className": "Folder",
+          "controllers": {
+            "$path": "client/controllers"
+          }
+        },
+        "ui": {
+          "$path": "ui"
+        }
+    },
+      "common": {
+        "$className": "Folder",
+        "shared": {
+          "$path": "../../src/common/shared"
+        },
+        "purchase": {
+          "$path": "../../src/common/purchase"
+        }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide": { "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src" },
+        "ProfileStore": { "$path": "../../ServerPackages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau" }
+      }
+    },
+    "ServerScriptService": {
+      "match": {
+        "$path": "server"
+      },
+      "common": {
+        "$path": "../../src/common/server"
+      }
+    },
+    "ServerStorage": {
+      "ui": {
+        "$path": "ui"
+      },
+      "Stories": {
+        "$className": "Folder",
+        "$path": "stories"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "ClientRuntime": {
+          "$path": "client/runtime.client.luau"
+        }
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "FilteringEnabled": true
+      },
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Color": [0.423, 0.37254, 0.38823],
+          "Locked": true,
+          "Position": [0, -10, 0],
+          "Size": [512, 20, 512]
+        }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Ambient": [0, 0, 0],
+        "Brightness": 2,
+        "GlobalShadows": true,
+        "Outlines": false,
+        "Technology": "Voxel"
+      }
+    },
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    }
+  }
+}

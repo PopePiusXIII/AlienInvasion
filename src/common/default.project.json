@@ -1,0 +1,46 @@
+{
+  "name": "AlienInvasion_Common",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "match": {
+        "$className": "Folder",
+        "shared": {
+          "$path": "../../src/place_match/shared"
+        },
+        "client": {
+          "$path": "../../src/place_match/client"
+        },
+        "ui": {
+          "$path": "../../src/place_match/ui"
+        }
+      },
+      "common": {
+        "$className": "Folder",
+        "shared": {
+          "$path": "shared"
+        },
+        "purchase": {
+          "$path": "purchase"
+        }
+      },
+      "Packages": {
+        "$className": "Folder",
+        "vide": {
+          "$path": "../../Packages/_Index/centau_vide@0.4.0/vide/src"
+        },
+        "ProfileStore": {
+          "$path": "../../ServerPackages/_Index/vyon_profilestore@1.0.3/profilestore/ProfileStore.luau"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "match": {
+        "$path": "../../src/place_match/server"
+      },
+      "common": {
+        "$path": "server"
+      }
+    }
+  }
+}

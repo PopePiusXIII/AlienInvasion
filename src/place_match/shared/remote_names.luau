@@ -1,0 +1,38 @@
+--!strict
+--------------------------------------------------------------------------------
+-- RemoteNames.luau  (src/place_match/shared → replicated_storage.shared.RemoteNames)
+-- Single source of truth for all RemoteEvent name strings (Match Place).
+-- Import this in both Services (server) and Controllers (client) to prevent
+-- typo-induced nil-remote bugs that only surface at runtime.
+--------------------------------------------------------------------------------
+
+return {
+	SHOOT_GUN     = "ShootGun",
+	WAVE_ANNOUNCE = "WaveAnnounce",
+	WAVE_CLEAR    = "WaveClear",
+	RUN_CURRENCY_UPDATED  = "RunCurrencyUpdated",
+	COINS_EARNED_UPDATED  = "CoinsEarnedUpdated",
+	PLAYER_HEALTH_UPDATED = "PlayerHealthUpdated",
+	EXPERIENCE_UPDATED    = "ExperienceUpdated",
+	REQUEST_SHOP_PURCHASE = "RequestShopPurchase",
+	SHOP_PURCHASE_RESULT  = "ShopPurchaseResult",
+	LOBBY_ECONOMY_SYNC    = "LobbyEconomySync",
+	REQUEST_WEAPON_UNLOCK = "RequestWeaponUnlock",
+	WEAPON_UNLOCK_RESULT  = "WeaponUnlockResult",
+	-- Gun shop remotes removed
+	-- RNG Block remotes
+	RNG_ACTIVATE           = "RNGActivate",
+	RNG_UNLOCKED_LIST      = "RNGUnlockedList",
+	RNG_REQUEST_GIVE       = "RNGRequestGive",
+	RNG_TOPUP_AMMO         = "RNGTopupAmmo",
+	RNG_PICK_MODIFIER      = "RNGPickModifier",
+	SKILLS_SYNC            = "SkillsSync",
+	BOLT_SPAWNED           = "BoltSpawned",
+	CLAIM_BOLT             = "ClaimBolt",
+	ZOMBIE_HIT_SOUND       = "ZombieHitSound",
+	ZOMBIE_DAMAGE_DEALT     = "ZombieDamageDealt",
+	-- Custom inventory system remotes
+	INVENTORY_SYNC         = "InventorySync",
+	INVENTORY_EQUIP        = "InventoryEquip",
+	SYNC_PROFILE           = "SyncProfile",
+}
