@@ -92,11 +92,16 @@ local function onZombieDamageDealt(zombieModel: Model, damageAmount: number, isH
 	ZombieDamageHud.show(zombieModel, damageAmount, isHeadshot)
 end
 
+local function onCurrencyAcquired(silverStuds: number, totalGold: number)
+		_sources.coins(silverStuds)
+end
+
 function HudController:Start()
 	local waveClearRemote = Framework.GetRemote(RemoteNames.WAVE_CLEAR)
 	local healthUpdatedRemote = Framework.GetRemote(RemoteNames.PLAYER_HEALTH_UPDATED)
 	local experienceUpdatedRemote = Framework.GetRemote(RemoteNames.EXPERIENCE_UPDATED)
 	local damageDealtRemote = Framework.GetRemote(RemoteNames.ZOMBIE_DAMAGE_DEALT)
+	local runCurrencyRemote = Framework.GetRemote(RemoteNames.RUN_CURRENCY_UPDATED)
 
 	Logger.onClientEvent(waveClearRemote, TAG, function()
 		-- Delegate state mutation to CharacterController — HudController never
@@ -121,7 +126,7 @@ function HudController:Start()
 	Logger.onClientEvent(damageDealtRemote, TAG, onZombieDamageDealt)
 	InventoryController.onInventoryChanged(onInventoryChanged)
 	onInventoryChanged(InventoryController.getGuns(), InventoryController.getEquippedSlot())
-
+	Logger.onClientEvent(runCurrencyRemote, TAG, onCurrencyAcquired)
 	Logger.info(TAG, "HUD event listeners connected.")
 end
 
