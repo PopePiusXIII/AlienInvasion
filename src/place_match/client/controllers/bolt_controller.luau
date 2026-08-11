@@ -68,39 +68,29 @@ local function onBoltSpawned(id: number, currencyName: string, _amount: number, 
 	local bolt = template:Clone()
 	bolt.Name = currencyName .. "BoltPickup_" .. tostring(id)
 
-	local rootPart: BasePart? = nil
-
-	if bolt:IsA("BasePart") then
-		local p = bolt :: BasePart
-		p.Anchored = true; p.CanCollide = false; p.CanTouch = false
-		p.CFrame = CFrame.new(spawnPosition)
-		rootPart = p
-	elseif bolt:IsA("Model") then
-		for _, d in ipairs((bolt :: Model):GetDescendants()) do
-			if d:IsA("BasePart") then
-				local p = d :: BasePart
-				p.Anchored = true; p.CanCollide = false; p.CanTouch = false; p.Transparency = 0
-				if not rootPart then rootPart = p end
-			end
-		end
-		if not rootPart then bolt:Destroy(); return end
-	else
-		bolt:Destroy(); return
+	-- Assume bolts are Models. If not, log and skip (templates are validated in Init).
+	if not bolt:IsA("Model") then
+		Logger.warn(TAG, "Bolt template '%s' cloned for %s is not a Model — expected Model.", template.Name, tostring(currencyName))
+		bolt:Destroy()
+		return
 	end
+
+	local rootPart: BasePart? = nil
+	for _, d in ipairs((bolt :: Model):GetDescendants()) do
+		if d:IsA("BasePart") then
+			local p = d :: BasePart
+			p.Anchored = true; p.CanCollide = false; p.CanTouch = false; p.Transparency = 0
+			if not rootPart then rootPart = p end
+		end
+	end
+	if not rootPart then bolt:Destroy(); return end
 
 	bolt.Parent = workspace
-
-	if bolt:IsA("Model") then
-		(bolt :: Model):MoveTo(spawnPosition)
-	end
+	bolt:MoveTo(spawnPosition)
 
 	local boltCenter: Vector3
-	if bolt:IsA("Model") then
-		local cf, _ = (bolt :: Model):GetBoundingBox()
-		boltCenter = cf.Position
-	else
-		boltCenter = (rootPart :: BasePart).Position
-	end
+	local cf, _ = (bolt :: Model):GetBoundingBox()
+	boltCenter = cf.Position
 
 	local state: ClientBoltState = {
 		id           = id,
@@ -128,6 +118,16 @@ function BoltController:Init()
 	if templates then
 		_silverTemplate = templates:FindFirstChild("SilverBolt")
 		_goldTemplate   = templates:FindFirstChild("GoldBolt")
+	end
+
+	-- Validate templates once: bolts must be Models. Log and clear invalid templates.
+	if _silverTemplate and not _silverTemplate:IsA("Model") then
+		Logger.warn(TAG, "SilverBolt template is not a Model — expected Model.")
+		_silverTemplate = nil
+	end
+	if _goldTemplate and not _goldTemplate:IsA("Model") then
+		Logger.warn(TAG, "GoldBolt template is not a Model — expected Model.")
+		_goldTemplate = nil
 	end
 
 	-- Fallback: if GoldBolt template is missing, reuse SilverBolt so gold bolts still appear.
