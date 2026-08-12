@@ -14,7 +14,6 @@ local server_script_service = game:GetService("ServerScriptService")
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local CombatConfig    = require(replicated_storage.common.shared.configs.combat_config)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local ProfileService = require(server_script_service.common.services.profile_db)
 
 local TAG = "InventoryService"
@@ -25,8 +24,8 @@ InventoryService.Name = TAG
 local _playerInventories: { [number]: { gunIds: { string }, equippedSlot: number? } } = {}
 local _gunLevels: { [number]: { [string]: number } } = {}
 
-local _inventorySyncRemote:  RemoteEvent
-local _inventoryEquipRemote: RemoteEvent
+local _inventoryUpdatedRemote: RemoteEvent
+local _equipInventorySlotRemote: RemoteEvent
 
 -- ── Weapon Helper Functions ──────────────────────────────────────────────────
 
@@ -146,7 +145,7 @@ local function syncToClient(player: Player)
 		end
 	end
 
-	Logger.fireClient(_inventorySyncRemote, player, weaponData, inv.equippedSlot)
+	Logger.fireClient(_inventoryUpdatedRemote, player, weaponData, inv.equippedSlot)
 	Logger.info(TAG, "syncToClient %s — slots=%d, equippedSlot=%s",
 		player.Name, #inv.gunIds, tostring(inv.equippedSlot))
 end
@@ -457,8 +456,8 @@ end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function InventoryService:Init()
-	_inventorySyncRemote  = Framework.CreateRemote(RemoteNames.INVENTORY_SYNC)
-	_inventoryEquipRemote = Framework.CreateRemote(RemoteNames.INVENTORY_EQUIP)
+	_inventoryUpdatedRemote = Framework.CreateRemote("InventoryUpdated")
+	_equipInventorySlotRemote = Framework.CreateRemote("EquipInventorySlot")
 end
 
 local function grantStarterGunsToPlayer(player: Player)
@@ -476,7 +475,7 @@ local function grantStarterGunsToPlayer(player: Player)
 end
 
 function InventoryService:Start()
-	Logger.onServerEvent(_inventoryEquipRemote, TAG, function(player: Player, slot: number?)
+	Logger.onServerEvent(_equipInventorySlotRemote, TAG, function(player: Player, slot: number?)
 		InventoryService.setEquippedSlot(player, slot)
 	end)
 

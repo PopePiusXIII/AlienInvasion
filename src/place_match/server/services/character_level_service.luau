@@ -7,7 +7,6 @@ local server_script_service = game:GetService("ServerScriptService")
 local CharacterLevelConfig = require(replicated_storage.match.shared.configs.character_level_config)
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger = require(replicated_storage.common.shared.logger)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local EconomyService = require(server_script_service.match.services.economy_service)
 local RngService = require(server_script_service.match.services.rng_service)
 
@@ -89,7 +88,7 @@ end
 
 
 function CharacterLevelService:Init()
-	_experienceUpdatedRemote = Framework.CreateRemote(RemoteNames.EXPERIENCE_UPDATED)
+	_experienceUpdatedRemote = Framework.CreateRemote("ExperienceUpdated")
 	for _, player in ipairs(Players:GetPlayers()) do
 		getLevelState(player)
 	end
