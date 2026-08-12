@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 -- RunService not used directly; scheduler handles per-frame loop
 
-local Shared = replicated_storage.common.shared
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 local Config = require(replicated_storage.match.shared.configs.game_config)
 

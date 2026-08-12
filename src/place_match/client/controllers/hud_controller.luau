@@ -91,8 +91,8 @@ local function onZombieDamageDealt(zombieModel: Model, damageAmount: number, isH
 	ZombieDamageHud.show(zombieModel, damageAmount, isHeadshot)
 end
 
-local function onCurrencyAcquired(silverStuds: number, totalGold: number)
-		_sources.coins(silverStuds)
+local function onCurrencyAcquired(silverStuds: number, _totalGold: number)
+	_sources.coins(silverStuds)
 end
 
 function HudController:Start()

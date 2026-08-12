@@ -50,16 +50,6 @@ function InventoryController.getGuns(): { SyncedGun }
 
 	return _guns
 end
-
---- Gets weapon names only (legacy helper for quick lookups)
-function InventoryController.getWeapons(): { string }
-	local result: { string } = {}
-	for _, g in ipairs(_guns) do
-		table.insert(result, g.name)
-	end
-	return result
-end
-
 --- Checks if a weapon name exists in the inventory
 function InventoryController.hasWeapon(name: string): boolean
 	for _, g in ipairs(_guns) do

@@ -276,28 +276,6 @@ function InventoryService.removeWeaponById(player: Player, gunId: string): boole
 	end
 	return false
 end
-
---- Remove a gun by base name (legacy, removes first match).
-function InventoryService.removeWeapon(player: Player, weaponName: string): boolean
-	local inv = getInventory(player)
-	for i, gid in ipairs(inv.gunIds) do
-		local instance = ProfileService.getGun(player, gid)
-		if instance and instance.name == weaponName then
-			table.remove(inv.gunIds, i)
-			ProfileService.removeGun(player, gid)
-
-			if inv.equippedSlot == i then
-				inv.equippedSlot = #inv.gunIds > 0 and 1 or nil
-			elseif inv.equippedSlot and inv.equippedSlot > i then
-				inv.equippedSlot = inv.equippedSlot - 1
-			end
-			syncToClient(player)
-			return true
-		end
-	end
-	return false
-end
-
 function InventoryService.setEquippedSlot(player: Player, slot: number?)
     local inv = getInventory(player)
     local character = player.Character
@@ -354,13 +332,12 @@ end
 
 --- Get the in-memory level for a gun (1-4, resets each match).
 function InventoryService.getGunLevel(player: Player, gunId: string): number
-	local uid = player.UserId
-	local levels = _gunLevels[uid]
+	local levels = _gunLevels[player.UserId]
 	if not levels then return 1 end
 	return levels[gunId] or 1
 end
 
---- Upgrade a gun's in-memory level (1→2→3→4). Returns (success, newLevel?, reason?).
+--- Upgrade a gun's in-memory level (1->2->3->4). Returns (success, newLevel?, reason?).
 function InventoryService.upgradeGunLevel(player: Player, gunId: string): (boolean, number?, string?)
 	local uid = player.UserId
 	local levels = _gunLevels[uid]
@@ -384,30 +361,9 @@ function InventoryService.upgradeGunLevel(player: Player, gunId: string): (boole
 	return true, levels[gunId], nil
 end
 
---- Get the equipped weapon's base name (legacy compat).
-function InventoryService.getEquippedWeapon(player: Player): string?
-	local gunId = InventoryService.getEquippedGunId(player)
-	if not gunId then return nil end
-	local instance = ProfileService.getGun(player, gunId)
-	return instance and instance.name or nil
-end
-
 --- Get all gun IDs in the player's inventory.
 function InventoryService.getGunIds(player: Player): { string }
 	return getInventory(player).gunIds
-end
-
---- Get all weapon base names (legacy compat for services that still expect names).
-function InventoryService.getWeapons(player: Player): { string }
-	local inv = getInventory(player)
-	local names: { string } = {}
-	for _, gid in ipairs(inv.gunIds) do
-		local instance = ProfileService.getGun(player, gid)
-		if instance then
-			table.insert(names, instance.name)
-		end
-	end
-	return names
 end
 
 function InventoryService.clearInventory(player: Player)
