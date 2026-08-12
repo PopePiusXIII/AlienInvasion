@@ -100,9 +100,15 @@ local function onWaveTimerUpdated(remainingSeconds: number)
 	_sources.timerSeconds(math.ceil(remainingSeconds))
 end
 
+local function onBattleKillsUpdated(kills: number)
+	assert(kills >= 0, string.format("Battle kills cannot be negative, got %f", kills))
+	_sources.kills(math.floor(kills))
+end
+
 function HudController:Start()
 	local waveClearRemote = Framework.GetRemote("WaveCleared")
 	local waveTimerUpdatedRemote = Framework.GetRemote("WaveTimerUpdated")
+	local battleKillsUpdatedRemote = Framework.GetRemote("BattleKillsUpdated")
 	local healthUpdatedRemote = Framework.GetRemote("PlayerHealthUpdated")
 	local experienceUpdatedRemote = Framework.GetRemote("ExperienceUpdated")
 	local damageDealtRemote = Framework.GetRemote("ZombieDamageApplied")
@@ -127,6 +133,7 @@ function HudController:Start()
 	end)
 
 	Logger.onClientEvent(waveTimerUpdatedRemote, TAG, onWaveTimerUpdated)
+	Logger.onClientEvent(battleKillsUpdatedRemote, TAG, onBattleKillsUpdated)
 	Logger.onClientEvent(healthUpdatedRemote, TAG, onHealthUpdated)
 	Logger.onClientEvent(experienceUpdatedRemote, TAG, onExperienceUpdated)
 	Logger.onClientEvent(damageDealtRemote, TAG, onZombieDamageDealt)

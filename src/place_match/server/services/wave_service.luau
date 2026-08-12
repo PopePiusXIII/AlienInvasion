@@ -25,10 +25,16 @@ local TAG = "WaveService"
 local _waveAnnounceRemote:       RemoteEvent
 local _waveClearRemote:          RemoteEvent
 local _waveTimerUpdatedRemote:   RemoteEvent
+local _battleKillsUpdatedRemote: RemoteEvent
 
 type BattleTimer = {
 	expired: boolean,
 	stopped: boolean,
+}
+
+type BattleState = {
+	kills: number,
+	timer: BattleTimer,
 }
 
 local WaveService = Framework.CreateService({
@@ -37,6 +43,7 @@ local WaveService = Framework.CreateService({
 		_waveAnnounceRemote = Framework.CreateRemote("WaveStarted")
 		_waveClearRemote = Framework.CreateRemote("WaveCleared")
 		_waveTimerUpdatedRemote = Framework.CreateRemote("WaveTimerUpdated")
+		_battleKillsUpdatedRemote = Framework.CreateRemote("BattleKillsUpdated")
 	end,
 	Start = function() end,
 })
@@ -98,19 +105,23 @@ local function runBattleTimer(player: Player, timer: BattleTimer)
 end
 
 -- Runs one full wave: spawns all zombies, waits for all to die (or player death).
-local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, humanoid: Humanoid, timer: BattleTimer)
+local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, humanoid: Humanoid, battle: BattleState)
 	Logger.info(TAG, "Wave %d — %s (%d zombies).", waveNumber, player.Name, waveNumber)
 	player:SetAttribute("CurrentWave", waveNumber)
 
 	-- All network sends go through Logger middleware for payload tracing.
 	Logger.fireClient(_waveAnnounceRemote, player, waveNumber)
 
-	local remaining = 10* waveNumber
-	local function onZombieDied() remaining -= 1 end
+	local remaining = 10 * waveNumber
+	local function onZombieDied()
+		remaining -= 1
+		battle.kills += 1
+		Logger.fireClient(_battleKillsUpdatedRemote, player, battle.kills)
+	end
 
 	local totalZombies = 10 * waveNumber
 	for i = 1, totalZombies do
-		if not player.Parent or humanoid.Health <= 0 or timer.expired then break end
+		if not player.Parent or humanoid.Health <= 0 or battle.timer.expired then break end
 		ZombieService.spawn(player, onZombieDied, spawnPos, pickZombieType(waveNumber))
 		if i < totalZombies then
 			task.wait(WaveConfig.WAVE_SPAWN_INTERVAL)
@@ -118,7 +129,7 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 	end
 
 	-- Polling loop: yield until all zombies are dead or the run is over.
-	while remaining > 0 and player.Parent and humanoid.Health > 0 and not timer.expired do
+	while remaining > 0 and player.Parent and humanoid.Health > 0 and not battle.timer.expired do
 		task.wait(0.5)
 	end
 end
@@ -137,23 +148,27 @@ function WaveService.startBattle(player: Player): number
 
 	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = WaveConfig.STARTING_WAVE
-	local timer: BattleTimer = {
-		expired = false,
-		stopped = false,
+	local battle: BattleState = {
+		kills = 0,
+		timer = {
+			expired = false,
+			stopped = false,
+		},
 	}
-	task.spawn(runBattleTimer, player, timer)
+	Logger.fireClient(_battleKillsUpdatedRemote, player, battle.kills)
+	task.spawn(runBattleTimer, player, battle.timer)
 
 	-- The humanoid reference is captured once. Even if the character respawns,
 	-- this humanoid's Health drops to 0 on death, so the loop detects it correctly.
-	while player.Parent and humanoid.Health > 0 and not timer.expired do
-		runWave(player, waveNumber, spawnPos, humanoid, timer)
+	while player.Parent and humanoid.Health > 0 and not battle.timer.expired do
+		runWave(player, waveNumber, spawnPos, humanoid, battle)
 
 		if humanoid.Health <= 0 then
 			Logger.info(TAG, "%s died on wave %d.", player.Name, waveNumber)
 			ZombieService.cleanupForPlayer(player.Name)
 			break
 		end
-		if timer.expired then
+		if battle.timer.expired then
 			Logger.info(TAG, "%s ran out of time on wave %d.", player.Name, waveNumber)
 			ZombieService.cleanupForPlayer(player.Name)
 			break
@@ -163,7 +178,7 @@ function WaveService.startBattle(player: Player): number
 			waveNumber, player.Name, WaveConfig.WAVE_BETWEEN_DELAY)
 		Logger.fireClient(_waveClearRemote, player)
 		task.wait(WaveConfig.WAVE_BETWEEN_DELAY)
-		if timer.expired then
+		if battle.timer.expired then
 			Logger.info(TAG, "%s ran out of time after wave %d.", player.Name, waveNumber)
 			ZombieService.cleanupForPlayer(player.Name)
 			break
@@ -171,7 +186,7 @@ function WaveService.startBattle(player: Player): number
 		waveNumber += 1
 	end
 
-	timer.stopped = true
+	battle.timer.stopped = true
 	player:SetAttribute("CurrentWave", nil)
 	Logger.info(TAG, "Final wave: %d for %s.", waveNumber, player.Name)
 	return waveNumber
