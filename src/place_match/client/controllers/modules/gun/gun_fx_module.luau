@@ -332,6 +332,10 @@ function GunFxModule.playReloadAnimation(targetDuration: number): AnimationTrack
 		_cachedReloadTrack = track
 	end
 
+	if track.Length == 0 then
+    	track:GetPropertyChangedSignal("Length"):Wait()
+	end
+
 	assert(track.Length > 0, string.format("Reload animation for gun '%s' has no duration", gunName))
 	track:Stop(0)
 	track.TimePosition = 0
