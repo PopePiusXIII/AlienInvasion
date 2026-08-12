@@ -258,40 +258,6 @@ local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: On
 	humanoid.Died:Connect(function()
 		ragdollAndExplode(zombie, 30)
 
-		-- Spawn RNG BLOCK at death position with 1-in-5 chance
-		local deathPos: Vector3
-		local root = zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if root then
-			deathPos = root.Position
-		else
-			local cf, _ = zombie:GetBoundingBox()
-			deathPos = cf.Position
-		end
-
-		local rngTemplate = replicated_storage:FindFirstChild("RNG BLOCK", true)
-		if not rngTemplate and not _rngTemplateWarned then
-			Logger.warn(TAG, "RNG BLOCK template not found in replicated_storage — RNG BLOCKs will not spawn.")
-			_rngTemplateWarned = true
-		end
-		-- if rngTemplate and math.random(1, 5) == 1 then
-		-- 	local block = rngTemplate:Clone()
-		-- 	block.Name = "RNG BLOCK"
-		-- 	if block:IsA("Model") then
-		-- 		block.Parent = workspace
-		-- 		local anyPart = block:FindFirstChildWhichIsA("BasePart", true)
-		-- 		if anyPart then
-		-- 			block:PivotTo(CFrame.new(deathPos))
-		-- 		else
-		-- 			block.Parent = nil
-		-- 		end
-		-- 	elseif block:IsA("BasePart") then
-		-- 		block.Parent = workspace
-		-- 		block.CFrame = CFrame.new(deathPos + Vector3.new(0, 2, 0))
-		-- 	else
-		-- 		block.Parent = nil
-		-- 	end
-		-- end
-
 		task.wait(2.0)
 		zombie:Destroy()
 		onDied()

@@ -8,7 +8,6 @@ local EconomyConfig = require(replicated_storage.match.shared.configs.economy_co
 local ZombieConfig = require(replicated_storage.match.shared.configs.zombie_config)
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
-local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 local ProfileService = require(server_script_service.common.services.profile_db)
 
 local EconomyService = {}
@@ -194,12 +193,12 @@ function EconomyService:Init()
 		Logger.warn(TAG, "replicated_storage.BoltTemplates folder not found — client bolt visuals will be missing.")
 	end
 
-	_runCurrencyUpdatedRemote  = Framework.CreateRemote(RemoteNames.RUN_CURRENCY_UPDATED)
-	_coinsEarnedUpdatedRemote  = Framework.CreateRemote(RemoteNames.COINS_EARNED_UPDATED)
-	_requestShopPurchaseRemote = Framework.CreateRemote(RemoteNames.REQUEST_SHOP_PURCHASE)
-	_shopPurchaseResultRemote  = Framework.CreateRemote(RemoteNames.SHOP_PURCHASE_RESULT)
-	_boltSpawnedRemote         = Framework.CreateRemote(RemoteNames.BOLT_SPAWNED)
-	_claimBoltRemote           = Framework.CreateRemote(RemoteNames.CLAIM_BOLT)
+	_runCurrencyUpdatedRemote  = Framework.CreateRemote("RunCurrencyUpdated")
+	_coinsEarnedUpdatedRemote  = Framework.CreateRemote("CoinsAwarded")
+	_requestShopPurchaseRemote = Framework.CreateRemote("PurchaseShopItem")
+	_shopPurchaseResultRemote  = Framework.CreateRemote("ShopPurchaseResolved")
+	_boltSpawnedRemote         = Framework.CreateRemote("BoltSpawned")
+	_claimBoltRemote           = Framework.CreateRemote("ClaimBolt")
 
 	Logger.onServerEvent(_claimBoltRemote, TAG, function(player: Player, boltId: any)
 		onClaimBolt(player, boltId)

@@ -7,13 +7,11 @@
 
 local Players = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
-local Shared = replicated_storage.common.shared
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local Config    = require(replicated_storage.match.shared.configs.economy_config)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 
 local TAG = "BoltController"
 local BoltController = {}
@@ -138,8 +136,8 @@ function BoltController:Init()
 end
 
 function BoltController:Start()
-	_boltSpawnedRemote = Framework.GetRemote(RemoteNames.BOLT_SPAWNED)
-	_claimBoltRemote   = Framework.GetRemote(RemoteNames.CLAIM_BOLT)
+	_boltSpawnedRemote = Framework.GetRemote("BoltSpawned")
+	_claimBoltRemote   = Framework.GetRemote("ClaimBolt")
 
 	_boltSpawnedRemote.OnClientEvent:Connect(function(id: number, currencyName: string, amount: number, spawnPosition: Vector3)
 		onBoltSpawned(id, currencyName, amount, spawnPosition)

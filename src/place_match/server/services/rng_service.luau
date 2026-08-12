@@ -6,7 +6,6 @@ local SkillService = require(server_script_service.match.services.skill_service)
 local RngCore = require(server_script_service.common.modules.rng_core)
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local SkillTypes = require(replicated_storage.match.shared.types.skill_types)
 
 local TAG = "RngService"
@@ -22,10 +21,10 @@ local _pendingOptions: { [Player]: { string } } = {}
 
 function RngService:Init()
 	Logger.info(TAG, "Initialized.")
-	_rngActivateRemote = Framework.CreateRemote(RemoteNames.RNG_ACTIVATE)
-	_rngTopupRemote = Framework.CreateRemote(RemoteNames.RNG_TOPUP_AMMO)
-	_rngRequestGiveRemote = Framework.CreateRemote(RemoteNames.RNG_REQUEST_GIVE)
-	_rngPickModifierRemote = Framework.CreateRemote(RemoteNames.RNG_PICK_MODIFIER)
+	_rngActivateRemote = Framework.CreateRemote("RngActivated")
+	_rngTopupRemote = Framework.CreateRemote("GunAmmoReplenished")
+	_rngRequestGiveRemote = Framework.CreateRemote("RequestRngReward")
+	_rngPickModifierRemote = Framework.CreateRemote("SelectRngModifier")
 end
 
 function RngService.activate(player: Player): SkillTypes.ModifierOptions

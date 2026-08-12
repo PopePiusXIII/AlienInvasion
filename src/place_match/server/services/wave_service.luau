@@ -16,8 +16,6 @@ local server_script_service = game:GetService("ServerScriptService")
 local Framework    = require(replicated_storage.common.shared.framework)
 local Logger       = require(replicated_storage.common.shared.logger)
 local WaveConfig   = require(replicated_storage.match.shared.configs.wave_config)
-local RemoteNames  = require(replicated_storage.match.shared.remote_names)
-local ProfileService = require(server_script_service.common.services.profile_db)
 local CharacterService = require(server_script_service.match.services.character_service)
 local ZombieService = require(server_script_service.match.services.zombie_service)
 local EconomyService = require(server_script_service.match.services.economy_service)
@@ -30,8 +28,8 @@ local _waveClearRemote:          RemoteEvent
 local WaveService = Framework.CreateService({
 	Name = TAG,
 	Init = function()
-		_waveAnnounceRemote = Framework.CreateRemote(RemoteNames.WAVE_ANNOUNCE)
-		_waveClearRemote = Framework.CreateRemote(RemoteNames.WAVE_CLEAR)
+		_waveAnnounceRemote = Framework.CreateRemote("WaveStarted")
+		_waveClearRemote = Framework.CreateRemote("WaveCleared")
 	end,
 	Start = function() end,
 })

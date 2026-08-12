@@ -6,7 +6,6 @@ local server_script_service = game:GetService("ServerScriptService")
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger = require(replicated_storage.common.shared.logger)
 local PlayerConfig = require(replicated_storage.match.shared.configs.player_config)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local CharacterService = require(server_script_service.match.services.character_service)
 local SkillService = require(server_script_service.match.services.skill_service)
 
@@ -87,7 +86,7 @@ function HealthService.set_health(target: HealthTarget, health: number): boolean
 end
 
 function HealthService:Init()
-	_healthUpdatedRemote = Framework.CreateRemote(RemoteNames.PLAYER_HEALTH_UPDATED)
+	_healthUpdatedRemote = Framework.CreateRemote("PlayerHealthUpdated")
 end
 
 function HealthService:Start()

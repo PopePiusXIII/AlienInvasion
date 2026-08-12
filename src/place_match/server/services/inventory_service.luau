@@ -14,7 +14,6 @@ local server_script_service = game:GetService("ServerScriptService")
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local CombatConfig    = require(replicated_storage.common.shared.configs.combat_config)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 local ProfileService = require(server_script_service.common.services.profile_db)
 
 local TAG = "InventoryService"
@@ -25,8 +24,8 @@ InventoryService.Name = TAG
 local _playerInventories: { [number]: { gunIds: { string }, equippedSlot: number? } } = {}
 local _gunLevels: { [number]: { [string]: number } } = {}
 
-local _inventorySyncRemote:  RemoteEvent
-local _inventoryEquipRemote: RemoteEvent
+local _inventoryUpdatedRemote: RemoteEvent
+local _equipInventorySlotRemote: RemoteEvent
 
 -- ── Weapon Helper Functions ──────────────────────────────────────────────────
 
@@ -146,7 +145,7 @@ local function syncToClient(player: Player)
 		end
 	end
 
-	Logger.fireClient(_inventorySyncRemote, player, weaponData, inv.equippedSlot)
+	Logger.fireClient(_inventoryUpdatedRemote, player, weaponData, inv.equippedSlot)
 	Logger.info(TAG, "syncToClient %s — slots=%d, equippedSlot=%s",
 		player.Name, #inv.gunIds, tostring(inv.equippedSlot))
 end
@@ -277,28 +276,6 @@ function InventoryService.removeWeaponById(player: Player, gunId: string): boole
 	end
 	return false
 end
-
---- Remove a gun by base name (legacy, removes first match).
-function InventoryService.removeWeapon(player: Player, weaponName: string): boolean
-	local inv = getInventory(player)
-	for i, gid in ipairs(inv.gunIds) do
-		local instance = ProfileService.getGun(player, gid)
-		if instance and instance.name == weaponName then
-			table.remove(inv.gunIds, i)
-			ProfileService.removeGun(player, gid)
-
-			if inv.equippedSlot == i then
-				inv.equippedSlot = #inv.gunIds > 0 and 1 or nil
-			elseif inv.equippedSlot and inv.equippedSlot > i then
-				inv.equippedSlot = inv.equippedSlot - 1
-			end
-			syncToClient(player)
-			return true
-		end
-	end
-	return false
-end
-
 function InventoryService.setEquippedSlot(player: Player, slot: number?)
     local inv = getInventory(player)
     local character = player.Character
@@ -355,13 +332,12 @@ end
 
 --- Get the in-memory level for a gun (1-4, resets each match).
 function InventoryService.getGunLevel(player: Player, gunId: string): number
-	local uid = player.UserId
-	local levels = _gunLevels[uid]
+	local levels = _gunLevels[player.UserId]
 	if not levels then return 1 end
 	return levels[gunId] or 1
 end
 
---- Upgrade a gun's in-memory level (1→2→3→4). Returns (success, newLevel?, reason?).
+--- Upgrade a gun's in-memory level (1->2->3->4). Returns (success, newLevel?, reason?).
 function InventoryService.upgradeGunLevel(player: Player, gunId: string): (boolean, number?, string?)
 	local uid = player.UserId
 	local levels = _gunLevels[uid]
@@ -385,30 +361,9 @@ function InventoryService.upgradeGunLevel(player: Player, gunId: string): (boole
 	return true, levels[gunId], nil
 end
 
---- Get the equipped weapon's base name (legacy compat).
-function InventoryService.getEquippedWeapon(player: Player): string?
-	local gunId = InventoryService.getEquippedGunId(player)
-	if not gunId then return nil end
-	local instance = ProfileService.getGun(player, gunId)
-	return instance and instance.name or nil
-end
-
 --- Get all gun IDs in the player's inventory.
 function InventoryService.getGunIds(player: Player): { string }
 	return getInventory(player).gunIds
-end
-
---- Get all weapon base names (legacy compat for services that still expect names).
-function InventoryService.getWeapons(player: Player): { string }
-	local inv = getInventory(player)
-	local names: { string } = {}
-	for _, gid in ipairs(inv.gunIds) do
-		local instance = ProfileService.getGun(player, gid)
-		if instance then
-			table.insert(names, instance.name)
-		end
-	end
-	return names
 end
 
 function InventoryService.clearInventory(player: Player)
@@ -457,8 +412,8 @@ end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function InventoryService:Init()
-	_inventorySyncRemote  = Framework.CreateRemote(RemoteNames.INVENTORY_SYNC)
-	_inventoryEquipRemote = Framework.CreateRemote(RemoteNames.INVENTORY_EQUIP)
+	_inventoryUpdatedRemote = Framework.CreateRemote("InventoryUpdated")
+	_equipInventorySlotRemote = Framework.CreateRemote("EquipInventorySlot")
 end
 
 local function grantStarterGunsToPlayer(player: Player)
@@ -476,7 +431,7 @@ local function grantStarterGunsToPlayer(player: Player)
 end
 
 function InventoryService:Start()
-	Logger.onServerEvent(_inventoryEquipRemote, TAG, function(player: Player, slot: number?)
+	Logger.onServerEvent(_equipInventorySlotRemote, TAG, function(player: Player, slot: number?)
 		InventoryService.setEquippedSlot(player, slot)
 	end)
 

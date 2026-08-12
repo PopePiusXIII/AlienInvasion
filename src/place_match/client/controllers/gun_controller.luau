@@ -2,7 +2,7 @@
 --------------------------------------------------------------------------------
 -- GunController.luau  (src/client/controllers)
 -- Manages gun equip, fire, and reload on the client.
--- Reports confirmed hits to the server via the ShootGun RemoteEvent.
+-- Reports confirmed hits to the server via the ReportZombieHit RemoteEvent.
 -- Visual effects (muzzle flash, particles) play locally; damage is server-auth.
 --
 -- Single Responsibility: gun input handling and local visual feedback.
@@ -15,7 +15,6 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
-local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 local HudController = require(replicated_storage.match.client.controllers.hud_controller)
 local InventoryController = require(replicated_storage.match.client.controllers.inventory_controller)
@@ -33,8 +32,8 @@ GunController.Name = TAG
 
 local _localPlayer  = Players.LocalPlayer
 local _mouse        = _localPlayer:GetMouse()
-local _shootRemote:      RemoteEvent
-local _hitSoundRemote:   RemoteEvent
+local _reportZombieHitRemote: RemoteEvent
+local _zombieHitConfirmedRemote: RemoteEvent
 
 -- Gun state — all mutable locals are module-private.
 local _isReloading:      boolean              = false
@@ -227,7 +226,7 @@ local function fire(): boolean
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
 	if hitZombie then
-		Logger.fireServer(_shootRemote, hitZombie, isHeadshot, hitPosition)
+		Logger.fireServer(_reportZombieHitRemote, hitZombie, isHeadshot, hitPosition)
 	end
 
 	task.wait(stats.fireCooldown)
@@ -387,11 +386,11 @@ local function onGunEquipped(gun: Tool)
 	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
 	local m = gun:FindFirstChild("Muzzle", true)
 	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
+	GunFxModule.onGunEquipped(gun)
 	-- Track camera/view changes and update cached muzzle to viewmodel muzzle when in first-person
 	startViewModeTracking()
 	GunViewModelModule.onGunEquipped(gun)
 	updateCachedMuzzleForView()
-	GunFxModule.onGunEquipped(gun)
 	-- Ensure FX module uses the controller's cached muzzle (viewmodel muzzle when appropriate)
 	GunFxModule.setCachedMuzzle(_cachedMuzzle)
 	startAimPitchTracking(gun)
@@ -474,6 +473,18 @@ local function onInventoryChanged(guns: { SyncedGun }, equippedSlot: number?)
 		end
 	end
 end
+
+local function onZombieHit(hitPosition: Vector3, isHeadshot: boolean)
+		local soundsFolder = replicated_storage:FindFirstChild("Sounds") :: Folder?
+		local templateName = isHeadshot and "ZombieHeadshotHit" or "ZombieBodyHit"
+		local template = soundsFolder and soundsFolder:FindFirstChild(templateName) :: Sound?
+		if not template then return end
+
+		local sound = (template :: Sound):Clone()
+		sound.Parent = _localPlayer.Character or workspace
+		sound:Play()
+		sound.Ended:Connect(function() sound:Destroy() end)
+	end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function GunController:Init()
@@ -482,11 +493,11 @@ end
 
 function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
-	_shootRemote = Framework.GetRemote(RemoteNames.SHOOT_GUN)
+	_reportZombieHitRemote = Framework.GetRemote("ReportZombieHit")
 
 	-- Top-up ammo remote for RNG hits where player rolled an already-equipped weapon
-	local _rngTopupRemote: RemoteEvent = Framework.GetRemote(RemoteNames.RNG_TOPUP_AMMO)
-	_rngTopupRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number, maxAmmo: number)
+	local _gunAmmoReplenishedRemote: RemoteEvent = Framework.GetRemote("GunAmmoReplenished")
+	_gunAmmoReplenishedRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number, maxAmmo: number)
 		assert(type(weaponName) == "string", "RNG top-up requires a weapon name")
 		assert(type(magSize) == "number", "RNG top-up requires a magazine size")
 		assert(type(maxAmmo) == "number", "RNG top-up requires a reserve ammo count")
@@ -502,7 +513,7 @@ function GunController:Start()
 
 	_localPlayer.CharacterAdded:Connect(function(character: Model)
 		onCharacterAdded(character)
-		watchCharacter(character)
+		watchCharacter(character)	
 	end)
 
 	_localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
@@ -523,20 +534,10 @@ function GunController:Start()
 	end)
 
 	-- Play hit sound (body or headshot) when server confirms a hit.
-	_hitSoundRemote = Framework.GetRemote(RemoteNames.ZOMBIE_HIT_SOUND)
-	local soundsFolder = replicated_storage:FindFirstChild("Sounds") :: Folder?
-	_hitSoundRemote.OnClientEvent:Connect(function(hitPosition: Vector3, isHeadshot: boolean)
-		local templateName = isHeadshot and "ZombieHeadshotHit" or "ZombieBodyHit"
-		local template = soundsFolder and soundsFolder:FindFirstChild(templateName) :: Sound?
-		if not template then return end
+	_zombieHitConfirmedRemote = Framework.GetRemote("ZombieHitConfirmed")
+	_zombieHitConfirmedRemote.OnClientEvent:Connect(onZombieHit)
 
-		local sound = (template :: Sound):Clone()
-		sound.Parent = _localPlayer.Character or workspace
-		sound:Play()
-		sound.Ended:Connect(function() sound:Destroy() end)
-	end)
-
-	Logger.info(TAG, "ShootGun remote acquired; gun watchers connected.")
+	Logger.info(TAG, "ReportZombieHit remote acquired; gun watchers connected.")
 end
 
 Framework.CreateController(GunController)

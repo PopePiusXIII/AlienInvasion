@@ -18,7 +18,6 @@ local server_script_service = game:GetService("ServerScriptService")
 
 local framework      = require(replicated_storage.common.shared.framework)
 local logger         = require(replicated_storage.common.shared.logger)
-local remote_names   = require(replicated_storage.match.shared.remote_names)
 local zombie_service = require(server_script_service.match.services.zombie_service)
 local economy_service = require(server_script_service.match.services.economy_service)
 local inventory_service = require(server_script_service.match.services.inventory_service)
@@ -31,9 +30,9 @@ local TAG = "CombatService"
 combat_service.Name = TAG
 
 function combat_service:Init()
-	local shoot_remote = framework.CreateRemote(remote_names.SHOOT_GUN)
-	local hit_sound_remote = framework.CreateRemote(remote_names.ZOMBIE_HIT_SOUND)
-	local damage_dealt_remote = framework.CreateRemote(remote_names.ZOMBIE_DAMAGE_DEALT)
+	local shoot_remote = framework.CreateRemote("ReportZombieHit")
+	local hit_sound_remote = framework.CreateRemote("ZombieHitConfirmed")
+	local damage_dealt_remote = framework.CreateRemote("ZombieDamageApplied")
 
 	logger.onServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
 		if not zombie_model or not zombie_model:IsA("Model") then return end

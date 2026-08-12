@@ -20,7 +20,6 @@ local Framework      = require(replicated_storage.common.shared.framework)
 local Logger         = require(replicated_storage.common.shared.logger)
 local ModifierConfig = require(replicated_storage.match.shared.configs.match_profile_config)
 local ModifierCategory = require(replicated_storage.match.shared.modifier_category)
-local RemoteNames = require(replicated_storage.match.shared.remote_names)
 
 local TAG = "SkillService"
 local SkillService = {}
@@ -155,7 +154,7 @@ end
 -- ── Lifecycle ────────────────────────────────────────────────────────────────
 
 function SkillService:Init()
-	_skillsSyncRemote = Framework.CreateRemote(RemoteNames.SKILLS_SYNC)
+	_skillsSyncRemote = Framework.CreateRemote("SkillsUpdated")
 	Logger.info(TAG, "Initialized.")
 end
 

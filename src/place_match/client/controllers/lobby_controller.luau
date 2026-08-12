@@ -12,7 +12,6 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 local Framework     = require(replicated_storage.common.shared.framework)
 local Logger        = require(replicated_storage.common.shared.logger)
 local Config        = require(replicated_storage.match.shared.configs.game_config)
-local RemoteNames   = require(replicated_storage.match.shared.remote_names)
 local HudController = require(replicated_storage.match.client.controllers.hud_controller)
 local LobbyPromptViewModule = require(replicated_storage.match.client.controllers.modules.lobby.lobby_prompt_view_module)
 local PadProximityModule = require(replicated_storage.match.client.controllers.modules.lobby.pad_proximity_module)
@@ -40,7 +39,7 @@ function LobbyController:Init()
 end
 
 function LobbyController:Start()
-	_requestPlayRemote = Framework.GetRemote(RemoteNames.REQUEST_PLAY)
+	_requestPlayRemote = Framework.GetRemote("RequestPlay")
 
 	-- Parent the prompt into the shared ScreenGui owned by HudController.
 	local playPrompt = LobbyPromptViewModule.buildPlayPrompt(HudController.getScreenGui())
