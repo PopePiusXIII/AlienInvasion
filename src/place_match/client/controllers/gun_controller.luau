@@ -474,6 +474,18 @@ local function onInventoryChanged(guns: { SyncedGun }, equippedSlot: number?)
 		end
 	end
 end
+
+local function onZombieHit(hitPosition: Vector3, isHeadshot: boolean)
+		local soundsFolder = replicated_storage:FindFirstChild("Sounds") :: Folder?
+		local templateName = isHeadshot and "ZombieHeadshotHit" or "ZombieBodyHit"
+		local template = soundsFolder and soundsFolder:FindFirstChild(templateName) :: Sound?
+		if not template then return end
+
+		local sound = (template :: Sound):Clone()
+		sound.Parent = _localPlayer.Character or workspace
+		sound:Play()
+		sound.Ended:Connect(function() sound:Destroy() end)
+	end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function GunController:Init()
@@ -524,17 +536,7 @@ function GunController:Start()
 
 	-- Play hit sound (body or headshot) when server confirms a hit.
 	_hitSoundRemote = Framework.GetRemote(RemoteNames.ZOMBIE_HIT_SOUND)
-	local soundsFolder = replicated_storage:FindFirstChild("Sounds") :: Folder?
-	_hitSoundRemote.OnClientEvent:Connect(function(hitPosition: Vector3, isHeadshot: boolean)
-		local templateName = isHeadshot and "ZombieHeadshotHit" or "ZombieBodyHit"
-		local template = soundsFolder and soundsFolder:FindFirstChild(templateName) :: Sound?
-		if not template then return end
-
-		local sound = (template :: Sound):Clone()
-		sound.Parent = _localPlayer.Character or workspace
-		sound:Play()
-		sound.Ended:Connect(function() sound:Destroy() end)
-	end)
+	_hitSoundRemote.OnClientEvent:Connect(onZombieHit)
 
 	Logger.info(TAG, "ShootGun remote acquired; gun watchers connected.")
 end
