@@ -1,6 +1,7 @@
 --!strict
 return {
 	STARTING_WAVE          = 1,
+	BATTLE_DURATION        = 300,
 	WAVE_START_DELAY       = 3,
 	WAVE_BETWEEN_DELAY     = 5,
 	WAVE_SPAWN_INTERVAL    = .2,

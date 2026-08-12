@@ -95,8 +95,14 @@ local function onCurrencyAcquired(silverStuds: number, _totalGold: number)
 	_sources.coins(silverStuds)
 end
 
+local function onWaveTimerUpdated(remainingSeconds: number)
+	assert(remainingSeconds >= 0, string.format("Wave timer cannot be negative, got %f", remainingSeconds))
+	_sources.timerSeconds(math.ceil(remainingSeconds))
+end
+
 function HudController:Start()
 	local waveClearRemote = Framework.GetRemote("WaveCleared")
+	local waveTimerUpdatedRemote = Framework.GetRemote("WaveTimerUpdated")
 	local healthUpdatedRemote = Framework.GetRemote("PlayerHealthUpdated")
 	local experienceUpdatedRemote = Framework.GetRemote("ExperienceUpdated")
 	local damageDealtRemote = Framework.GetRemote("ZombieDamageApplied")
@@ -120,6 +126,7 @@ function HudController:Start()
 		)
 	end)
 
+	Logger.onClientEvent(waveTimerUpdatedRemote, TAG, onWaveTimerUpdated)
 	Logger.onClientEvent(healthUpdatedRemote, TAG, onHealthUpdated)
 	Logger.onClientEvent(experienceUpdatedRemote, TAG, onExperienceUpdated)
 	Logger.onClientEvent(damageDealtRemote, TAG, onZombieDamageDealt)
