@@ -4,13 +4,16 @@ local ProfileServiceTypes = {}
 local replicated_storage = game:GetService("ReplicatedStorage")
 local GunCore = require(replicated_storage.common.shared.gun_core)
 
+export type WeaponUnlocks = { [string]: { [GunCore.GunRarity]: boolean } }
+
 export type PlayerProfile = {
+	schemaVersion: number,
 	bestWave: number,
 	totalGames: number,
 	goldStuds: number,
 	lifetimeSilverEarned: number,
 	lifetimeSilverSpent: number,
-	unlockedWeapons: { [string]: boolean },
+	unlockedWeapons: WeaponUnlocks,
 	inventory: { [string]: GunCore.GunInstance },  -- keyed by UUID
 }
 
@@ -32,13 +35,18 @@ export type API = {
 
 	-- Data operations
 	save: (player: Player) -> (),
-	saveStats: (player: Player, waveReached: number, economy: EconomySummary?) -> (),
-	isWeaponUnlocked: (player: Player, weaponName: string) -> boolean,
-	tryUnlockWeapon: (player: Player, weaponName: string) -> (boolean, string),
-	buyDeveloperGold: (player: Player, dev_product_id: number) -> boolean,
+	NotifyChanged: (player: Player, profile: PlayerProfile) -> (),
+}
 
-	-- Inventory management
-	grantGun: (player: Player, gunName: string) -> string?,
+export type EconomyAPI = {
+	saveStats: (player: Player, waveReached: number, economy: EconomySummary?) -> (),
+	isWeaponUnlocked: (player: Player, weaponName: string, rarity: GunCore.GunRarity) -> boolean,
+	tryUnlockWeapon: (player: Player, weaponName: string, rarity: GunCore.GunRarity) -> (boolean, string),
+	buyDeveloperGold: (player: Player, devProductId: number) -> boolean,
+}
+
+export type GunAPI = {
+	grantGun: (player: Player, gunName: string, rarity: GunCore.GunRarity) -> string?,
 	getInventory: (player: Player) -> { GunCore.GunInstance }?,
 	getGun: (player: Player, gunId: string) -> GunCore.GunInstance?,
 	removeGun: (player: Player, gunId: string) -> boolean,

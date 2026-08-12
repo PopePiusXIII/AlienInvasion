@@ -32,7 +32,7 @@ export type LobbyMainHUDProps = {
     hintText: string,
     parentGui: Instance?,
     playerName: string?,
-    onPurchaseWeapon: ((string) -> ())?,
+    onPurchaseWeapon: ((string, string) -> ())?,
     profileApi: ProfileDb.API?,
 }
 

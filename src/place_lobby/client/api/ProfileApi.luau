@@ -66,7 +66,7 @@ function ProfileApi.start()
 	syncProfileRemote.OnClientEvent:Connect(function(
 		gold: number,
 		silver: number,
-		unlockedWeapons: { string }?,
+		unlockedWeapons: { ProfileApiType.UnlockedWeapon }?,
 		inventory: { OwnedItem }?
 	)
 		_profile.gold = math.max(0, math.floor(gold))
@@ -105,11 +105,11 @@ end
 
 --- Requests a weapon purchase. The server validates the weapon and balance.
 --- The updated balance arrives through SYNC_PROFILE.
-function ProfileApi.purchaseWeapon(weaponName: string)
+function ProfileApi.purchaseWeapon(weaponName: string, rarity: string)
 	assert(_started, "ProfileApi.start() must be called before purchaseWeapon()")
 	local purchaseWeaponRemote = _purchaseWeaponRemote
 	assert(purchaseWeaponRemote, "PurchaseWeapon remote was not initialized")
-	purchaseWeaponRemote:FireServer(weaponName)
+	purchaseWeaponRemote:FireServer(weaponName, rarity)
 end
 
 return ProfileApi

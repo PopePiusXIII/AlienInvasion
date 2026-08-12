@@ -19,7 +19,12 @@ local _started = false
 local _profile: ProfileSnapshot = {
 	gold = 80,
 	silver = 1250,
-	unlockedWeapons = { "1911", "HandCannon", "MP5", "SCAR" },
+	unlockedWeapons = {
+		{ name = "1911", rarity = "common" },
+		{ name = "HandCannon", rarity = "common" },
+		{ name = "MP5", rarity = "common" },
+		{ name = "SCAR", rarity = "common" },
+	},
 	inventory = {
 		{ id = "UI-LABS-1911", name = "1911", rarity = "common" },
 		{ id = "UI-LABS-MP5", name = "MP5", rarity = "rare" },
@@ -81,9 +86,9 @@ function UiLabsApi.onChanged(callback: ProfileChangedCallback): () -> ()
 	end
 end
 
-function UiLabsApi.purchaseWeapon(weaponName: string)
+function UiLabsApi.purchaseWeapon(weaponName: string, rarity: string)
 	assert(_started, "UiLabsApi.start() must be called before purchaseWeapon()")
-	warn("[UiLabsApi] Mock purchase request: " .. weaponName)
+	warn("[UiLabsApi] Mock purchase request: " .. weaponName .. " at " .. rarity .. " rarity")
 end
 
 return UiLabsApi

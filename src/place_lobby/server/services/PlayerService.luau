@@ -11,7 +11,7 @@ local server_script_service = game:GetService("ServerScriptService")
 
 local Framework   = require(replicated_storage.shared.framework)
 local Logger      = require(replicated_storage.shared.logger)
-local ProfileService = require(server_script_service.ProfileService)
+local Profile = require(server_script_service.common.services.profile_api)
 local RemoteNames = require(replicated_storage.shared.RemoteNames)
 
 local TAG = "PlayerInitService"
@@ -21,9 +21,14 @@ local _syncProfileRemote: RemoteEvent
 
 local function syncProfile(player: Player, profile: any)
 	local unlockedWeapons = {}
-	for weaponName, unlocked in profile.unlockedWeapons do
-		if unlocked then
-			table.insert(unlockedWeapons, weaponName)
+	for weaponName, rarities in profile.unlockedWeapons do
+		for rarity, unlocked in rarities do
+			if unlocked then
+				table.insert(unlockedWeapons, {
+					name = weaponName,
+					rarity = rarity,
+				})
+			end
 		end
 	end
 
@@ -51,19 +56,19 @@ function PlayerInitService:Init()
 
 	-- Create the weapon purchase remote
 	local purchaseRemote = Framework.CreateRemote(RemoteNames.PURCHASE_WEAPON)
-	purchaseRemote.OnServerEvent:Connect(function(player: Player, weaponName: string)
-		Logger.info(TAG, "%s wants to buy %s.", player.Name, weaponName)
+	purchaseRemote.OnServerEvent:Connect(function(player: Player, weaponName: string, rarity: string)
+		Logger.info(TAG, "%s wants to buy %s at %s rarity.", player.Name, weaponName, rarity)
 
 		-- Attempt to unlock with gold
-		local success, errorCode = ProfileService.tryUnlockWeapon(player, weaponName)
+		local success, errorCode = Profile.EconomyApi.tryUnlockWeapon(player, weaponName, rarity)
 		if success then
-			Logger.info(TAG, "%s purchased %s with gold.", player.Name, weaponName)
+			Logger.info(TAG, "%s purchased %s at %s rarity with gold.", player.Name, weaponName, rarity)
 			return
 		end
 
 		-- If they don't have enough gold, prompt for developer product purchase
 		if errorCode == "INSUFFICIENT_GOLD" then
-			Logger.info(TAG, "%s doesn't have enough gold for %s — prompting dev product.", player.Name, weaponName)
+			Logger.info(TAG, "%s doesn't have enough gold for %s at %s rarity — prompting dev product.", player.Name, weaponName, rarity)
 			MarketplaceService:PromptProductPurchase(player, 3608323068) -- Replace with your gold product ID
 		else
 			Logger.warn(TAG, "%s purchase failed: %s", player.Name, errorCode)
@@ -72,11 +77,11 @@ function PlayerInitService:Init()
 end
 
 function PlayerInitService:Start()
-	ProfileService.OnProfileLoaded(syncProfile)
-	ProfileService.OnProfileChanged(syncProfile)
+	Profile.Db.OnProfileLoaded(syncProfile)
+	Profile.Db.OnProfileChanged(syncProfile)
 
 	for _, player in Players:GetPlayers() do
-		local profile = ProfileService:GetProfile(player)
+		local profile = Profile.Db:GetProfile(player)
 		if profile then
 			syncProfile(player, profile)
 		end

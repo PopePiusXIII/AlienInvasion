@@ -5,17 +5,17 @@
 return {
 	HEADSHOT_MULTIPLIER = 2.0,
 	STARTER_GUNS = {
-		"common_MP5",
-		"common_SCAR",
+		{ name = "MP5", rarity = "common" },
+		{ name = "SCAR", rarity = "common" },
 	},
 	STARTER_UNLOCKED_WEAPONS = {
-		"common_1911",
-		"common_HandCannon",
-		"common_MP5",
-		"common_SCAR",
+		{ name = "1911", rarity = "common" },
+		{ name = "HandCannon", rarity = "common" },
+		{ name = "MP5", rarity = "common" },
+		{ name = "SCAR", rarity = "common" },
 	},
-	GUN_STATS = {
-	common_Deagle = {
+		Deagle = {
+			common = {
 		rarity           = "common",
 		damage           = 34,
 		gold_cost        = 500,
@@ -33,7 +33,7 @@ return {
 			color     = Color3.fromRGB(255, 241, 160),
 		},
 	},
-	rare_Deagle = {
+			rare = {
 		rarity           = "rare",
 		damage           = 42,
 		gold_cost        = 625,
@@ -51,7 +51,7 @@ return {
 			color     = Color3.fromRGB(255, 243, 155),
 		},
 	},
-	legendary_Deagle = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 51,
 		gold_cost        = 750,
@@ -69,7 +69,7 @@ return {
 			color     = Color3.fromRGB(255, 245, 150),
 		},
 	},
-	epic_Deagle = {
+			epic = {
 		rarity           = "epic",
 		damage           = 61,
 		gold_cost        = 900,
@@ -87,7 +87,7 @@ return {
 			color     = Color3.fromRGB(255, 247, 145),
 		},
 	},
-	mythic_Deagle = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 75,
 		gold_cost        = 1100,
@@ -105,7 +105,9 @@ return {
 			color     = Color3.fromRGB(255, 249, 140),
 		},
 	},
-	["common_1911"] = {
+		},
+		["1911"] = {
+			common = {
 		rarity           = "common",
 		damage           = 28,
 		image            = "rbxassetid://87276978756456",
@@ -122,7 +124,7 @@ return {
 			color     = Color3.fromRGB(255, 244, 200),
 		},
 	},
-	["rare_1911"] = {
+			rare = {
 		rarity           = "rare",
 		damage           = 35,
 		image            = "rbxassetid://0",
@@ -139,7 +141,7 @@ return {
 			color     = Color3.fromRGB(255, 246, 195),
 		},
 	},
-	["legendary_1911"] = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 42,
 		image            = "rbxassetid://0",
@@ -156,7 +158,7 @@ return {
 			color     = Color3.fromRGB(255, 248, 190),
 		},
 	},
-	["epic_1911"] = {
+			epic = {
 		rarity           = "epic",
 		damage           = 50,
 		image            = "rbxassetid://0",
@@ -173,7 +175,7 @@ return {
 			color     = Color3.fromRGB(255, 250, 185),
 		},
 	},
-	["mythic_1911"] = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 62,
 		image            = "rbxassetid://0",
@@ -190,7 +192,9 @@ return {
 			color     = Color3.fromRGB(255, 252, 180),
 		},
 	},
-	common_AA12 = {
+		},
+		AA12 = {
+			common = {
 		rarity           = "common",
 		damage           = 85,
 		image            = "rbxassetid://0",
@@ -208,7 +212,7 @@ return {
 			color     = Color3.fromRGB(255, 200, 140),
 		},
 	},
-	rare_AA12 = {
+			rare = {
 		rarity           = "rare",
 		damage           = 106,
 		image            = "rbxassetid://0",
@@ -226,7 +230,7 @@ return {
 			color     = Color3.fromRGB(255, 202, 135),
 		},
 	},
-	legendary_AA12 = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 128,
 		image            = "rbxassetid://0",
@@ -244,7 +248,7 @@ return {
 			color     = Color3.fromRGB(255, 204, 130),
 		},
 	},
-	epic_AA12 = {
+			epic = {
 		rarity           = "epic",
 		damage           = 153,
 		image            = "rbxassetid://0",
@@ -262,7 +266,7 @@ return {
 			color     = Color3.fromRGB(255, 206, 125),
 		},
 	},
-	mythic_AA12 = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 187,
 		image            = "rbxassetid://0",
@@ -280,7 +284,9 @@ return {
 			color     = Color3.fromRGB(255, 208, 120),
 		},
 	},
-	common_M82 = {
+		},
+		M82 = {
+			common = {
 		rarity           = "common",
 		damage           = 250,
 		gold_cost        = 1000,
@@ -298,7 +304,7 @@ return {
 			color     = Color3.fromRGB(255, 219, 130),
 		},
 	},
-	rare_M82 = {
+			rare = {
 		rarity           = "rare",
 		damage           = 312,
 		gold_cost        = 1250,
@@ -316,7 +322,7 @@ return {
 			color     = Color3.fromRGB(255, 221, 125),
 		},
 	},
-	legendary_M82 = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 375,
 		gold_cost        = 1500,
@@ -334,7 +340,7 @@ return {
 			color     = Color3.fromRGB(255, 223, 120),
 		},
 	},
-	epic_M82 = {
+			epic = {
 		rarity           = "epic",
 		damage           = 450,
 		gold_cost        = 1800,
@@ -352,7 +358,7 @@ return {
 			color     = Color3.fromRGB(255, 225, 115),
 		},
 	},
-	mythic_M82 = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 550,
 		gold_cost        = 2200,
@@ -370,7 +376,9 @@ return {
 			color     = Color3.fromRGB(255, 227, 110),
 		},
 	},
-	common_M60 = {
+		},
+		M60 = {
+			common = {
 		rarity           = "common",
 		damage           = 42,
 		gold_cost        = 800,
@@ -388,7 +396,7 @@ return {
 			color     = Color3.fromRGB(255, 226, 140),
 		},
 	},
-	rare_M60 = {
+			rare = {
 		rarity           = "rare",
 		damage           = 52,
 		gold_cost        = 1000,
@@ -406,7 +414,7 @@ return {
 			color     = Color3.fromRGB(255, 228, 135),
 		},
 	},
-	legendary_M60 = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 63,
 		gold_cost        = 1200,
@@ -424,7 +432,7 @@ return {
 			color     = Color3.fromRGB(255, 230, 130),
 		},
 	},
-	epic_M60 = {
+			epic = {
 		rarity           = "epic",
 		damage           = 76,
 		gold_cost        = 1440,
@@ -442,7 +450,7 @@ return {
 			color     = Color3.fromRGB(255, 232, 125),
 		},
 	},
-	mythic_M60 = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 92,
 		gold_cost        = 1760,
@@ -460,7 +468,9 @@ return {
 			color     = Color3.fromRGB(255, 234, 120),
 		},
 	},
-	common_MG42 = {
+		},
+		MG42 = {
+			common = {
 		rarity           = "common",
 		damage           = 42,
 		gold_cost        = 750,
@@ -478,7 +488,7 @@ return {
 			color     = Color3.fromRGB(255, 226, 140),
 		},
 	},
-	rare_MG42 = {
+			rare = {
 		rarity           = "rare",
 		damage           = 52,
 		gold_cost        = 938,
@@ -496,7 +506,7 @@ return {
 			color     = Color3.fromRGB(255, 228, 135),
 		},
 	},
-	legendary_MG42 = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 63,
 		gold_cost        = 1125,
@@ -514,7 +524,7 @@ return {
 			color     = Color3.fromRGB(255, 230, 130),
 		},
 	},
-	epic_MG42 = {
+			epic = {
 		rarity           = "epic",
 		damage           = 76,
 		gold_cost        = 1350,
@@ -532,7 +542,7 @@ return {
 			color     = Color3.fromRGB(255, 232, 125),
 		},
 	},
-	mythic_MG42 = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 92,
 		gold_cost        = 1650,
@@ -550,7 +560,9 @@ return {
 			color     = Color3.fromRGB(255, 234, 120),
 		},
 	},
-	common_M240B = {
+		},
+		M240B = {
+			common = {
 		rarity           = "common",
 		damage           = 46,
 		gold_cost        = 900,
@@ -568,7 +580,7 @@ return {
 			color     = Color3.fromRGB(255, 214, 128),
 		},
 	},
-	rare_M240B = {
+			rare = {
 		rarity           = "rare",
 		damage           = 58,
 		gold_cost        = 1125,
@@ -586,7 +598,7 @@ return {
 			color     = Color3.fromRGB(255, 216, 123),
 		},
 	},
-	legendary_M240B = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 69,
 		gold_cost        = 1350,
@@ -604,7 +616,7 @@ return {
 			color     = Color3.fromRGB(255, 218, 118),
 		},
 	},
-	epic_M240B = {
+			epic = {
 		rarity           = "epic",
 		damage           = 83,
 		gold_cost        = 1620,
@@ -622,7 +634,7 @@ return {
 			color     = Color3.fromRGB(255, 220, 113),
 		},
 	},
-	mythic_M240B = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 101,
 		gold_cost        = 1980,
@@ -640,7 +652,9 @@ return {
 			color     = Color3.fromRGB(255, 222, 108),
 		},
 	},
-	common_BushMaster = {
+		},
+		BushMaster = {
+			common = {
 		rarity           = "common",
 		damage           = 100,
 		gold_cost        = 600,
@@ -659,7 +673,7 @@ return {
 			color     = Color3.fromRGB(255, 214, 128),
 		},
 	},
-	rare_BushMaster = {
+			rare = {
 		rarity           = "rare",
 		damage           = 125,
 		gold_cost        = 750,
@@ -678,7 +692,7 @@ return {
 			color     = Color3.fromRGB(255, 216, 123),
 		},
 	},
-	legendary_BushMaster = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 150,
 		gold_cost        = 900,
@@ -697,7 +711,7 @@ return {
 			color     = Color3.fromRGB(255, 218, 118),
 		},
 	},
-	epic_BushMaster = {
+			epic = {
 		rarity           = "epic",
 		damage           = 180,
 		gold_cost        = 1080,
@@ -716,7 +730,7 @@ return {
 			color     = Color3.fromRGB(255, 220, 113),
 		},
 	},
-	mythic_BushMaster = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 220,
 		gold_cost        = 1320,
@@ -735,7 +749,9 @@ return {
 			color     = Color3.fromRGB(255, 222, 108),
 		},
 	},
-	common_HandCannon = {
+		},
+		HandCannon = {
+			common = {
 		rarity           = "common",
 		damage           = 180,
 		gold_cost        = 1200,
@@ -753,7 +769,7 @@ return {
 			color     = Color3.fromRGB(255, 180, 130),
 		},
 	},
-	rare_HandCannon = {
+			rare = {
 		rarity           = "rare",
 		damage           = 225,
 		gold_cost        = 1500,
@@ -771,7 +787,7 @@ return {
 			color     = Color3.fromRGB(255, 182, 125),
 		},
 	},
-	legendary_HandCannon = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 270,
 		gold_cost        = 1800,
@@ -789,7 +805,7 @@ return {
 			color     = Color3.fromRGB(255, 184, 120),
 		},
 	},
-	epic_HandCannon = {
+			epic = {
 		rarity           = "epic",
 		damage           = 324,
 		gold_cost        = 2160,
@@ -807,7 +823,7 @@ return {
 			color     = Color3.fromRGB(255, 186, 115),
 		},
 	},
-	mythic_HandCannon = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 396,
 		gold_cost        = 2640,
@@ -825,7 +841,9 @@ return {
 			color     = Color3.fromRGB(255, 188, 110),
 		},
 	},
-	common_BAR = {
+		},
+		BAR = {
+			common = {
 		rarity           = "common",
 		damage           = 45,
 		gold_cost        = 1200,
@@ -843,7 +861,7 @@ return {
 			color     = Color3.fromRGB(255, 210, 140),
 		},
 	},
-	rare_BAR = {
+			rare = {
 		rarity           = "rare",
 		damage           = 56,
 		gold_cost        = 1500,
@@ -861,7 +879,7 @@ return {
 			color     = Color3.fromRGB(255, 212, 135),
 		},
 	},
-	legendary_BAR = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 68,
 		gold_cost        = 1800,
@@ -879,7 +897,7 @@ return {
 			color     = Color3.fromRGB(255, 214, 130),
 		},
 	},
-	epic_BAR = {
+			epic = {
 		rarity           = "epic",
 		damage           = 81,
 		gold_cost        = 2160,
@@ -897,7 +915,7 @@ return {
 			color     = Color3.fromRGB(255, 216, 125),
 		},
 	},
-	mythic_BAR = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 99,
 		gold_cost        = 2640,
@@ -915,7 +933,9 @@ return {
 			color     = Color3.fromRGB(255, 218, 120),
 		},
 	},
-	common_M870 = {
+		},
+		M870 = {
+			common = {
 		rarity           = "common",
 		damage           = 120,
 		gold_cost        = 1200,
@@ -934,7 +954,7 @@ return {
 			color     = Color3.fromRGB(255, 200, 140),
 		},
 	},
-	rare_M870 = {
+			rare = {
 		rarity           = "rare",
 		damage           = 150,
 		gold_cost        = 1500,
@@ -953,7 +973,7 @@ return {
 			color     = Color3.fromRGB(255, 202, 135),
 		},
 	},
-	legendary_M870 = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 180,
 		gold_cost        = 1800,
@@ -972,7 +992,7 @@ return {
 			color     = Color3.fromRGB(255, 204, 130),
 		},
 	},
-	epic_M870 = {
+			epic = {
 		rarity           = "epic",
 		damage           = 216,
 		gold_cost        = 2160,
@@ -991,7 +1011,7 @@ return {
 			color     = Color3.fromRGB(255, 206, 125),
 		},
 	},
-	mythic_M870 = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 264,
 		gold_cost        = 2640,
@@ -1010,7 +1030,9 @@ return {
 			color     = Color3.fromRGB(255, 208, 120),
 		},
 	},
-	common_MP5 = {
+		},
+		MP5 = {
+			common = {
 		rarity           = "common",
 		damage           = 25,
 		gold_cost        = 400,
@@ -1028,7 +1050,7 @@ return {
 			color     = Color3.fromRGB(180, 235, 255),
 		},
 	},
-	rare_MP5 = {
+			rare = {
 		rarity           = "rare",
 		damage           = 31,
 		gold_cost        = 500,
@@ -1046,7 +1068,7 @@ return {
 			color     = Color3.fromRGB(183, 237, 250),
 		},
 	},
-	legendary_MP5 = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 38,
 		gold_cost        = 600,
@@ -1064,7 +1086,7 @@ return {
 			color     = Color3.fromRGB(186, 239, 245),
 		},
 	},
-	epic_MP5 = {
+			epic = {
 		rarity           = "epic",
 		damage           = 45,
 		gold_cost        = 720,
@@ -1082,7 +1104,7 @@ return {
 			color     = Color3.fromRGB(189, 241, 240),
 		},
 	},
-	mythic_MP5 = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 55,
 		gold_cost        = 880,
@@ -1100,7 +1122,9 @@ return {
 			color     = Color3.fromRGB(192, 243, 235),
 		},
 	},
-	common_SCAR = {
+		},
+		SCAR = {
+			common = {
 		rarity           = "common",
 		damage           = 35,
 		gold_cost        = 550,
@@ -1118,7 +1142,7 @@ return {
 			color     = Color3.fromRGB(255, 220, 180),
 		},
 	},
-	rare_SCAR = {
+			rare = {
 		rarity           = "rare",
 		damage           = 44,
 		gold_cost        = 688,
@@ -1136,7 +1160,7 @@ return {
 			color     = Color3.fromRGB(255, 222, 175),
 		},
 	},
-	legendary_SCAR = {
+			legendary = {
 		rarity           = "legendary",
 		damage           = 52,
 		gold_cost        = 825,
@@ -1154,7 +1178,7 @@ return {
 			color     = Color3.fromRGB(255, 224, 170),
 		},
 	},
-	epic_SCAR = {
+			epic = {
 		rarity           = "epic",
 		damage           = 63,
 		gold_cost        = 990,
@@ -1172,7 +1196,7 @@ return {
 			color     = Color3.fromRGB(255, 226, 165),
 		},
 	},
-	mythic_SCAR = {
+			mythic = {
 		rarity           = "mythic",
 		damage           = 77,
 		gold_cost        = 1210,
