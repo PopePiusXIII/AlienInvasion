@@ -386,11 +386,11 @@ local function onGunEquipped(gun: Tool)
 	_deactivatedConn  = gun.Deactivated:Connect(stopTriggerFiring)
 	local m = gun:FindFirstChild("Muzzle", true)
 	_cachedMuzzle = (m and m:IsA("BasePart")) and m :: BasePart or nil
+	GunFxModule.onGunEquipped(gun)
 	-- Track camera/view changes and update cached muzzle to viewmodel muzzle when in first-person
 	startViewModeTracking()
 	GunViewModelModule.onGunEquipped(gun)
 	updateCachedMuzzleForView()
-	GunFxModule.onGunEquipped(gun)
 	-- Ensure FX module uses the controller's cached muzzle (viewmodel muzzle when appropriate)
 	GunFxModule.setCachedMuzzle(_cachedMuzzle)
 	startAimPitchTracking(gun)

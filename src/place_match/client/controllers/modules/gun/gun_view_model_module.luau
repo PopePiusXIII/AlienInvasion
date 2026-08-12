@@ -5,6 +5,7 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 local Config = require(replicated_storage.match.shared.configs.game_config)
+local GunFxModule = require(replicated_storage.match.client.controllers.modules.gun.gun_fx_module)
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -118,6 +119,7 @@ local function destroyActiveViewmodel()
         renderTaskId = nil
     end
     if activeViewmodel then
+        GunFxModule.onViewmodelStateChanged(nil)
         activeViewmodel:Destroy()
         activeViewmodel = nil
     end
@@ -137,6 +139,8 @@ local function mountViewmodel(template: Model)
     if root and activeViewmodel.PrimaryPart == nil then
         activeViewmodel.PrimaryPart = root
     end
+
+    GunFxModule.onViewmodelStateChanged(activeViewmodel)
 
     -- Immediately hide world tool and real arms while viewmodel is mounted
     setWorldToolVisible(false)
@@ -209,6 +213,8 @@ local function updateViewmodelVisibility()
     else
         if activeViewmodel then
             destroyActiveViewmodel()
+        else
+            GunFxModule.onViewmodelStateChanged(nil)
         end
         setWorldToolVisible(true)
     end

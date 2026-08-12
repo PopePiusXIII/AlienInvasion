@@ -20,6 +20,7 @@ local _cachedShootTrack:  AnimationTrack? = nil
 local _cachedReloadAnimObj: Animation?     = nil
 local _cachedReloadAnimator: Animator?     = nil
 local _cachedReloadTrack:  AnimationTrack? = nil
+local _activeViewModel: Model? = nil
 
 type GunTracerStyle = {
 	lifetime: number,
@@ -27,13 +28,11 @@ type GunTracerStyle = {
 	color: Color3,
 }
 
--- Helper: find the camera-mounted viewmodel instance for the currently cached gun name.
-local function findViewModelInstance(): Model?
-	if not _currentGunName then return nil end
-	local cam = workspace.CurrentCamera
-	if not cam then return nil end
-	local vm = cam:FindFirstChild(_currentGunName)
-	return (vm and vm:IsA("Model")) and vm :: Model or nil
+local function getActiveViewModel(): Model?
+	if not _activeViewModel or not _activeViewModel.Parent then
+		return nil
+	end
+	return _activeViewModel
 end
 
 local function removePrefix(inventoryName: string): string
@@ -79,8 +78,8 @@ local function hasValidCachedReloadTrack(): boolean
 		return false
 	end
 
-	local animatorParent = _cachedReloadAnimator.Parent
-	return animatorParent ~= nil and animatorParent.Parent ~= nil
+	local viewmodel = getActiveViewModel()
+	return viewmodel ~= nil and getAnimatorForVm(viewmodel) == _cachedReloadAnimator
 end
 
 local function spawnTemplateMuzzleFlash(muzzle: BasePart, muzzleDelay: number): boolean
@@ -149,49 +148,6 @@ function GunFxModule.onGunEquipped(gun: Tool)
 	_cachedReloadAnimObj = nil
 	_cachedReloadAnimator = nil
 	_cachedReloadTrack = nil
-
-	-- Attempt to preload the reload animation track into the viewmodel animator so
-	-- the track.Length is available immediately when first played.
-	do
-		local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
-		if viewModelsFolder then
-			local template = viewModelsFolder:FindFirstChild(_currentGunName)
-			local animObj = template and (template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation"))
-			if animObj and animObj:IsA("Animation") then
-				local cam = workspace.CurrentCamera
-				if cam then
-					local vmInstance = cam:FindFirstChild(_currentGunName)
-					if vmInstance and vmInstance:IsA("Model") then
-						local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
-						local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
-						local animator: Animator? = nil
-						if animationController then
-							animator = animationController:FindFirstChildWhichIsA("Animator")
-							if not animator then
-								animator = Instance.new("Animator")
-								animator.Parent = animationController
-							end
-						elseif humanoid then
-							animator = humanoid:FindFirstChildWhichIsA("Animator")
-							if not animator then
-								animator = Instance.new("Animator")
-								animator.Parent = humanoid
-							end
-						end
-						if animator then
-							local ok, track = pcall(function()
-								return animator:LoadAnimation(animObj :: Animation)
-							end)
-							if ok and track then
-								_cachedReloadAnimator = animator
-								_cachedReloadTrack = track
-							end
-						end
-					end
-				end
-			end
-		end
-	end
 end
 
 function GunFxModule.onGunUnequipped()
@@ -208,33 +164,77 @@ function GunFxModule.onGunUnequipped()
 	_cachedReloadAnimObj = nil
 	_cachedReloadAnimator = nil
 	_cachedReloadTrack = nil
+	_activeViewModel = nil
+end
+
+function GunFxModule.onViewmodelStateChanged(viewmodel: Model?)
+	if _cachedShootTrack then
+		_cachedShootTrack:Stop(0)
+	end
+	if _cachedReloadTrack then
+		_cachedReloadTrack:Stop(0)
+	end
+
+	_activeViewModel = viewmodel
+	_cachedShootAnimObj = nil
+	_cachedAnimator = nil
+	_cachedShootTrack = nil
+	_cachedReloadAnimObj = nil
+	_cachedReloadAnimator = nil
+	_cachedReloadTrack = nil
+
+	if not viewmodel then
+		return
+	end
+
+	local gunName = assert(_currentGunName, "Cannot set a ViewModel animation context without an equipped gun")
+	assert(
+		viewmodel.Name == gunName,
+		string.format("Active ViewModel '%s' does not match equipped gun '%s'", viewmodel.Name, gunName)
+	)
+
+	local animator = assert(
+		getAnimatorForVm(viewmodel),
+		string.format("Missing Animator for ViewModel '%s'", viewmodel.Name)
+	)
+	local shootAnimation = viewmodel:FindFirstChild("shootAnimation") or viewmodel:FindFirstChild("ShootAnimation")
+	assert(
+		shootAnimation and shootAnimation:IsA("Animation"),
+		string.format("Active ViewModel for gun '%s' is missing a shoot Animation", gunName)
+	)
+	local reloadAnimation = viewmodel:FindFirstChild("reloadAnimation") or viewmodel:FindFirstChild("ReloadAnimation")
+	assert(
+		reloadAnimation and reloadAnimation:IsA("Animation"),
+		string.format("Active ViewModel for gun '%s' is missing a reload Animation", gunName)
+	)
+
+	_cachedAnimator = animator
+	_cachedShootAnimObj = shootAnimation :: Animation
+	_cachedShootTrack = animator:LoadAnimation(shootAnimation :: Animation)
+	_cachedReloadAnimator = animator
+	_cachedReloadAnimObj = reloadAnimation :: Animation
+	_cachedReloadTrack = animator:LoadAnimation(reloadAnimation :: Animation)
 end
 
 local function ensureShootAnimationReady(): boolean
 	if not _currentGunName then return false end
 
-	-- If we already have a track and its animator still exists, reuse it
-	if _cachedShootTrack and _cachedAnimator and _cachedAnimator.Parent and _cachedAnimator.Parent.Parent then
+	local vmInstance = getActiveViewModel()
+	if not vmInstance then return false end
+
+	-- Reuse a track only when it belongs to the explicitly mounted viewmodel.
+	if _cachedShootTrack and _cachedAnimator and getAnimatorForVm(vmInstance) == _cachedAnimator then
 		return true
 	end
 
 	-- Lazy-resolve the animation object from the template if not cached
 	if not _cachedShootAnimObj then
-		local viewModelsFolder = replicated_storage:FindFirstChild("ViewModels")
-		if viewModelsFolder then
-			local template = viewModelsFolder:FindFirstChild(_currentGunName)
-			if template and template:IsA("Model") then
-				local animObj = template:FindFirstChild("shootAnimation") or template:FindFirstChild("ShootAnimation")
-				if animObj and animObj:IsA("Animation") then
-					_cachedShootAnimObj = animObj :: Animation
-				end
-			end
+		local animObj = vmInstance:FindFirstChild("shootAnimation") or vmInstance:FindFirstChild("ShootAnimation")
+		if animObj and animObj:IsA("Animation") then
+			_cachedShootAnimObj = animObj :: Animation
 		end
 	end
 
-	-- Resolve the viewmodel instance and animator using shared helpers
-	local vmInstance = findViewModelInstance()
-	if not vmInstance then return false end
 	local animator = getAnimatorForVm(vmInstance)
 	if not animator then return false end
 
@@ -297,32 +297,17 @@ function GunFxModule.playReloadAnimation(targetDuration: number): AnimationTrack
 	assert(targetDuration > 0, string.format("Reload duration must be positive, got %f", targetDuration))
 
 	local gunName = assert(_currentGunName, "Cannot play reload animation without an equipped gun")
-	local viewModelsFolder = assert(
-		replicated_storage:FindFirstChild("ViewModels"),
-		"Missing replicated_storage.ViewModels required for reload animation"
-	)
-	local template = assert(
-		viewModelsFolder:FindFirstChild(gunName),
-		string.format("Missing ViewModel template for gun '%s'", gunName)
-	)
-	assert(template:IsA("Model"), string.format("ViewModel template for gun '%s' must be a Model", gunName))
-
-	local animation = template:FindFirstChild("reloadAnimation") or template:FindFirstChild("ReloadAnimation")
+	local vmInstance = assert(getActiveViewModel(), string.format("Missing mounted ViewModel for gun '%s'", gunName))
+	local animation = vmInstance:FindFirstChild("reloadAnimation") or vmInstance:FindFirstChild("ReloadAnimation")
 	assert(
 		animation and animation:IsA("Animation"),
-		string.format("ViewModel template for gun '%s' is missing a reload Animation", gunName)
+		string.format("Mounted ViewModel for gun '%s' is missing a reload Animation", gunName)
 	)
 
 	local track: AnimationTrack
 	if hasValidCachedReloadTrack() then
 		track = assert(_cachedReloadTrack, "Validated reload track unexpectedly missing")
 	else
-		local cam = assert(workspace.CurrentCamera, "Missing workspace.CurrentCamera for reload animation")
-		local vmInstance = assert(
-			cam:FindFirstChild(gunName),
-			string.format("Missing camera-mounted ViewModel instance for gun '%s'", gunName)
-		)
-		assert(vmInstance:IsA("Model"), string.format("Camera ViewModel for gun '%s' must be a Model", gunName))
 		local animator = assert(
 			getAnimatorForVm(vmInstance),
 			string.format("Missing Animator for ViewModel '%s'", vmInstance.Name)
