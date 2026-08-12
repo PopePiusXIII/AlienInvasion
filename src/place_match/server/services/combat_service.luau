@@ -22,7 +22,7 @@ local zombie_service = require(server_script_service.match.services.zombie_servi
 local economy_service = require(server_script_service.match.services.economy_service)
 local inventory_service = require(server_script_service.match.services.inventory_service)
 local gun_core       = require(replicated_storage.common.shared.gun_core)
-local profile_service = require(server_script_service.common.services.profile_db)
+local profile_api = require(server_script_service.common.services.profile_api)
 local wave_config    = require(replicated_storage.match.shared.configs.wave_config)
 
 local combat_service = {}
@@ -46,7 +46,7 @@ function combat_service:Init()
 		local level = inventory_service.getGunLevel(player, equipped_gun_id)
 
 		-- Get resolved stats (base rarity stats + level multipliers)
-		local gun = profile_service.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
+		local gun = profile_api.GunApi.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
 		if not gun then return end
 
 		local shooter_pos: Vector3?
