@@ -495,7 +495,6 @@ function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
 	_reportZombieHitRemote = Framework.GetRemote("ReportZombieHit")
 
-	-- DELETE
 	-- Top-up ammo remote for RNG hits where player rolled an already-equipped weapon
 	local _gunAmmoReplenishedRemote: RemoteEvent = Framework.GetRemote("GunAmmoReplenished")
 	_gunAmmoReplenishedRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number, maxAmmo: number)
@@ -509,7 +508,6 @@ function GunController:Start()
 		end
 		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, magSize, maxAmmo)
 	end)
-	-- DELETE
 
 	InventoryController.onInventoryChanged(onInventoryChanged)
 
