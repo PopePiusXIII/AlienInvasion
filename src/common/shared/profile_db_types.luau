@@ -6,6 +6,11 @@ local GunCore = require(replicated_storage.common.shared.gun_core)
 
 export type WeaponUnlocks = { [string]: { [GunCore.GunRarity]: boolean } }
 
+export type StoredGun = {
+	name: string,
+	rarity: GunCore.GunRarity,
+}
+
 export type PlayerProfile = {
 	schemaVersion: number,
 	bestWave: number,
@@ -14,7 +19,7 @@ export type PlayerProfile = {
 	lifetimeSilverEarned: number,
 	lifetimeSilverSpent: number,
 	unlockedWeapons: WeaponUnlocks,
-	inventory: { [string]: GunCore.GunInstance },  -- keyed by UUID
+	inventory: { [string]: StoredGun },  -- keyed by UUID
 }
 
 export type EconomySummary = {

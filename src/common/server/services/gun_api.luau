@@ -16,11 +16,20 @@ local ProfileDb = require(server_script_service.common.services.profile_db)
 local TAG = "GunApi"
 
 type GunInstance = GunCore.GunInstance
+type StoredGun = ProfileDbType.StoredGun
 
 local GunApi = {}
 
 local function generateGunId(): string
 	return HttpService:GenerateGUID():upper()
+end
+
+local function createGunInstance(id: string, storedGun: StoredGun): GunInstance
+	return {
+		id = id,
+		name = storedGun.name,
+		rarity = storedGun.rarity,
+	}
 end
 
 function GunApi.grantGun(player: Player, gunName: string, rarity: GunCore.GunRarity): string?
@@ -44,7 +53,7 @@ function GunApi.grantGun(player: Player, gunName: string, rarity: GunCore.GunRar
 	end
 	unlockedRarities[rarity] = true
 	local id = generateGunId()
-	profile.inventory[id] = { id = id, name = gunName, rarity = rarity }
+	profile.inventory[id] = { name = gunName, rarity = rarity }
 
 	Logger.info(TAG, "%s granted %s at %s rarity (id=%s).", player.Name, gunName, rarity, id)
 	ProfileDb.save(player)
@@ -58,8 +67,8 @@ function GunApi.getInventory(player: Player): { GunInstance }?
 	end
 
 	local result: { GunInstance } = {}
-	for _, instance in profile.inventory do
-		table.insert(result, instance)
+	for id, storedGun in profile.inventory do
+		table.insert(result, createGunInstance(id, storedGun))
 	end
 	return result
 end
@@ -69,7 +78,11 @@ function GunApi.getGun(player: Player, gunId: string): GunInstance?
 	if not profile then
 		return nil
 	end
-	return profile.inventory[gunId]
+	local storedGun = profile.inventory[gunId]
+	if not storedGun then
+		return nil
+	end
+	return createGunInstance(gunId, storedGun)
 end
 
 function GunApi.removeGun(player: Player, gunId: string): boolean
@@ -102,11 +115,11 @@ function GunApi.mergeGuns(player: Player, gunIds: { string }): (boolean, string?
 
 	local instances: { GunInstance } = {}
 	for _, gunId in ipairs(gunIds) do
-		local instance = profile.inventory[gunId]
-		if not instance then
+		local storedGun = profile.inventory[gunId]
+		if not storedGun then
 			return false, nil, "GUN_NOT_FOUND"
 		end
-		table.insert(instances, instance)
+		table.insert(instances, createGunInstance(gunId, storedGun))
 	end
 
 	local first = instances[1]
@@ -132,7 +145,7 @@ function GunApi.mergeGuns(player: Player, gunIds: { string }): (boolean, string?
 	end
 
 	local id = generateGunId()
-	profile.inventory[id] = { id = id, name = first.name, rarity = newRarity }
+	profile.inventory[id] = { name = first.name, rarity = newRarity }
 	Logger.info(TAG, "%s merged %d %s %s into %s (id=%s).", player.Name, #instances, first.rarity, first.name, newRarity, id)
 	ProfileDb.save(player)
 	return true, id, nil

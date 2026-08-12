@@ -27,15 +27,38 @@ local profiles: { [string]: ProfileDbType.PlayerProfile } = {
 			["1911"] = { common = true },
 			MP5 = { common = true },
 			SCAR = { common = true },
+			MG42 = { common = true },
 		},
 		inventory = {
-			["DEV-COMMON-1911"] = {
-				id = "DEV-COMMON-1911",
-				name = "1911",
+			["DEV-COMMON-MG42"] = {
+				name = "MG42",
 				rarity = "common",
 			},
 			["DEV-COMMON-MP5"] = {
-				id = "DEV-COMMON-MP5",
+				name = "MP5",
+				rarity = "common",
+			},
+		},
+	},
+	FULL2_LOADOUT = {
+		schemaVersion = 1,
+		bestWave = 25,
+		totalGames = 10,
+		goldStuds = 10_000,
+		lifetimeSilverEarned = 25_000,
+		lifetimeSilverSpent = 5_000,
+		unlockedWeapons = {
+			["1911"] = { common = true },
+			MP5 = { common = true },
+			SCAR = { common = true },
+			MG42 = { common = true },
+		},
+		inventory = {
+			["DEV-COMMON-MG42"] = {
+				name = "MG42",
+				rarity = "common",
+			},
+			["DEV-COMMON-MP5"] = {
 				name = "MP5",
 				rarity = "common",
 			},
@@ -45,6 +68,6 @@ local profiles: { [string]: ProfileDbType.PlayerProfile } = {
 
 return {
 	USE_SPOOF = true,
-	ACTIVE_PROFILE = "FULL_LOADOUT",
+	ACTIVE_PROFILE = "FULL2_LOADOUT",
 	PROFILES = profiles,
 }
