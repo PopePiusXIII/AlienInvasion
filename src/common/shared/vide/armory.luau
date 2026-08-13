@@ -16,11 +16,11 @@ local combatCfg = require(replicated_storage.common.shared.configs.combat_config
 local create = vide.create
 
 -- ── Weapon grid data ────────────────────────────────────────────────────────
--- `configKey` maps to CombatConfig.GUN_STATS[key].  If nil, the card won't
+-- `configKey` maps to CombatConfig[gunName].  If nil, the card won't
 -- render full stats (placeholder / coming-soon).
 type WeaponEntry = {
     label: string,          -- display name on grid icon
-    configKey: string?,     -- key into CombatConfig.GUN_STATS (nil = placeholder)
+    configKey: string?,     -- key into CombatConfig (nil = placeholder)
     image: string,
 }
 
@@ -47,7 +47,7 @@ local GAP      = 0.03   -- gap between grid cells (fraction of panel)
 
 --- Creates the armory popup panel with a breakout detail view.
 --- Returns a toggle function so the caller just calls it on click.
-function createArmoryHUD(screenGui: Instance, onPurchaseWeapon: ((string) -> ())?): () -> ()
+function createArmoryHUD(screenGui: Instance, onPurchaseWeapon: ((string, string) -> ())?): () -> ()
     local armoryPanel = create "Frame" {
         Name                   = "ArmoryPanel",
         Parent                 = screenGui,
@@ -198,8 +198,8 @@ function createArmoryHUD(screenGui: Instance, onPurchaseWeapon: ((string) -> ())
 
         -- If the weapon has a known config key, render a full GunPurchaseCard
         if entry.configKey then
-			local statsKey = "common_" .. entry.configKey
-			local gunStats = combatCfg and combatCfg.GUN_STATS[statsKey]
+            local variants = combatCfg and combatCfg[entry.configKey]
+            local gunStats = variants and variants.common
 			if gunStats then
 				currentCard = GunPurchaseCard({
 					parent   = cardContainer,
@@ -212,7 +212,7 @@ function createArmoryHUD(screenGui: Instance, onPurchaseWeapon: ((string) -> ())
                         if not weaponName then return end
 
                         if onPurchaseWeapon then
-                            onPurchaseWeapon(weaponName)
+                            onPurchaseWeapon(weaponName, "common")
                         end
                     end,
                 })

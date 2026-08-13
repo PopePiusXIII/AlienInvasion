@@ -11,8 +11,8 @@ local GunCatalogModule = {}
 --- Used for quick lookups where the caller doesn't have instance data.
 function GunCatalogModule.getGunStats(config: { [string]: any }, gunName: string?): GunModule.Gun
 	local defaultTracer = config.GUN_TRACER_DEFAULT :: GunModule.GunTracer
-	-- Try common variant first as fallback for legacy callers
-	local gun = CombatConfig.GUN_STATS[CombatConfig.getGunStatsKey(gunName or "", "common")] :: GunModule.Gun?
+	local variants = CombatConfig[gunName or ""]
+	local gun = variants and variants.common
 	if gun then
 		return {
 			damage = gun.damage,
@@ -43,10 +43,10 @@ end
 
 --- Resolve full stats for a gun with rarity + level multipliers applied.
 function GunCatalogModule.getResolvedStats(gunName: string, rarity: string, level: number): GunModule.Gun
-	local statsKey = CombatConfig.getGunStatsKey(gunName, rarity)
-	local base = CombatConfig.GUN_STATS[statsKey]
+	local variants = CombatConfig[gunName]
+	local base = variants and variants[rarity]
 	if not base then
-		Logger.warn("GunCatalog", "No stats for %s.", statsKey)
+		Logger.warn("GunCatalog", "No stats for %s at %s rarity.", gunName, rarity)
 		return GunCatalogModule.getGunStats({}, gunName)
 	end
 
@@ -72,7 +72,8 @@ end
 
 function GunCatalogModule.isSupportedGunName(config: { [string]: any }, name: string): boolean
 	-- Check if the common variant exists (means the base gun is valid)
-	return CombatConfig.GUN_STATS[CombatConfig.getGunStatsKey(name, "common")] ~= nil
+	local variants = CombatConfig[name]
+	return variants ~= nil and variants.common ~= nil
 end
 
 return GunCatalogModule

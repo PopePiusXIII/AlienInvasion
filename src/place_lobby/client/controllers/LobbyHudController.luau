@@ -40,8 +40,8 @@ function LobbyHudController:Init()
 	-- Always-on lobby HUD
 	_mainScreenGui, _mainControls = LobbyMainHUD.createLobbyMainHUD({
 		title            = "ALIEN INVASION",
-			onPurchaseWeapon = function(weaponName: string)
-				ProfileApi.purchaseWeapon(weaponName)
+			onPurchaseWeapon = function(weaponName: string, rarity: string)
+				ProfileApi.purchaseWeapon(weaponName, rarity)
 			end,
 			profileApi        = ProfileApi,
 		})

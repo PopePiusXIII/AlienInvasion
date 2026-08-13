@@ -8,10 +8,15 @@ export type OwnedItem = {
 	rarity: string,
 }
 
+export type UnlockedWeapon = {
+	name: string,
+	rarity: string,
+}
+
 export type ProfileSnapshot = {
 	gold: number,
 	silver: number,
-	unlockedWeapons: { string },
+	unlockedWeapons: { UnlockedWeapon },
 	inventory: { OwnedItem },
 }
 
@@ -21,7 +26,7 @@ export type API = {
 	start: () -> (),
 	getProfile: () -> ProfileSnapshot,
 	onChanged: (callback: ProfileChangedCallback) -> (() -> ()),
-	purchaseWeapon: (weaponName: string) -> (),
+	purchaseWeapon: (weaponName: string, rarity: string) -> (),
 }
 
 return ProfileApiType
