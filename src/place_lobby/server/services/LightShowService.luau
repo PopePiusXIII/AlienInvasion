@@ -10,8 +10,8 @@
 --------------------------------------------------------------------------------
 
 local replicated_storage = game:GetService("ReplicatedStorage")
-local Framework         = require(replicated_storage.shared.framework)
-local Logger            = require(replicated_storage.shared.logger)
+local Framework         = require(replicated_storage.common.shared.framework)
+local Logger            = require(replicated_storage.common.shared.logger)
 
 local TAG = "LightShowService"
 
@@ -22,7 +22,7 @@ export type LightStep = {
 	startTime: number,
 }
 
-local LightShowService = Framework.CreateService({ Name = TAG })
+local LightShowService = { Name = "LightShowService" }
 
 -- Registry: GroupID -> { [Index]: BasePart }
 local _lightGroups: { [string]: { [number]: BasePart } } = {}
@@ -93,7 +93,7 @@ function LightShowService:Start()
 	
 	-- Auto-start the Iron Cartilage show
 	task.defer(function()
-		local Config = require(replicated_storage.shared.LightShowConfig)
+		local Config = require(replicated_storage.lobby.shared.LightShowConfig)
 		local baseShow = Config.GetIronCartilageShow()
 		local duration = Config.GetSequenceDuration(baseShow)
 		local sequence = Config.GetLoopedSequence(baseShow, 20, duration)
@@ -172,5 +172,7 @@ function LightShowService:_setLightState(groupId: string, index: number, isOn: b
 		end
 	end
 end
+
+Framework.CreateService(LightShowService)
 
 return LightShowService

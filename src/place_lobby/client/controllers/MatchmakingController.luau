@@ -12,15 +12,14 @@ local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
 
-local Framework   = require(replicated_storage.shared.framework)
-local Logger      = require(replicated_storage.shared.logger)
-local Config      = require(replicated_storage.shared.Config)
-local RemoteNames = require(replicated_storage.shared.RemoteNames)
+local Framework   = require(replicated_storage.common.shared.framework)
+local Logger      = require(replicated_storage.common.shared.logger)
+local Config      = require(replicated_storage.lobby.shared.Config)
 local LobbyHudController = require(script.Parent.LobbyHudController)
 
 local TAG = "MatchmakingController"
 
-local MatchmakingController = Framework.CreateController({ Name = TAG })
+local MatchmakingController = { Name = "MatchmakingController" }
 
 local _localPlayer     = Players.LocalPlayer
 local _joinQueueRemote:  RemoteEvent
@@ -51,9 +50,9 @@ function MatchmakingController:Init()
 end
 
 function MatchmakingController:Start()
-	_joinQueueRemote  = Framework.GetRemote(RemoteNames.JOIN_QUEUE)
-	_leaveQueueRemote = Framework.GetRemote(RemoteNames.LEAVE_QUEUE)
-	_matchFoundRemote = Framework.GetRemote(RemoteNames.MATCH_FOUND)
+	_joinQueueRemote  = Framework.GetRemote("JoinQueue")
+	_leaveQueueRemote = Framework.GetRemote("LeaveQueue")
+	_matchFoundRemote = Framework.GetRemote("MatchFound")
 
 	-- Register the button click handler with LobbyHudController.
 	LobbyHudController.setFindMatchCallback(function()
@@ -111,5 +110,7 @@ function MatchmakingController:Start()
 
 	Logger.info(TAG, "Queue remotes acquired; button and MatchFound listener active.")
 end
+
+Framework.CreateController(MatchmakingController)
 
 return MatchmakingController

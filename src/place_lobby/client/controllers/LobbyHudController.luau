@@ -12,12 +12,11 @@
 local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework  = require(replicated_storage.shared.framework)
-local Logger     = require(replicated_storage.shared.logger)
-local ProfileApi = require(script.Parent.Parent.api.ProfileApi)
-local LobbyMainHUD = require(replicated_storage.shared.vide.LobbyMainHUD)
-local MatchmakingHUDModule     = require(replicated_storage.shared.vide.MatchmakingHUD)
-local LobbyHudController = Framework.CreateController({ Name = "LobbyHudController" })
+local Framework  = require(replicated_storage.common.shared.framework)
+local Logger     = require(replicated_storage.common.shared.logger)
+local LobbyMainHUD = require(replicated_storage.common.shared.vide.lobby_main_hud)
+local MatchmakingHUDModule = require(replicated_storage.common.shared.vide.matchmaking_hud)
+local LobbyHudController = { Name = "LobbyHudController" }
 
 local TAG = "LobbyHudController"
 
@@ -40,22 +39,12 @@ function LobbyHudController:Init()
 	-- Always-on lobby HUD
 	_mainScreenGui, _mainControls = LobbyMainHUD.createLobbyMainHUD({
 		title            = "ALIEN INVASION",
-			onPurchaseWeapon = function(weaponName: string, rarity: string)
-				ProfileApi.purchaseWeapon(weaponName, rarity)
-			end,
-			profileApi        = ProfileApi,
+		hintText = "Walk to a pad to play",
 		})
 	_mainScreenGui.Parent = Players.LocalPlayer.PlayerGui
 end
 
-function LobbyHudController:Start()
-	ProfileApi.onChanged(function(profile)
-		Logger.info(TAG, "Profile synced — gold=%d, silver=%d.", profile.gold, profile.silver)
-		LobbyHudController.setGold(profile.gold)
-		LobbyHudController.setSilver(profile.silver)
-	end)
-	ProfileApi.start()
-end
+function LobbyHudController:Start() end
 
 -- ── Matchmaking panel lifecycle ───────────────────────────────────────────────
 
@@ -152,5 +141,7 @@ end
 function LobbyHudController.setHint(msg: string)
 	_mainControls.setHint(msg)
 end
+
+Framework.CreateController(LobbyHudController)
 
 return LobbyHudController

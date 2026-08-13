@@ -12,13 +12,13 @@
 local TeleportService   = game:GetService("TeleportService")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
-local Config    = require(replicated_storage.shared.Config)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
+local Config    = require(replicated_storage.lobby.shared.Config)
 
 local TAG = "TeleportHelperService"
 
-local TeleportHelperService = Framework.CreateService({ Name = TAG })
+local TeleportHelperService = { Name = "TeleportHelperService" }
 
 local MAX_RETRIES = 3
 local RETRY_DELAY = 2
@@ -26,6 +26,8 @@ local RETRY_DELAY = 2
 function TeleportHelperService:Init()
 	Logger.info(TAG, "Initialized.")
 end
+
+function TeleportHelperService:Start() end
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
@@ -71,5 +73,7 @@ function TeleportHelperService.returnToLobby(players: { Player })
 		TeleportService:TeleportAsync(Config.LOBBY_PLACE_ID, players)
 	end)
 end
+
+Framework.CreateService(TeleportHelperService)
 
 return TeleportHelperService

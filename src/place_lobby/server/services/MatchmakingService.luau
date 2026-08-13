@@ -11,16 +11,15 @@
 local Players           = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework              = require(replicated_storage.shared.framework)
-local Logger                 = require(replicated_storage.shared.logger)
-local Config                 = require(replicated_storage.shared.Config)
-local RemoteNames            = require(replicated_storage.shared.RemoteNames)
+local Framework              = require(replicated_storage.common.shared.framework)
+local Logger                 = require(replicated_storage.common.shared.logger)
+local Config                 = require(replicated_storage.lobby.shared.Config)
 local MatchQueueService      = require(script.Parent.MatchQueueService)
 local TeleportHelperService  = require(script.Parent.TeleportHelperService)
 
 local TAG = "MatchmakingService"
 
-local MatchmakingService = Framework.CreateService({ Name = TAG })
+local MatchmakingService = { Name = "MatchmakingService" }
 
 -- Per-server in-memory map: UserId → Player.
 -- Tracks which players on THIS server have entered the queue
@@ -32,9 +31,9 @@ local _matchFoundRemote: RemoteEvent
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function MatchmakingService:Init()
-	local joinQueueRemote  = Framework.CreateRemote(RemoteNames.JOIN_QUEUE)
-	local leaveQueueRemote = Framework.CreateRemote(RemoteNames.LEAVE_QUEUE)
-	_matchFoundRemote      = Framework.CreateRemote(RemoteNames.MATCH_FOUND)
+	local joinQueueRemote  = Framework.CreateRemote("JoinQueue")
+	local leaveQueueRemote = Framework.CreateRemote("LeaveQueue")
+	_matchFoundRemote      = Framework.CreateRemote("MatchFound")
 
 	Logger.wrapServerEvent(joinQueueRemote, TAG, function(player: Player)
 		MatchmakingService._enqueue(player)
@@ -121,5 +120,7 @@ function MatchmakingService._dequeue(player: Player)
 	MatchQueueService.dequeue(player)
 	_localQueue[player.UserId] = nil
 end
+
+Framework.CreateService(MatchmakingService)
 
 return MatchmakingService

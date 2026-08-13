@@ -8,13 +8,13 @@
 local RunService        = game:GetService("RunService")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
-local Config    = require(replicated_storage.shared.Config)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
+local Config    = require(replicated_storage.lobby.shared.Config)
 
 local TAG = "FlyoverService"
 
-local FlyoverService = Framework.CreateService({ Name = TAG })
+local FlyoverService = { Name = "FlyoverService" }
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -159,5 +159,7 @@ function FlyoverService:_startPlaneMovement(plane: Instance, velocity: number): 
 
 	return connection
 end
+
+Framework.CreateService(FlyoverService)
 
 return FlyoverService
