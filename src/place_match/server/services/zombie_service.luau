@@ -257,10 +257,10 @@ end
 local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: OnDied)
 	humanoid.Died:Connect(function()
 		ragdollAndExplode(zombie, 30)
+		onDied()
 
 		task.wait(2.0)
 		zombie:Destroy()
-		onDied()
 	end)
 end
 
