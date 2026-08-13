@@ -7,6 +7,8 @@ local GunFxModule = {}
 
 local muzzleFlashTemplate = replicated_storage:FindFirstChild("MuzzleFlash")
 
+assert(muzzleFlashTemplate, "MuzzleFlash doesnt exist in replicated storage")
+
 -- Cached per-gun references, populated once when a gun is equipped.
 local _cachedMuzzle:    BasePart?        = nil
 local _cachedFlash:     PointLight?      = nil
