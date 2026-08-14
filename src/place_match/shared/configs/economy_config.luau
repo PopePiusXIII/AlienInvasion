@@ -3,7 +3,7 @@ return {
 	DATA_STORE_NAME = "PlayerStats",
 
 	BOLT_RISE_DURATION        = 0.5,
-	BOLT_HOVER_HEIGHT         = 0.1,
+	BOLT_HOVER_HEIGHT         = 0.01,
 	BOLT_ATTRACT_RADIUS       = 20,
 	BOLT_ATTRACT_ACCELERATION = 15,
 	BOLT_COLLECT_RADIUS       = 3,

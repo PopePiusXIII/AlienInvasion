@@ -24,6 +24,7 @@ type ClientBoltState = {
     center: Vector3,
     hoverY: number,
     spawnY: number,
+    groundY: number,
     riseElapsed: number,
     riseComplete: boolean,
     -- Rise / physics state
@@ -51,10 +52,10 @@ local BOLT_LIFETIME = 10
 local BURST_SPEED = 12
 local BURST_UP_MIN = 6
 local BURST_UP_MAX = 10
-local GRAVITY = 40
-local BOUNCE_DAMPING = 0.45
+local GRAVITY = 100
+local BOUNCE_DAMPING = 0.3
 local HORIZONTAL_DAMPING = 0.7
-local MAX_BOUNCES = 1
+local MAX_BOUNCES = 5
 
 local rng = Random.new()
 
@@ -126,13 +127,44 @@ local function createAndRegisterBolt(id: number, currencyName: string, _amount: 
     local cf, _ = (bolt :: Model):GetBoundingBox()
     local center = cf.Position
 
+    -- Determine hoverY by raycasting straight down from above the spawn position.
+    -- We blacklist zombie models (models with a Humanoid) so the ray won't hit the dying
+    -- zombie body and instead returns the world ground under the spawn.
+    local rayStart = spawnPosition + Vector3.new(0, 50, 0)
+    local rayDir = Vector3.new(0, -500, 0)
+    local rp = RaycastParams.new()
+    rp.FilterType = Enum.RaycastFilterType.Exclude
+    local blacklist: { Instance } = {}
+    table.insert(blacklist, bolt)
+    for _, inst in ipairs(workspace:GetDescendants()) do
+        if inst:IsA("Model") then
+            local hm = inst:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
+            if hm then
+                table.insert(blacklist, inst)
+            end
+        end
+    end
+    rp.FilterDescendantsInstances = blacklist
+    local ray = workspace:Raycast(rayStart, rayDir, rp)
+    local groundY: number
+    local computedHoverY: number
+    if ray and ray.Position then
+        groundY = ray.Position.Y
+        computedHoverY = groundY + (Config.BOLT_HOVER_HEIGHT :: number)
+        Logger.info(TAG, "Bolt spawn height=%s ground height=%s", tostring(spawnPosition.Y), tostring(groundY))
+    else
+        bolt:Destroy()
+        error(('%s: Bolt hover raycast missed at %s'):format(TAG, tostring(spawnPosition)))
+    end
+
     local state: ClientBoltState = {
         id = id,
         bolt = bolt,
         root = rootPart :: BasePart,
         center = center,
-        hoverY = spawnPosition.Y + (Config.BOLT_HOVER_HEIGHT :: number),
-        spawnY = spawnPosition.Y,
+        hoverY = computedHoverY,
+        spawnY = groundY,
+        groundY = groundY,
         riseElapsed = 0,
         riseComplete = false,
         velocity = Vector3.new(0, 0, 0),
@@ -190,10 +222,10 @@ local function processBurst(state: ClientBoltState, dt: number)
     state.velocity = state.velocity + Vector3.new(0, -GRAVITY * dt, 0)
     state.center = state.center + state.velocity * dt
 
-    -- Ground contact check (simple, cheap)
-    if state.center.Y <= state.spawnY then
+    -- Ground contact check (use the raycast-determined ground Y)
+    if state.center.Y <= state.groundY then
         -- clamp to ground
-        state.center = Vector3.new(state.center.X, state.spawnY, state.center.Z)
+        state.center = Vector3.new(state.center.X, state.groundY, state.center.Z)
 
         -- bounce
         state.velocity = Vector3.new(state.velocity.X * HORIZONTAL_DAMPING, -state.velocity.Y * BOUNCE_DAMPING, state.velocity.Z * HORIZONTAL_DAMPING)
@@ -203,8 +235,8 @@ local function processBurst(state: ClientBoltState, dt: number)
             -- transition to rising/hover phase
             state.phase = "rising"
             state.riseElapsed = 0
-            -- start rise from current ground Y to hoverY
-            state.spawnY = state.center.Y
+            -- ensure spawnY is the true ground Y for the rise lerp
+            state.spawnY = state.groundY
             state.riseComplete = false
         end
     end
