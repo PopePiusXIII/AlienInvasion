@@ -7,6 +7,8 @@ local RngCore = require(server_script_service.common.modules.rng_core)
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local SkillTypes = require(replicated_storage.match.shared.types.skill_types)
+local InventoryService = require(server_script_service.match.services.inventory_service)
+local Profile = require(server_script_service.common.services.profile_api)
 
 local TAG = "RngService"
 local RngService = {}
@@ -32,6 +34,20 @@ function RngService.activate(player: Player): SkillTypes.ModifierOptions
 	_pendingOptions[player] = modifierOptions
 	_rngActivateRemote:FireClient(player, modifierOptions)
 	return modifierOptions
+end
+
+function RngService.replenishAmmo(player: Player)
+	local gunId = InventoryService.getEquippedGunId(player)
+	if not gunId then
+		return
+	end
+	local stats = Profile.GunApi.getGunStats(player, gunId, InventoryService.getGunLevel(player, gunId))
+	if not stats then
+		return
+	end
+	local gun = Profile.GunApi.getGun(player, gunId)
+	assert(gun, string.format("Missing equipped gun '%s' for %s", gunId, player.Name))
+	Logger.fireClient(_rngTopupRemote, player, gun.name, stats.magSize, stats.max_ammo)
 end
 
 local function onModifierPicked(player: Player, key: string)

@@ -19,6 +19,7 @@ local WaveConfig   = require(replicated_storage.match.shared.configs.wave_config
 local CharacterService = require(server_script_service.match.services.character_service)
 local ZombieService = require(server_script_service.match.services.zombie_service)
 local EconomyService = require(server_script_service.match.services.economy_service)
+local PowerupService = require(server_script_service.match.services.powerup_service)
 
 local TAG = "WaveService"
 
@@ -113,10 +114,14 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 	Logger.fireClient(_waveAnnounceRemote, player, waveNumber)
 
 	local remaining = 10 * waveNumber
-	local function onZombieDied()
+	local function onZombieDied(deathPosition: Vector3?)
 		remaining -= 1
+		if not deathPosition then
+			return
+		end
 		battle.kills += 1
 		Logger.fireClient(_battleKillsUpdatedRemote, player, battle.kills)
+		PowerupService.onZombieKilled(player, deathPosition)
 	end
 
 	local totalZombies = 10 * waveNumber
@@ -155,6 +160,7 @@ function WaveService.startBattle(player: Player): number
 			stopped = false,
 		},
 	}
+	PowerupService.beginBattle(player)
 	Logger.fireClient(_battleKillsUpdatedRemote, player, battle.kills)
 	task.spawn(runBattleTimer, player, battle.timer)
 
@@ -187,6 +193,7 @@ function WaveService.startBattle(player: Player): number
 	end
 
 	battle.timer.stopped = true
+	PowerupService.endBattle(player)
 	player:SetAttribute("CurrentWave", nil)
 	Logger.info(TAG, "Final wave: %d for %s.", waveNumber, player.Name)
 	return waveNumber
