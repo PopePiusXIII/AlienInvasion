@@ -10,24 +10,30 @@ local replicated_storage = game:GetService("ReplicatedStorage")
 local RenderScheduler = require(replicated_storage.match.shared.render_scheduler)
 
 local Framework = require(replicated_storage.common.shared.framework)
-local Logger    = require(replicated_storage.common.shared.logger)
 local Config    = require(replicated_storage.match.shared.configs.economy_config)
 
 local TAG = "BoltController"
 local BoltController = {}
 BoltController.Name = TAG
 
+local BOLT_LIFETIME = 10
+
+-- Burst / bounce physics constants (lightweight, low-cost per-frame math)
+local BURST_SPEED = 12
+local BURST_UP_MIN = 6
+local BURST_UP_MAX = 10
+local GRAVITY = 100
+local BOUNCE_DAMPING = 0.3
+local HORIZONTAL_DAMPING = 0.7
+local MAX_BOUNCES = 5
+
 type ClientBoltState = {
     id: number,
-    bolt: Instance,
-    root: BasePart,
+    bolt: Model,
     center: Vector3,
     hoverY: number,
-    spawnY: number,
     groundY: number,
     riseElapsed: number,
-    riseComplete: boolean,
-    -- Rise / physics state
     velocity: Vector3,
     phase: string,
     bounces: number,
@@ -46,25 +52,10 @@ local claimBoltRemote: RemoteEvent
 
 local localPlayer: Player
 
-local BOLT_LIFETIME = 10
-
--- Burst / bounce physics constants (lightweight, low-cost per-frame math)
-local BURST_SPEED = 12
-local BURST_UP_MIN = 6
-local BURST_UP_MAX = 10
-local GRAVITY = 100
-local BOUNCE_DAMPING = 0.3
-local HORIZONTAL_DAMPING = 0.7
-local MAX_BOUNCES = 5
-
 local rng = Random.new()
 
-local function moveBolt(bolt: Instance, root: BasePart, pos: Vector3)
-    if bolt:IsA("Model") then
-        (bolt :: Model):PivotTo(CFrame.new(pos))
-        return
-    end
-    root.CFrame = CFrame.new(pos)
+local function moveBolt(bolt: Model, pos: Vector3)
+    bolt:PivotTo(CFrame.new(pos))
 end
 
 local function claimBolt(state: ClientBoltState)
@@ -88,24 +79,21 @@ local function getTemplateForCurrency(currencyName: string): Model
     end
 end
 
-local function prepareRootPartFromModel(boltModel: Model): BasePart
-    local rootPart: BasePart? = nil
+local function prepareBoltModel(boltModel: Model)
+    local hasBasePart = false
     for _, desc in ipairs(boltModel:GetDescendants()) do
         if desc:IsA("BasePart") then
             local p = desc :: BasePart
+            hasBasePart = true
             p.Anchored = true
             p.CanCollide = false
             p.CanTouch = false
             p.Transparency = 0
-            if not rootPart then
-                rootPart = p
-            end
         end
     end
-    if not rootPart then
+    if not hasBasePart then
         error(('%s: Bolt model "%s" contains no BasePart descendants'):format(TAG, boltModel.Name))
     end
-    return rootPart
 end
 
 local function createAndRegisterBolt(id: number, currencyName: string, _amount: number, spawnPosition: Vector3)
@@ -119,12 +107,13 @@ local function createAndRegisterBolt(id: number, currencyName: string, _amount: 
         error(('%s: Cloned bolt template "%s" is not a Model'):format(TAG, template.Name))
     end
 
-    local rootPart = prepareRootPartFromModel(bolt :: Model)
+    local boltModel = bolt :: Model
+    prepareBoltModel(boltModel)
 
-    bolt.Parent = workspace
-    bolt:MoveTo(spawnPosition)
+    boltModel.Parent = workspace
+    boltModel:MoveTo(spawnPosition)
 
-    local cf, _ = (bolt :: Model):GetBoundingBox()
+    local cf, _ = boltModel:GetBoundingBox()
     local center = cf.Position
 
     -- Determine hoverY by raycasting straight down from above the spawn position.
@@ -134,39 +123,34 @@ local function createAndRegisterBolt(id: number, currencyName: string, _amount: 
     local rayDir = Vector3.new(0, -500, 0)
     local rp = RaycastParams.new()
     rp.FilterType = Enum.RaycastFilterType.Exclude
-    local blacklist: { Instance } = {}
-    table.insert(blacklist, bolt)
+    local excludedInstances: { Instance } = { boltModel }
     for _, inst in ipairs(workspace:GetDescendants()) do
         if inst:IsA("Model") then
             local hm = inst:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
             if hm then
-                table.insert(blacklist, inst)
+                table.insert(excludedInstances, inst)
             end
         end
     end
-    rp.FilterDescendantsInstances = blacklist
+    rp.FilterDescendantsInstances = excludedInstances
     local ray = workspace:Raycast(rayStart, rayDir, rp)
     local groundY: number
     local computedHoverY: number
     if ray and ray.Position then
         groundY = ray.Position.Y
         computedHoverY = groundY + (Config.BOLT_HOVER_HEIGHT :: number)
-        Logger.info(TAG, "Bolt spawn height=%s ground height=%s", tostring(spawnPosition.Y), tostring(groundY))
     else
-        bolt:Destroy()
+        boltModel:Destroy()
         error(('%s: Bolt hover raycast missed at %s'):format(TAG, tostring(spawnPosition)))
     end
 
     local state: ClientBoltState = {
         id = id,
-        bolt = bolt,
-        root = rootPart :: BasePart,
+        bolt = boltModel,
         center = center,
         hoverY = computedHoverY,
-        spawnY = groundY,
         groundY = groundY,
         riseElapsed = 0,
-        riseComplete = false,
         velocity = Vector3.new(0, 0, 0),
         phase = "burst",
         bounces = 0,
@@ -209,10 +193,9 @@ end
 local function processRise(state: ClientBoltState, dt: number, riseDuration: number)
     state.riseElapsed += dt
     local t = math.min(state.riseElapsed / riseDuration, 1)
-    local easedY = state.spawnY + (state.hoverY - state.spawnY) * (1 - (1 - t) ^ 2)
+    local easedY = state.groundY + (state.hoverY - state.groundY) * (1 - (1 - t) ^ 2)
     state.center = Vector3.new(state.center.X, easedY, state.center.Z)
     if t >= 1 then
-        state.riseComplete = true
         state.phase = "hover"
     end
 end
@@ -235,9 +218,6 @@ local function processBurst(state: ClientBoltState, dt: number)
             -- transition to rising/hover phase
             state.phase = "rising"
             state.riseElapsed = 0
-            -- ensure spawnY is the true ground Y for the rise lerp
-            state.spawnY = state.groundY
-            state.riseComplete = false
         end
     end
 end
@@ -285,31 +265,22 @@ local function updateBolts(dt: number)
 
     for i = #activeBolts, 1, -1 do
         local state = activeBolts[i]
-        local purged = false
+        local shouldPurge = state.claimed or not state.bolt.Parent or isExpired(state)
 
-        if state.claimed or not state.bolt.Parent or isExpired(state) then
-            purgeBoltAtIndex(i)
-            purged = true
-        end
-
-        if not purged then
+        if not shouldPurge then
             if state.phase == "burst" then
                 processBurst(state, dt)
             elseif state.phase == "rising" then
                 processRise(state, dt, riseDuration)
-            elseif state.phase == "hover" then
-                if playerPos then
-                    local removed = processAttraction(state, playerPos, dt, attractRadius, attractAccel, collectRadius)
-                    if removed then
-                        purgeBoltAtIndex(i)
-                        purged = true
-                    end
-                end
+            elseif state.phase == "hover" and playerPos then
+                shouldPurge = processAttraction(state, playerPos, dt, attractRadius, attractAccel, collectRadius)
             end
         end
 
-        if not purged then
-            moveBolt(state.bolt, state.root, state.center)
+        if shouldPurge then
+            purgeBoltAtIndex(i)
+        else
+            moveBolt(state.bolt, state.center)
         end
     end
 end
