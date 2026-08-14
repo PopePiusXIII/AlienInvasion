@@ -11,6 +11,7 @@
 --------------------------------------------------------------------------------
 
 local ServerStorage     = game:GetService("ServerStorage")
+local Players = game:GetService("Players")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local PhysicsService    = game:GetService("PhysicsService")
 local server_script_service = game:GetService("ServerScriptService")
@@ -26,6 +27,10 @@ local ZombiePathfinderActor = require(server_script_service.match.modules.zombie
 local TAG = "ZombieService"
 local ZombieService = {}
 ZombieService.Name = TAG
+
+local ZOMBIE_COLLISION_GROUP = "Zombies"
+local DEAD_ZOMBIE_COLLISION_GROUP = "DeadZombie"
+local PLAYER_COLLISION_GROUP = "Player"
 
 export type OnDied = () -> ()
 
@@ -83,10 +88,34 @@ end
 local function setupZombieCollision(zombieModel: Model): nil
     for _, part: Instance in ipairs(zombieModel:GetDescendants()) do
         if part:IsA("BasePart") then
-            part.CollisionGroup = "Zombies"
+			part.CollisionGroup = ZOMBIE_COLLISION_GROUP
         end
     end
     return nil
+end
+
+local function assignPlayerPartCollisionGroup(instance: Instance)
+	if instance:IsA("BasePart") then
+		instance.CollisionGroup = PLAYER_COLLISION_GROUP
+	end
+end
+
+local function setupPlayerCollision(character: Model)
+	for _, descendant in ipairs(character:GetDescendants()) do
+		assignPlayerPartCollisionGroup(descendant)
+	end
+	character.DescendantAdded:Connect(assignPlayerPartCollisionGroup)
+end
+
+local function onPlayerCharacterAdded(character: Model)
+	setupPlayerCollision(character)
+end
+
+local function onPlayerAdded(player: Player)
+	player.CharacterAdded:Connect(onPlayerCharacterAdded)
+	if player.Character then
+		setupPlayerCollision(player.Character)
+	end
 end
 
 local function disableZombieDisplay(zombieModel: Model): nil
@@ -103,6 +132,13 @@ local function disableZombieDisplay(zombieModel: Model): nil
 end
 
 function ZombieService:Init()
+	PhysicsService:RegisterCollisionGroup(ZOMBIE_COLLISION_GROUP)
+	PhysicsService:RegisterCollisionGroup(DEAD_ZOMBIE_COLLISION_GROUP)
+	PhysicsService:RegisterCollisionGroup(PLAYER_COLLISION_GROUP)
+	PhysicsService:CollisionGroupSetCollidable(ZOMBIE_COLLISION_GROUP, ZOMBIE_COLLISION_GROUP, false)
+	PhysicsService:CollisionGroupSetCollidable(ZOMBIE_COLLISION_GROUP, PLAYER_COLLISION_GROUP, false)
+	PhysicsService:CollisionGroupSetCollidable(DEAD_ZOMBIE_COLLISION_GROUP, PLAYER_COLLISION_GROUP, false)
+
 	-- Cache every zombie template by type name at startup.
 	for rawTypeName, rawData in Config.ZOMBIE_TYPES do
 		local typeName = rawTypeName :: string
@@ -114,13 +150,10 @@ function ZombieService:Init()
 	end
 	local _rngTemplateWarned = false
 
-	-- Ensure the group exists
-	pcall(function()
-		PhysicsService:RegisterCollisionGroup("Zombies")
-		PhysicsService:RegisterCollisionGroup("ZombiePassthrough")
-		PhysicsService:CollisionGroupSetCollidable("Zombies", "Zombies", false)
-		PhysicsService:CollisionGroupSetCollidable("Zombies", "ZombiePassthrough", false)
-	end)
+	for _, player in ipairs(Players:GetPlayers()) do
+		onPlayerAdded(player)
+	end
+	Players.PlayerAdded:Connect(onPlayerAdded)
 end
 
 function ZombieService:Start()
@@ -242,6 +275,7 @@ local function ragdollAndExplode(zombieModel: Model, explosionForce: number)
 	-- Throw each body part along the shot direction with a small randomized spread.
 	for _, part in ipairs(zombieModel:GetDescendants()) do
 		if part:IsA("BasePart") then
+			part.CollisionGroup = DEAD_ZOMBIE_COLLISION_GROUP
 			part.Anchored = false
 			part.CanCollide = true
 			part.CanQuery = false
