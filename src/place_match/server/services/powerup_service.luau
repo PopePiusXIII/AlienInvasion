@@ -17,14 +17,15 @@ type PowerupType = "Food" | "DoubleXp" | "MaxAmmo"
 
 type PickupRecord = {
 	owner: Player,
-	part: BasePart,
+	pickup: PVInstance,
+	parts: { BasePart },
 	powerupType: PowerupType,
 	claimed: boolean,
 }
 
 type BattleState = {
 	active: boolean,
-	pickups: { [BasePart]: PickupRecord },
+	pickups: { [PVInstance]: PickupRecord },
 }
 
 local PowerupService = {}
@@ -33,10 +34,10 @@ PowerupService.Name = TAG
 local _battleStateByPlayer: { [Player]: BattleState } = {}
 local _pickupRecordByPart: { [BasePart]: PickupRecord } = {}
 
-local POWERUP_COLORS: { [PowerupType]: Color3 } = {
-	Food = Color3.fromRGB(90, 220, 110),
-	DoubleXp = Color3.fromRGB(255, 210, 70),
-	MaxAmmo = Color3.fromRGB(90, 160, 255),
+local POWERUP_MODEL_NAMES: { [PowerupType]: string } = {
+	Food = "TurkeyLeg",
+	DoubleXp = "2x",
+	MaxAmmo = "MaxAmmo",
 }
 
 local function getBattleState(player: Player): BattleState?
@@ -50,11 +51,13 @@ end
 local function destroyPickup(record: PickupRecord)
 	local battle = _battleStateByPlayer[record.owner]
 	if battle then
-		battle.pickups[record.part] = nil
+		battle.pickups[record.pickup] = nil
 	end
-	_pickupRecordByPart[record.part] = nil
-	if record.part.Parent then
-		record.part:Destroy()
+	for _, part in record.parts do
+		_pickupRecordByPart[part] = nil
+	end
+	if record.pickup.Parent then
+		record.pickup:Destroy()
 	end
 end
 
@@ -114,7 +117,7 @@ local function onPickupTouched(hit: BasePart)
 	end
 
 	local record = _pickupRecordByPart[pickupPart]
-	if not record or record.claimed or not record.part.Parent then
+	if not record or record.claimed or not record.pickup.Parent then
 		return
 	end
 
@@ -131,8 +134,8 @@ local function onPickupTouched(hit: BasePart)
 		return
 	end
 
-	assert(record.part.Parent, "Active powerup pickup must remain parented")
-	if (rootPart.Position - record.part.Position).Magnitude > PowerupConfig.PICKUP_RADIUS then
+	assert(record.pickup.Parent, "Active powerup pickup must remain parented")
+	if (rootPart.Position - record.pickup:GetPivot().Position).Magnitude > PowerupConfig.PICKUP_RADIUS then
 		return
 	end
 
@@ -142,29 +145,40 @@ local function onPickupTouched(hit: BasePart)
 	Logger.info(TAG, "%s collected %s.", player.Name, record.powerupType)
 end
 
-local function createPickup(player: Player, position: Vector3, powerupType: PowerupType)
-	local pickup = Instance.new("Part")
-	pickup.Name = powerupType
-	pickup.Anchored = true
-	pickup.CanCollide = false
-	pickup.CanQuery = false
-	pickup.Color = POWERUP_COLORS[powerupType]
-	pickup.Material = Enum.Material.Neon
-	pickup.Shape = Enum.PartType.Ball
-	pickup.Size = Vector3.new(2, 2, 2)
-	pickup.CFrame = CFrame.new(position + Vector3.new(0, 2, 0))
+local function spawnPickup(player: Player, position: Vector3, powerupType: PowerupType)
+	local powerupFolder = replicated_storage:FindFirstChild("PowerUp")
+	assert(powerupFolder and powerupFolder:IsA("Folder"), "ReplicatedStorage.PowerUp folder is required")
+	local template = powerupFolder:FindFirstChild(POWERUP_MODEL_NAMES[powerupType], true)
+	assert(template, string.format("Missing PowerUp template for %s", powerupType))
+	assert(template:IsA("Model") or template:IsA("BasePart"), string.format("PowerUp template '%s' must be a Model or BasePart", template.Name))
+	local pickup = template:Clone() :: PVInstance
+	pickup:PivotTo(CFrame.new(position + Vector3.new(0, 2, 0)))
 	pickup.Parent = workspace
+
+	local parts: { BasePart } = {}
+	if pickup:IsA("BasePart") then
+		table.insert(parts, pickup)
+	end
+	for _, descendant in pickup:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			table.insert(parts, descendant)
+		end
+	end
+	assert(#parts > 0, string.format("PowerUp model '%s' requires a BasePart", template.Name))
 
 	local record: PickupRecord = {
 		owner = player,
-		part = pickup,
+		pickup = pickup,
+		parts = parts,
 		powerupType = powerupType,
 		claimed = false,
 	}
 	local battle = assert(getBattleState(player), string.format("Missing battle state for %s", player.Name))
+	for _, part in parts do
+		_pickupRecordByPart[part] = record
+		part.Touched:Connect(onPickupTouched)
+	end
 	battle.pickups[pickup] = record
-	_pickupRecordByPart[pickup] = record
-	pickup.Touched:Connect(onPickupTouched)
 	schedulePickupExpiry(record)
 end
 
@@ -203,7 +217,7 @@ function PowerupService.onZombieKilled(player: Player, deathPosition: Vector3?)
 		return
 	end
 
-	createPickup(player, deathPosition, choosePowerupType())
+	spawnPickup(player, deathPosition, choosePowerupType())
 end
 
 function PowerupService:Init()
