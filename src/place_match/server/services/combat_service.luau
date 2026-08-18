@@ -21,6 +21,7 @@ local logger         = require(replicated_storage.common.shared.logger)
 local zombie_service = require(server_script_service.match.services.zombie_service)
 local economy_service = require(server_script_service.match.services.economy_service)
 local inventory_service = require(server_script_service.match.services.inventory_service)
+local gun_service = require(server_script_service.match.services.gun_service)
 local gun_core       = require(replicated_storage.common.shared.gun_core)
 local profile_api = require(server_script_service.common.services.profile_api)
 local wave_config    = require(replicated_storage.match.shared.configs.wave_config)
@@ -29,50 +30,55 @@ local combat_service = {}
 local TAG = "CombatService"
 combat_service.Name = TAG
 
+local _hitSoundRemote: RemoteEvent
+local _damageDealtRemote: RemoteEvent
+
+local function onShotReported(player: Player, zombie_model: Instance?, is_headshot: boolean, hit_position: Vector3)
+	if not gun_service.tryFire(player) then
+		return
+	end
+
+	if not zombie_model or not zombie_model:IsA("Model") then return end
+	local character = player.Character
+
+	local equipped_gun_id = inventory_service.getEquippedGunId(player)
+	if not equipped_gun_id then return end
+
+	local level = inventory_service.getGunLevel(player, equipped_gun_id)
+	local gun = profile_api.GunApi.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
+	if not gun then return end
+
+	local shooter_pos: Vector3?
+	if character then
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if hrp and hrp:IsA("BasePart") then
+			shooter_pos = hrp.Position
+		end
+	end
+	local killed, zombie_type, death_position, damage_amount = zombie_service.damageZombie(
+		zombie_model,
+		gun,
+		is_headshot,
+		shooter_pos
+	)
+
+	logger.fireClient(_hitSoundRemote, player, hit_position, is_headshot)
+	if damage_amount then
+		logger.fireClient(_damageDealtRemote, player, zombie_model, damage_amount, is_headshot)
+	end
+
+	if killed then
+		local wave_number = tonumber(player:GetAttribute("CurrentWave")) or wave_config.STARTING_WAVE
+		economy_service.grantKillRewards(player, zombie_type, wave_number, death_position)
+	end
+end
+
 function combat_service:Init()
 	local shoot_remote = framework.CreateRemote("ReportZombieHit")
-	local hit_sound_remote = framework.CreateRemote("ZombieHitConfirmed")
-	local damage_dealt_remote = framework.CreateRemote("ZombieDamageApplied")
+	_hitSoundRemote = framework.CreateRemote("ZombieHitConfirmed")
+	_damageDealtRemote = framework.CreateRemote("ZombieDamageApplied")
 
-	logger.onServerEvent(shoot_remote, TAG, function(player: Player, zombie_model: Instance, is_headshot: boolean, hit_position: Vector3)
-		if not zombie_model or not zombie_model:IsA("Model") then return end
-		local character = player.Character
-
-		-- Resolve equipped gun via inventory_service + profile_service
-		local equipped_gun_id = inventory_service.getEquippedGunId(player)
-		if not equipped_gun_id then return end
-
-		-- Get current in-memory level for stat resolution
-		local level = inventory_service.getGunLevel(player, equipped_gun_id)
-
-		-- Get resolved stats (base rarity stats + level multipliers)
-		local gun = profile_api.GunApi.getGunStats(player, equipped_gun_id, level) :: gun_core.Gun?
-		if not gun then return end
-
-		local shooter_pos: Vector3?
-		if character then
-			local hrp = character:FindFirstChild("HumanoidRootPart")
-			if hrp and hrp:IsA("BasePart") then
-				shooter_pos = hrp.Position
-			end
-		end
-		local killed, zombie_type, death_position, damage_amount = zombie_service.damageZombie(
-			zombie_model,
-			gun,
-			is_headshot,
-			shooter_pos
-		)
-
-		logger.fireClient(hit_sound_remote, player, hit_position, is_headshot)
-		if damage_amount then
-			logger.fireClient(damage_dealt_remote, player, zombie_model, damage_amount, is_headshot)
-		end
-
-		if killed then
-			local wave_number = tonumber(player:GetAttribute("CurrentWave")) or wave_config.STARTING_WAVE
-			economy_service.grantKillRewards(player, zombie_type, wave_number, death_position)
-		end
-	end)
+	logger.onServerEvent(shoot_remote, TAG, onShotReported)
 
 	logger.info(TAG, "ShootGun handler registered.")
 end

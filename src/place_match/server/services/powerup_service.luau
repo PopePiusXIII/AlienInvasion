@@ -8,8 +8,8 @@ local Framework = require(replicated_storage.common.shared.framework)
 local Logger = require(replicated_storage.common.shared.logger)
 local PowerupConfig = require(replicated_storage.match.shared.configs.powerup_config)
 local CharacterLevelService = require(server_script_service.match.services.character_level_service)
+local GunService = require(server_script_service.match.services.gun_service)
 local HealthService = require(server_script_service.match.services.health_service)
-local RngService = require(server_script_service.match.services.rng_service)
 
 local TAG = "PowerupService"
 
@@ -95,7 +95,7 @@ local function applyPowerup(player: Player, powerupType: PowerupType)
 		return
 	end
 
-	RngService.replenishAmmo(player)
+	GunService.replenishEquippedAmmo(player)
 end
 
 local function getPickupTouchedPart(hit: BasePart): BasePart?
@@ -123,6 +123,7 @@ local function onPickupTouched(hit: BasePart)
 	if player ~= record.owner or not getBattleState(player) then
 		return
 	end
+	assert(character, "Powerup touch must have a character model")
 
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
@@ -203,6 +204,9 @@ function PowerupService.onZombieKilled(player: Player, deathPosition: Vector3?)
 	end
 
 	createPickup(player, deathPosition, choosePowerupType())
+end
+
+function PowerupService:Init()
 end
 
 function PowerupService:Start()
