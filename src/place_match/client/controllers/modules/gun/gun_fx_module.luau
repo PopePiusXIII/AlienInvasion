@@ -7,6 +7,8 @@ local GunFxModule = {}
 
 local muzzleFlashTemplate = replicated_storage:FindFirstChild("MuzzleFlash")
 
+assert(muzzleFlashTemplate, "MuzzleFlash doesnt exist in replicated storage")
+
 -- Cached per-gun references, populated once when a gun is equipped.
 local _cachedMuzzle:    BasePart?        = nil
 local _cachedFlash:     PointLight?      = nil
@@ -44,19 +46,15 @@ local function getAnimatorForVm(vmInstance: Model): Animator?
 	if not vmInstance then return nil end
 	local animationController = vmInstance:FindFirstChildOfClass("AnimationController")
 	local humanoid = vmInstance:FindFirstChildWhichIsA("Humanoid")
-	local animator: Animator? = nil
-	if animationController then
-		animator = animationController:FindFirstChildWhichIsA("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = animationController
-		end
-	elseif humanoid then
-		animator = humanoid:FindFirstChildWhichIsA("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = humanoid
-		end
+	local parent = animationController or humanoid
+	if not parent then 
+		return nil 
+	end
+
+	local animator = parent:FindFirstChildWhichIsA("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = parent
 	end
 	return animator
 end
@@ -324,8 +322,7 @@ function GunFxModule.playReloadAnimation(targetDuration: number): AnimationTrack
 	assert(track.Length > 0, string.format("Reload animation for gun '%s' has no duration", gunName))
 	track:Stop(0)
 	track.TimePosition = 0
-	track:AdjustSpeed(track.Length / targetDuration)
-	track:Play()
+	track:Play(0, 1, track.Length / targetDuration)
 
 	if _cachedReloadSnd then
 		_cachedReloadSnd.TimePosition = 0

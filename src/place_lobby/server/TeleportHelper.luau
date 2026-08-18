@@ -5,7 +5,7 @@
 local TeleportService   = game:GetService("TeleportService")
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local Config = require(replicated_storage.shared.Config)
+local Config = require(replicated_storage.lobby.shared.Config)
 
 local TeleportHelper = {}
 

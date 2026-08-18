@@ -29,6 +29,7 @@ local _localPlayer = Players.LocalPlayer
 export type SyncedGun = {
 	id: string,
 	name: string,
+	rarity: string,
 	stats: GunCore.Gun,
 }
 

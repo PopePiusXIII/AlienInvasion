@@ -14,12 +14,16 @@ local server_script_service = game:GetService("ServerScriptService")
 local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 local CombatConfig    = require(replicated_storage.common.shared.configs.combat_config)
-local ProfileService = require(server_script_service.common.services.profile_db)
+local GunCore = require(replicated_storage.common.shared.gun_core)
+local commonServices = server_script_service:WaitForChild("common"):WaitForChild("services")
+local Profile = require(commonServices:WaitForChild("profile_api"))
 
 local TAG = "InventoryService"
 
 local InventoryService = {}
 InventoryService.Name = TAG
+
+type GunInstance = GunCore.GunInstance
 
 local _playerInventories: { [number]: { gunIds: { string }, equippedSlot: number? } } = {}
 local _gunLevels: { [number]: { [string]: number } } = {}
@@ -30,14 +34,6 @@ local _equipInventorySlotRemote: RemoteEvent
 -- ── Weapon Helper Functions ──────────────────────────────────────────────────
 
 local function findWeaponModel(gunName: string): Instance?
-	
-	local function getToolName(inventoryName: string): string
-	-- transform common_name to just name
-    	return inventoryName:match("^[^_]+_(.+)$") or inventoryName
-	end
-
-	gunName = getToolName(gunName)
-
 	local found = ServerStorage:FindFirstChild(gunName, true)
 	if found and (found:IsA("Tool") or found:IsA("Model")) then
 		return found
@@ -112,10 +108,6 @@ local function getInventorySize(): number
 	return 2
 end
 
-local function getGunFamily(gunName: string): string
-	return gunName:match("^[^_]+_(.+)$") or gunName
-end
-
 local function getInventory(player: Player): { gunIds: { string }, equippedSlot: number? }
 	local uid = player.UserId
 	if not _playerInventories[uid] then
@@ -130,15 +122,16 @@ local function syncToClient(player: Player)
 	local levels = _gunLevels[player.UserId] or {}
 
 	-- Server resolves stats and sends them directly — client doesn't need rarity/level.
-	local weaponData: { { id: string, name: string, stats: any } } = {}
+	local weaponData: { { id: string, name: string, rarity: string, stats: any } } = {}
 	for _, gid in ipairs(inv.gunIds) do
-		local instance = ProfileService.getGun(player, gid)
+		local instance = Profile.GunApi.getGun(player, gid)
 		if instance then
-			local resolved = ProfileService.getGunStats(player, gid, levels[gid])
+			local resolved = Profile.GunApi.getGunStats(player, gid, levels[gid])
 			if resolved then
 				table.insert(weaponData, {
 					id = gid,
 					name = instance.name,
+					rarity = instance.rarity,
 					stats = resolved,
 				})
 			end
@@ -152,14 +145,14 @@ end
 
 --- Rebuild the two-slot in-match inventory from the player's profile.
 local function syncFromProfile(player: Player): number
-	local profileInventory = ProfileService.getInventory(player)
+	local profileInventory = Profile.GunApi.getInventory(player)
 	if not profileInventory then return 0 end
 
 	local inv = getInventory(player)
 	inv.gunIds = {}
 	local maxSize = getInventorySize()
-	local candidates = table.clone(profileInventory)
-	table.sort(candidates, function(left, right)
+	local candidates: { GunInstance } = table.clone(profileInventory)
+	table.sort(candidates, function(left: GunInstance, right: GunInstance): boolean
 		if left.name == right.name then
 			return left.id < right.id
 		end
@@ -168,18 +161,17 @@ local function syncFromProfile(player: Player): number
 
 	local selectedIds: { [string]: boolean } = {}
 	local selectedFamilies: { [string]: boolean } = {}
-	local function selectGun(instance)
+	local function selectGun(instance: GunInstance)
 		if #inv.gunIds >= maxSize or selectedIds[instance.id] then return end
 		table.insert(inv.gunIds, instance.id)
 		selectedIds[instance.id] = true
-		selectedFamilies[getGunFamily(instance.name)] = true
+		selectedFamilies[instance.name] = true
 	end
 
 	-- A profile is UUID-keyed, so use configured starters rather than table order.
-	for _, starterGunName in ipairs(CombatConfig.STARTER_GUNS) do
-		local starterFamily = getGunFamily(starterGunName)
+	for _, starterGun in ipairs(CombatConfig.STARTER_GUNS) do
 		for _, instance in ipairs(candidates) do
-			if getGunFamily(instance.name) == starterFamily then
+			if instance.name == starterGun.name and instance.rarity == starterGun.rarity then
 				selectGun(instance)
 				break
 			end
@@ -189,7 +181,7 @@ local function syncFromProfile(player: Player): number
 	-- Fill open slots with one instance of each remaining gun family.
 	for _, instance in ipairs(candidates) do
 		if #inv.gunIds >= maxSize then break end
-		if not selectedFamilies[getGunFamily(instance.name)] then
+		if not selectedFamilies[instance.name] then
 			selectGun(instance)
 		end
 	end
@@ -208,14 +200,14 @@ end
 
 --- Add a gun to the player's inventory.
 --- First grants it via ProfileService (creates the persistent instance), then adds to in-match slots.
-function InventoryService.addWeapon(player: Player, gunName: string): boolean
+function InventoryService.addWeapon(player: Player, gunName: string, rarity: string): boolean
 	local inv = getInventory(player)
 	local maxSize = getInventorySize()
 
 	if #inv.gunIds >= maxSize then return false end
 
 	-- Grant via profile (returns new gun ID or nil if already owned / error)
-	local gunId = ProfileService.grantGun(player, gunName)
+	local gunId = Profile.GunApi.grantGun(player, gunName, rarity)
 	if not gunId then return false end
 
 	table.insert(inv.gunIds, gunId)
@@ -231,13 +223,13 @@ function InventoryService.addWeapon(player: Player, gunName: string): boolean
 end
 
 --- Add a weapon at a specific slot. Use -1 to append to the end.
-function InventoryService.addWeaponAtSlot(player: Player, gunName: string, slot: number): boolean
+function InventoryService.addWeaponAtSlot(player: Player, gunName: string, rarity: string, slot: number): boolean
 	local inv = getInventory(player)
 	local maxSize = getInventorySize()
 
 	if #inv.gunIds >= maxSize then return false end
 
-	local gunId = ProfileService.grantGun(player, gunName)
+	local gunId = Profile.GunApi.grantGun(player, gunName, rarity)
 	if not gunId then return false end
 
 	if slot == -1 then
@@ -303,7 +295,7 @@ function InventoryService.setEquippedSlot(player: Player, slot: number?)
 
     -- Equip new tool (clone by base gun name from ServerStorage)
     local gunId = inv.gunIds[slot]
-    local instance = ProfileService.getGun(player, gunId)
+	local instance = Profile.GunApi.getGun(player, gunId)
     if character and instance then
         local tool = cloneWeaponAsTool(instance.name)
         if tool then
@@ -351,7 +343,7 @@ function InventoryService.upgradeGunLevel(player: Player, gunId: string): (boole
 	levels[gunId] = current + 1
 
 	-- Validate via ProfileService (ownership check)
-	local ok, _, errMsg = ProfileService.upgradeLevel(player, gunId)
+	local ok, _, errMsg = Profile.GunApi.upgradeLevel(player, gunId)
 	if not ok then
 		levels[gunId] = current -- Rollback
 		return false, nil, errMsg or "PROFILE_ERROR"
@@ -372,19 +364,19 @@ function InventoryService.clearInventory(player: Player)
 	syncToClient(player)
 end
 
-function InventoryService.replaceWeapon(player: Player, slot: number, newWeaponName: string): boolean
+function InventoryService.replaceWeapon(player: Player, slot: number, newWeaponName: string, rarity: string): boolean
 	local inv = getInventory(player)
 	if slot < 1 or slot > #inv.gunIds then return false end
 
 	-- Remove old gun from profile
 	local oldGunId = inv.gunIds[slot]
-	local oldInstance = ProfileService.getGun(player, oldGunId)
+	local oldInstance = Profile.GunApi.getGun(player, oldGunId)
 	if oldInstance then
-		ProfileService.removeGun(player, oldGunId)
+			Profile.GunApi.removeGun(player, oldGunId)
 	end
 
 	-- Grant new gun via profile
-	local newGunId = ProfileService.grantGun(player, newWeaponName)
+	local newGunId = Profile.GunApi.grantGun(player, newWeaponName, rarity)
 	if not newGunId then return false end
 
 	inv.gunIds[slot] = newGunId
@@ -397,7 +389,7 @@ function InventoryService.removeWeaponAtSlot(player: Player, slot: number): bool
 	if slot < 1 or slot > #inv.gunIds then return false end
 
 	local gunId = inv.gunIds[slot]
-	ProfileService.removeGun(player, gunId)
+	Profile.GunApi.removeGun(player, gunId)
 	table.remove(inv.gunIds, slot)
 
 	if inv.equippedSlot == slot then
@@ -422,9 +414,8 @@ local function grantStarterGunsToPlayer(player: Player)
 
 	-- Grant starters only for a first-time profile, not for a full match hotbar.
 	if profileGunCount == 0 then
-		local starterGuns = CombatConfig.STARTER_GUNS or {}
-		for _, gunName in ipairs(starterGuns) do
-			InventoryService.addWeapon(player, gunName)
+		for _, starterGun in ipairs(CombatConfig.STARTER_GUNS) do
+			InventoryService.addWeapon(player, starterGun.name, starterGun.rarity)
 		end
 		syncToClient(player)
 	end
@@ -440,7 +431,7 @@ function InventoryService:Start()
 		_gunLevels[player.UserId] = nil
 	end)
 
-	ProfileService.OnProfileLoaded(function(player, profile)
+	Profile.Db.OnProfileLoaded(function(player, profile)
 		grantStarterGunsToPlayer(player)
 	end)
 

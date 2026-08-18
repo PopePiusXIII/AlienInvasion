@@ -10,6 +10,7 @@ local indexes = vide.indexes
 
 export type GunSlot = {
 	name: string,
+	rarity: string,
 }
 
 export type Props = {
@@ -21,20 +22,24 @@ export type Props = {
 
 local function createGunTile(props: Props, gun: vide.Source<GunSlot>, _: number, __: vide.Source<boolean>): CanvasGroup
 	local function getGunImage(): string
-		local gunStats = CombatConfig.GUN_STATS[gun().name]
-		assert(gunStats, string.format("Missing CombatConfig entry for gun '%s'", gun().name))
+		local gunState = gun()
+		local variants = CombatConfig[gunState.name]
+		local gunStats = variants and variants[gunState.rarity]
+		assert(gunStats, string.format("Missing CombatConfig entry for gun '%s' at rarity '%s'", gunState.name, gunState.rarity))
 		return gunStats.image
 	end
 
 	local function getAmmoText(): string
-		local gunName = gun().name
+		local gunState = gun()
+		local gunName = gunState.name
 		local ammoText = props.ammoTextByGun()[gunName]
 		if ammoText then
 			return ammoText
 		end
 
-		local gunStats = CombatConfig.GUN_STATS[gunName]
-		assert(gunStats, string.format("Missing CombatConfig entry for gun '%s'", gunName))
+		local variants = CombatConfig[gunName]
+		local gunStats = variants and variants[gunState.rarity]
+		assert(gunStats, string.format("Missing CombatConfig entry for gun '%s' at rarity '%s'", gunName, gunState.rarity))
 		return string.format("%d / %d", gunStats.magSize, gunStats.max_ammo)
 	end
 

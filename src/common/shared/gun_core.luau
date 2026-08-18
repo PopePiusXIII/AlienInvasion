@@ -8,12 +8,12 @@ export type GunTracer = {
 
 export type GunInstance = {
     id: string,           -- UUID per instance (auto-increment counter)
-    name: string,         -- "1911", "Deagle" (key into GUN_STATS base name)
+    name: string,         -- "1911", "Deagle" (key into CombatConfig)
     rarity: GunRarity,
 }
 
 --- Base gun stats for a specific rarity tier (no level applied).
---- Lives in GUN_STATS as the source of truth per rarity.
+--- Lives in CombatConfig[gunName][rarity] as the source of truth.
 export type Gun = {
     rarity:         GunRarity,
     damage:         number,
