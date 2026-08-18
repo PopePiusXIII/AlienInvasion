@@ -18,13 +18,13 @@
 local MemoryStoreService = game:GetService("MemoryStoreService")
 local replicated_storage  = game:GetService("ReplicatedStorage")
 
-local Framework = require(replicated_storage.shared.framework)
-local Logger    = require(replicated_storage.shared.logger)
-local Config    = require(replicated_storage.shared.Config)
+local Framework = require(replicated_storage.common.shared.framework)
+local Logger    = require(replicated_storage.common.shared.logger)
+local Config    = require(replicated_storage.lobby.shared.Config)
 
 local TAG = "MatchQueueService"
 
-local MatchQueueService = Framework.CreateService({ Name = TAG })
+local MatchQueueService = { Name = "MatchQueueService" }
 
 local EXPIRY_SECONDS = 120   -- auto-expire stale queue entries after 2 minutes
 
@@ -34,6 +34,8 @@ function MatchQueueService:Init()
 	_queueMap = MemoryStoreService:GetSortedMap(Config.MEMORY_STORE_NAME)
 	Logger.info(TAG, "MemoryStore map '%s' initialized.", Config.MEMORY_STORE_NAME)
 end
+
+function MatchQueueService:Start() end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
 
@@ -96,5 +98,7 @@ function MatchQueueService.tryFormMatch(): { any }?
 	Logger.info(TAG, "Match formed with %d players.", #matched)
 	return matched
 end
+
+Framework.CreateService(MatchQueueService)
 
 return MatchQueueService

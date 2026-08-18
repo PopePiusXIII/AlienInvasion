@@ -1,6 +1,6 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 local vide  = require(replicated_storage.Packages.vide)
-local DepressedButton = require(replicated_storage.shared.vide.DepressedButton)
+local DepressedButton = require(replicated_storage.common.shared.vide.depressed_button)
 
 local create = vide.create
 

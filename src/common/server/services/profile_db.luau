@@ -139,7 +139,7 @@ local function onPlayerAdded(player: Player)
 		-- Fire callbacks so other services can react (e.g. sync to client HUD)
 		for _, cb in ProfileLoadedCallbacks do
 			task.spawn(function()
-				local ok, err = pcall(function() cb(player, profile :: PlayerProfile) end)
+				local ok, err = pcall(function() cb(player, profile.Data :: PlayerProfile) end)
 				if not ok then
 					Logger.warn(TAG, "ProfileLoaded callback crashed: %s", tostring(err))
 				end
