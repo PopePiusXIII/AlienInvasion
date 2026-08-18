@@ -34,6 +34,7 @@ local _localPlayer  = Players.LocalPlayer
 local _mouse        = _localPlayer:GetMouse()
 local _reportZombieHitRemote: RemoteEvent
 local _zombieHitConfirmedRemote: RemoteEvent
+local _requestGunReloadRemote: RemoteEvent
 
 -- Gun state — all mutable locals are module-private.
 local _isReloading:      boolean              = false
@@ -47,6 +48,7 @@ local _aimPitchTaskId: string? = nil
 local _cameraModeConn:   RBXScriptConnection? = nil
 local _cameraCFrameConn: RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
+local _activeReloadId: string? = nil
 local _baseGunGrip:      CFrame?              = nil
 local _cachedMuzzle:     BasePart?            = nil
 local _cachedHrp:        BasePart?            = nil
@@ -118,72 +120,21 @@ local function refreshAmmoDisplay()
 	refreshGunAmmoDisplay(gunName)
 end
 
-local function playReloadCycle(duration: number)
+local function playReloadAnimation(duration: number)
+	local startedAt = os.clock()
 	local track = GunFxModule.playReloadAnimation(duration)
 	track.Stopped:Wait()
+	Logger.info(TAG, "Reload animation stopped: target=%.3f elapsed=%.3f trackLength=%.3f", duration, os.clock() - startedAt, track.Length)
 end
 
 local function reload()
 	if not _equippedGun then return end
-	local reloadingGun = _equippedGun
-	local reloadingGunName = reloadingGun.Name
-	local stats = getGunStats(reloadingGunName)
-	if _isReloading or getCurrentAmmo(reloadingGunName) == stats.magSize then return end
-	-- Nothing to reload from reserve for this gun
-	local reserve = getReserveAmmo(reloadingGunName)
-	if reserve <= 0 then return end
+	local gunName = _equippedGun.Name
+	local stats = getGunStats(gunName)
+	if _isReloading or getCurrentAmmo(gunName) == stats.magSize or getReserveAmmo(gunName) <= 0 then return end
 	_isReloading = true
 	refreshAmmoDisplay()
-
-	if stats.isShotgun then
-		-- Shotgun: play reload animation once per shell needed to fill the mag.
-		local shellsNeeded = stats.magSize - getCurrentAmmo(reloadingGunName)
-		local timePerShell = stats.reloadTime / stats.magSize
-		for _i = 1, shellsNeeded do
-			if _equippedGun ~= reloadingGun then
-				_isReloading = false
-				refreshGunAmmoDisplay(reloadingGunName)
-				return
-			end
-
-			local reserveNow = getReserveAmmo(reloadingGunName)
-			if reserveNow <= 0 then break end
-			playReloadCycle(timePerShell)
-			if _equippedGun ~= reloadingGun then
-				_isReloading = false
-				refreshGunAmmoDisplay(reloadingGunName)
-				return
-			end
-			-- consume one shell from reserve
-			local loadAmount = math.min(1, reserveNow)
-			setCurrentAmmo(reloadingGunName, getCurrentAmmo(reloadingGunName) + loadAmount)
-			setReserveAmmo(reloadingGunName, reserveNow - loadAmount)
-			refreshAmmoDisplay()
-		end
-	else
-		-- Standard gun: single reload animation for the whole mag.
-		local missing = stats.magSize - getCurrentAmmo(reloadingGunName)
-		local reserveNow = getReserveAmmo(reloadingGunName)
-		local amountToLoad = math.min(missing, math.max(0, math.floor(reserveNow)))
-		if amountToLoad <= 0 then
-			_isReloading = false
-			refreshAmmoDisplay()
-			return
-		end
-		playReloadCycle(stats.reloadTime)
-		if _equippedGun ~= reloadingGun then
-			_isReloading = false
-			refreshGunAmmoDisplay(reloadingGunName)
-			return
-		end
-		-- apply loaded ammo after animation
-		setCurrentAmmo(reloadingGunName, getCurrentAmmo(reloadingGunName) + amountToLoad)
-		setReserveAmmo(reloadingGunName, reserveNow - amountToLoad)
-		refreshAmmoDisplay()
-	end
-
-	_isReloading = false
-	refreshAmmoDisplay()
+	Logger.fireServer(_requestGunReloadRemote)
 end
 
 local function castShot(origin: Vector3, gunName: string)
@@ -225,9 +176,7 @@ local function fire(): boolean
 	GunFxModule.flashMuzzle(muzzleDelay)
 
 	-- Logger.fireServer provides the net trace hook when DEBUG_NETWORKING = true.
-	if hitZombie then
-		Logger.fireServer(_reportZombieHitRemote, hitZombie, isHeadshot, hitPosition)
-	end
+	Logger.fireServer(_reportZombieHitRemote, hitZombie, isHeadshot, hitPosition)
 
 	task.wait(stats.fireCooldown)
 	_isOnFireCooldown = false
@@ -417,6 +366,7 @@ local function onGunUnequipped()
 	GunViewModelModule.onGunUnequipped()
 	GunFxModule.onGunUnequipped()
 	_equippedGun = nil
+	_activeReloadId = nil
 	refreshAmmoDisplay()
 end
 
@@ -485,6 +435,46 @@ local function onZombieHit(hitPosition: Vector3, isHeadshot: boolean)
 		sound:Play()
 		sound.Ended:Connect(function() sound:Destroy() end)
 	end
+
+local function completePredictedReload(weaponName: string, reloadId: string)
+	if _activeReloadId ~= reloadId then
+		return
+	end
+
+	local stats = getGunStats(weaponName)
+	local magazine = getCurrentAmmo(weaponName)
+	local reserve = getReserveAmmo(weaponName)
+	local amountToLoad = math.min(stats.magSize - magazine, reserve)
+	setCurrentAmmo(weaponName, magazine + amountToLoad)
+	setReserveAmmo(weaponName, reserve - amountToLoad)
+	_isReloading = false
+	refreshAmmoDisplay()
+	Logger.info(TAG, "Reload predicted complete: gun=%s", weaponName)
+end
+
+local function onAmmoStateUpdated(weaponName: string, magazine: number, reserve: number, reloading: boolean, reloadId: string?, reloadEndsAt: number?)
+	setCurrentAmmo(weaponName, magazine)
+	setReserveAmmo(weaponName, reserve)
+	if _equippedGun and _equippedGun.Name == weaponName then
+		if reloading then
+			assert(type(reloadId) == "string", "Reload state requires an event ID")
+			assert(type(reloadEndsAt) == "number", "Reload state requires an end time")
+			if _activeReloadId == reloadId then
+				return
+			end
+
+			_activeReloadId = reloadId
+			local remainingDuration = math.max(0.01, reloadEndsAt - workspace:GetServerTimeNow())
+			Logger.info(TAG, "Reload acknowledged: gun=%s remaining=%.3f", weaponName, remainingDuration)
+			task.spawn(playReloadAnimation, remainingDuration)
+			task.delay(remainingDuration, completePredictedReload, weaponName, reloadId)
+		else
+			_activeReloadId = nil
+		end
+		_isReloading = reloading
+		refreshAmmoDisplay()
+	end
+end
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 function GunController:Init()
@@ -494,20 +484,10 @@ end
 function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
 	_reportZombieHitRemote = Framework.GetRemote("ReportZombieHit")
+	_requestGunReloadRemote = Framework.GetRemote("RequestGunReload")
 
-	-- Top-up ammo remote for RNG hits where player rolled an already-equipped weapon
-	local _gunAmmoReplenishedRemote: RemoteEvent = Framework.GetRemote("GunAmmoReplenished")
-	_gunAmmoReplenishedRemote.OnClientEvent:Connect(function(weaponName: string, magSize: number, maxAmmo: number)
-		assert(type(weaponName) == "string", "RNG top-up requires a weapon name")
-		assert(type(magSize) == "number", "RNG top-up requires a magazine size")
-		assert(type(maxAmmo) == "number", "RNG top-up requires a reserve ammo count")
-		setReserveAmmo(weaponName, maxAmmo)
-		if _equippedGun and _equippedGun.Name == weaponName then
-			setCurrentAmmo(weaponName, magSize)
-			refreshAmmoDisplay()
-		end
-		Logger.info(TAG, "RNG top-up: weapon=%s mag=%d reserve=%d", weaponName, magSize, maxAmmo)
-	end)
+	local ammoStateUpdatedRemote: RemoteEvent = Framework.GetRemote("AmmoStateUpdated")
+	ammoStateUpdatedRemote.OnClientEvent:Connect(onAmmoStateUpdated)
 
 	InventoryController.onInventoryChanged(onInventoryChanged)
 

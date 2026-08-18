@@ -27,7 +27,7 @@ local TAG = "ZombieService"
 local ZombieService = {}
 ZombieService.Name = TAG
 
-export type OnDied = () -> ()
+export type OnDied = (deathPosition: Vector3?) -> ()
 
 type ZombieSnapshot = {
 	rootPosition: Vector3?,
@@ -255,13 +255,16 @@ local function ragdollAndExplode(zombieModel: Model, explosionForce: number)
 end
 
 local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: OnDied)
-	humanoid.Died:Connect(function()
+	local function onHumanoidDied()
+		local deathPosition = zombie:GetPivot().Position
 		ragdollAndExplode(zombie, 30)
-		onDied()
+		onDied(deathPosition)
 
 		task.wait(2.0)
 		zombie:Destroy()
-	end)
+	end
+
+	humanoid.Died:Connect(onHumanoidDied)
 end
 
 local function registerZombie(zombie: Model, humanoid: Humanoid, target: Player)
@@ -281,7 +284,7 @@ function ZombieService.spawn(target: Player, onDied: OnDied, centerPos: Vector3?
 	if not humanoid then
 		Logger.warn(TAG, "Zombie template '%s' is missing a Humanoid — skipping spawn.", resolvedType)
 		zombie:Destroy()
-		onDied()
+		onDied(nil)
 		return
 	end
 	configureHumanoid(humanoid, stats.MaxHealth, stats.WalkSpeed)

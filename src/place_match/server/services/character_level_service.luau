@@ -20,6 +20,7 @@ export type LevelState = {
 }
 
 local _levelStateByPlayer: { [Player]: LevelState } = {}
+local _doubleXpExpiryByPlayer: { [Player]: number } = {}
 local _levelUp = Instance.new("BindableEvent")
 local _experienceUpdatedRemote: RemoteEvent
 
@@ -64,10 +65,25 @@ function CharacterLevelService.onLevelUp(callback: (Player, number, number, numb
 	return _levelUp.Event:Connect(callback)
 end
 
+function CharacterLevelService.activateDoubleXp(player: Player, duration: number)
+	assert(duration > 0, string.format("Double XP duration must be positive, got %f", duration))
+	_doubleXpExpiryByPlayer[player] = os.clock() + duration
+end
+
+function CharacterLevelService.clearDoubleXp(player: Player)
+	_doubleXpExpiryByPlayer[player] = nil
+end
+
 function CharacterLevelService.addExperience(player: Player, amount: number)
 	local earnedExperience = math.max(0, math.floor(amount))
 	if earnedExperience == 0 then
 		return
+	end
+	local doubleXpExpiry = _doubleXpExpiryByPlayer[player]
+	if doubleXpExpiry and doubleXpExpiry > os.clock() then
+		earnedExperience *= 2
+	elseif doubleXpExpiry then
+		_doubleXpExpiryByPlayer[player] = nil
 	end
 
 	local state = getLevelState(player)
@@ -104,6 +120,7 @@ function CharacterLevelService:Start()
 	Players.PlayerAdded:Connect(getLevelState)
 	Players.PlayerRemoving:Connect(function(player: Player)
 		_levelStateByPlayer[player] = nil
+		_doubleXpExpiryByPlayer[player] = nil
 	end)
 end
 

@@ -19,64 +19,30 @@ local theme = require(replicated_storage.common.shared.vide.vide_theme)
 local ui    = require(replicated_storage.common.shared.vide.ui_config)
 local DepressedButton = require(replicated_storage.common.shared.vide.depressed_button)
 local armoryHud = require(replicated_storage.common.shared.vide.armory)
-local ProfileInventory = require(replicated_storage.common.shared.profile_db_types)
-local ProfileDb = require(replicated_storage.common.shared.profile_db_types)
 
 local create = vide.create
-local source = vide.source
 local effect = vide.effect
 local mount  = vide.mount
+local root   = vide.root
+local source = vide.source
 
-export type LobbyMainHUDProps = {
-    title: string,
-    hintText: string,
-    parentGui: Instance?,
-    playerName: string?,
-    onPurchaseWeapon: ((string, string) -> ())?,
-    profileApi: ProfileDb.API?,
-}
+local silverAmount = source(0)
+local goldAmount = source(0)
+local hintMessage = source("Walk to a pad to play")
 
 --- Creates the always-visible lobby HUD.
---- Returns the ScreenGui, a control table for updating reactive fields, and an
---- unmount function.
-function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
-    setSilver: (number) -> (),
-    setGold: (number) -> (),
-    setHint:   (string) -> (),
-}, () -> ())
-    local silverAmount = source(0)
-    local goldAmount = source(0)
-    local hintMsg      = source(props.hintText or "")
-    -- UI Labs stories run without a client Player, so LocalPlayer can be nil.
-    -- Keep the component renderable there while preserving the real name in-game.
-    local localPlayer = Players.LocalPlayer
-    local displayName = props.playerName
-    if not displayName then
-        displayName = "PLAYER"
-        if localPlayer then
-            displayName = localPlayer.Name
-        end
-    end
+function createLobbyMainHUD(): ScreenGui
+    local localPlayer = assert(Players.LocalPlayer, "LobbyMainHUD requires a local player")
+    local displayName = localPlayer.Name
 
-    local screenGui: Instance
-    if props.parentGui then
-        screenGui = props.parentGui
-    else
-        screenGui = create "ScreenGui" {
-            Name           = "LobbyMainHud",
-            ResetOnSpawn   = false,
-            IgnoreGuiInset = true,
-            Parent         = localPlayer and localPlayer.PlayerGui,
-        }
-    end
+    local screenGui = create "ScreenGui" {
+        Name           = "LobbyMainHud",
+        ResetOnSpawn   = false,
+        IgnoreGuiInset = true,
+    }
 
     -- Armory panel (created once, returns a toggle function)
-    local toggleArmory = armoryHud.createArmoryHUD(screenGui, props.onPurchaseWeapon)
-    local toggleInventory: () -> () = function() end
-    local cleanupInventory: (() -> ())? = nil
-    if props.profileApi then
-        toggleInventory, cleanupInventory = ProfileInventory.createProfileInventoryHUD(props.profileApi, screenGui)
-    end
+    local toggleArmory = armoryHud.createArmoryHUD(screenGui, nil)
 
     -- Click sound (static, not reactive)
     local _clickSound = create "Sound" {
@@ -97,7 +63,7 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             TextColor3           = theme.TEXT_HIGHLIGHT,
             TextScaled           = true,
             Font                 = theme.FONT_BOLD,
-            Text                 = props.title,
+            Text                 = "ALIEN INVASION",
         }
 
         -- Player name (top-left) — static
@@ -160,11 +126,11 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
 		TextColor3           = theme.TEXT_SECONDARY,
 		TextScaled           = true,
 		Font                 = theme.FONT_REGULAR,
-		Text                 = hintMsg(),
+        Text                 = hintMessage(),
 	}
 
 	effect(function()
-		hintLabel.Text = hintMsg()
+		hintLabel.Text = hintMessage()
 	end)
 
         -- Shop button (bottom-center) — reusable DepressedButton component
@@ -209,30 +175,23 @@ function createLobbyMainHUD(props: LobbyMainHUDProps): (Instance, {
             TextScaled             = true,
             Font                   = theme.FONT_BOLD,
             BorderSizePixel        = 0,
-            Visible                = props.profileApi ~= nil,
-            Activated              = toggleInventory,
+            Visible                = false,
         }
 
 
     end
 
-    local unmount = mount(renderHUD, screenGui)
-    local function cleanup()
-        unmount()
-        if cleanupInventory then
-            cleanupInventory()
-        end
-    end
-
-    local controls = {
-        setSilver = function(amount: number) silverAmount(amount) end,
-        setGold = function(amount: number) goldAmount(amount) end,
-        setHint   = function(msg: string) hintMsg(msg) end,
-    }
-
-    return screenGui, controls, cleanup
+    mount(renderHUD, screenGui)
+    return screenGui
 end
 
+local _destroyRoot, lobbyMainHud = root(createLobbyMainHUD)
+
 return {
-    createLobbyMainHUD = createLobbyMainHUD,
+	gui = lobbyMainHud,
+	sources = {
+		silverAmount = silverAmount,
+		goldAmount = goldAmount,
+		hintMessage = hintMessage,
+	},
 }

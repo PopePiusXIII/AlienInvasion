@@ -14,7 +14,6 @@ RngService.Name = TAG
 
 
 local _rngActivateRemote:     RemoteEvent
-local _rngTopupRemote:        RemoteEvent
 local _rngRequestGiveRemote:  RemoteEvent
 local _rngPickModifierRemote: RemoteEvent
 local _pendingOptions: { [Player]: { string } } = {}
@@ -22,7 +21,6 @@ local _pendingOptions: { [Player]: { string } } = {}
 function RngService:Init()
 	Logger.info(TAG, "Initialized.")
 	_rngActivateRemote = Framework.CreateRemote("RngActivated")
-	_rngTopupRemote = Framework.CreateRemote("GunAmmoReplenished")
 	_rngRequestGiveRemote = Framework.CreateRemote("RequestRngReward")
 	_rngPickModifierRemote = Framework.CreateRemote("SelectRngModifier")
 end
