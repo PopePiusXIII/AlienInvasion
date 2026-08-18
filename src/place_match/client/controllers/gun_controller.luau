@@ -48,6 +48,7 @@ local _aimPitchTaskId: string? = nil
 local _cameraModeConn:   RBXScriptConnection? = nil
 local _cameraCFrameConn: RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
+local _activeReloadId: string? = nil
 local _baseGunGrip:      CFrame?              = nil
 local _cachedMuzzle:     BasePart?            = nil
 local _cachedHrp:        BasePart?            = nil
@@ -120,8 +121,10 @@ local function refreshAmmoDisplay()
 end
 
 local function playReloadAnimation(duration: number)
+	local startedAt = os.clock()
 	local track = GunFxModule.playReloadAnimation(duration)
 	track.Stopped:Wait()
+	Logger.info(TAG, "Reload animation stopped: target=%.3f elapsed=%.3f trackLength=%.3f", duration, os.clock() - startedAt, track.Length)
 end
 
 local function reload()
@@ -132,7 +135,6 @@ local function reload()
 	_isReloading = true
 	refreshAmmoDisplay()
 	Logger.fireServer(_requestGunReloadRemote)
-	task.spawn(playReloadAnimation, stats.reloadTime)
 end
 
 local function castShot(origin: Vector3, gunName: string)
@@ -364,6 +366,7 @@ local function onGunUnequipped()
 	GunViewModelModule.onGunUnequipped()
 	GunFxModule.onGunUnequipped()
 	_equippedGun = nil
+	_activeReloadId = nil
 	refreshAmmoDisplay()
 end
 
@@ -433,10 +436,41 @@ local function onZombieHit(hitPosition: Vector3, isHeadshot: boolean)
 		sound.Ended:Connect(function() sound:Destroy() end)
 	end
 
-local function onAmmoStateUpdated(weaponName: string, magazine: number, reserve: number, reloading: boolean)
+local function completePredictedReload(weaponName: string, reloadId: string)
+	if _activeReloadId ~= reloadId then
+		return
+	end
+
+	local stats = getGunStats(weaponName)
+	local magazine = getCurrentAmmo(weaponName)
+	local reserve = getReserveAmmo(weaponName)
+	local amountToLoad = math.min(stats.magSize - magazine, reserve)
+	setCurrentAmmo(weaponName, magazine + amountToLoad)
+	setReserveAmmo(weaponName, reserve - amountToLoad)
+	_isReloading = false
+	refreshAmmoDisplay()
+	Logger.info(TAG, "Reload predicted complete: gun=%s", weaponName)
+end
+
+local function onAmmoStateUpdated(weaponName: string, magazine: number, reserve: number, reloading: boolean, reloadId: string?, reloadEndsAt: number?)
 	setCurrentAmmo(weaponName, magazine)
 	setReserveAmmo(weaponName, reserve)
 	if _equippedGun and _equippedGun.Name == weaponName then
+		if reloading then
+			assert(type(reloadId) == "string", "Reload state requires an event ID")
+			assert(type(reloadEndsAt) == "number", "Reload state requires an end time")
+			if _activeReloadId == reloadId then
+				return
+			end
+
+			_activeReloadId = reloadId
+			local remainingDuration = math.max(0.01, reloadEndsAt - workspace:GetServerTimeNow())
+			Logger.info(TAG, "Reload acknowledged: gun=%s remaining=%.3f", weaponName, remainingDuration)
+			task.spawn(playReloadAnimation, remainingDuration)
+			task.delay(remainingDuration, completePredictedReload, weaponName, reloadId)
+		else
+			_activeReloadId = nil
+		end
 		_isReloading = reloading
 		refreshAmmoDisplay()
 	end

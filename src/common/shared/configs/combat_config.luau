@@ -1133,7 +1133,7 @@ return {
 		fireCooldown     = 0.09,
 		magSize          = 30,
 		max_ammo         = 200,
-		reloadTime       = 2.6,
+		reloadTime       = 0.5,
 		isAutomatic      = true,
 		knockbackForce   = 20,
 		tracer = {

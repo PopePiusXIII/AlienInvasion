@@ -1,6 +1,7 @@
 --!strict
 
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
@@ -15,8 +16,9 @@ type AmmoState = {
 	magazine: number,
 	reserve: number,
 	lastShotAt: number,
-	reloadToken: number,
 	reloading: boolean,
+	reloadId: string?,
+	reloadEndsAt: number?,
 }
 
 export type GunServiceApi = {
@@ -62,7 +64,6 @@ local function getAmmoState(player: Player, gunId: string): AmmoState
 		magazine = stats.magSize,
 		reserve = stats.max_ammo,
 		lastShotAt = -math.huge,
-		reloadToken = 0,
 		reloading = false,
 	}
 	states[gunId] = initialState
@@ -70,17 +71,26 @@ local function getAmmoState(player: Player, gunId: string): AmmoState
 end
 
 local function publishAmmoState(player: Player, gunId: string, state: AmmoState)
-	Logger.fireClient(_ammoStateUpdatedRemote, player, getGunName(player, gunId), state.magazine, state.reserve, state.reloading)
+	Logger.fireClient(
+		_ammoStateUpdatedRemote,
+		player,
+		getGunName(player, gunId),
+		state.magazine,
+		state.reserve,
+		state.reloading,
+		state.reloadId,
+		state.reloadEndsAt
+	)
 end
 
-local function completeReload(player: Player, gunId: string, reloadToken: number)
+local function completeReload(player: Player, gunId: string, reloadId: string)
 	if not player.Parent then
 		return
 	end
 
 	local states = _ammoByPlayer[player.UserId]
 	local state = states and states[gunId]
-	if not state or not state.reloading or state.reloadToken ~= reloadToken then
+	if not state or not state.reloading or state.reloadId ~= reloadId then
 		return
 	end
 
@@ -89,7 +99,10 @@ local function completeReload(player: Player, gunId: string, reloadToken: number
 	state.magazine += amountToLoad
 	state.reserve -= amountToLoad
 	state.reloading = false
+	state.reloadId = nil
+	state.reloadEndsAt = nil
 	publishAmmoState(player, gunId, state)
+	Logger.info(TAG, "Reload completed for %s: gun=%s duration=%.3f", player.Name, gunId, stats.reloadTime)
 end
 
 local function onPlayerRemoving(player: Player)
@@ -130,9 +143,12 @@ local function requestReload(player: Player): boolean
 	end
 
 	state.reloading = true
-	state.reloadToken += 1
+	local reloadId = HttpService:GenerateGUID(false)
+	state.reloadId = reloadId
+	state.reloadEndsAt = workspace:GetServerTimeNow() + stats.reloadTime
 	publishAmmoState(player, gunId, state)
-	task.delay(stats.reloadTime, completeReload, player, gunId, state.reloadToken)
+	Logger.info(TAG, "Reload accepted for %s: gun=%s duration=%.3f endsAt=%.3f", player.Name, gunId, stats.reloadTime, state.reloadEndsAt)
+	task.delay(stats.reloadTime, completeReload, player, gunId, reloadId)
 	return true
 end
 
@@ -147,7 +163,8 @@ local function replenishEquippedAmmo(player: Player)
 	state.magazine = stats.magSize
 	state.reserve = stats.max_ammo
 	state.reloading = false
-	state.reloadToken += 1
+	state.reloadId = nil
+	state.reloadEndsAt = nil
 	publishAmmoState(player, gunId, state)
 end
 
