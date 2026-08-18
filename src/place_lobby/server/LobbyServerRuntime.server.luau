@@ -13,7 +13,17 @@ local Framework = require(replicated_storage.common.shared.framework)
 local Logger    = require(replicated_storage.common.shared.logger)
 
 -- ── Shared services (cross-place) ────────────────────────────────────────────
-require(server_script_service.common.services.profile_db)
+local ProfileDb = require(server_script_service.common.services.profile_db)
+
+local currencyUpdatedRemote = Framework.CreateRemote("LobbyCurrencyUpdated")
+
+local function sendCurrencyUpdated(player: Player, profile: any)
+	local silverAmount = profile.lifetimeSilverEarned - profile.lifetimeSilverSpent
+	Logger.fireClient(currencyUpdatedRemote, player, silverAmount, profile.goldStuds)
+end
+
+ProfileDb.OnProfileLoaded(sendCurrencyUpdated)
+ProfileDb.OnProfileChanged(sendCurrencyUpdated)
 
 -- ── Lobby services ───────────────────────────────────────────────────────────
 

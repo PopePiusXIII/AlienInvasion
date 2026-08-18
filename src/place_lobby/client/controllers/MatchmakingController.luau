@@ -66,7 +66,7 @@ function MatchmakingController:Start()
 		end
 	end)
 
-	Logger.wrapClientEvent(_matchFoundRemote, TAG, function()
+	Logger.onClientEvent(_matchFoundRemote, TAG, function()
 		_matchLocked = true
 		LobbyHudController.setButtonText("", false)  -- disable button
 

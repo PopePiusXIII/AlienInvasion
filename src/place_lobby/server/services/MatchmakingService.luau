@@ -35,10 +35,10 @@ function MatchmakingService:Init()
 	local leaveQueueRemote = Framework.CreateRemote("LeaveQueue")
 	_matchFoundRemote      = Framework.CreateRemote("MatchFound")
 
-	Logger.wrapServerEvent(joinQueueRemote, TAG, function(player: Player)
+	Logger.onServerEvent(joinQueueRemote, TAG, function(player: Player)
 		MatchmakingService._enqueue(player)
 	end)
-	Logger.wrapServerEvent(leaveQueueRemote, TAG, function(player: Player)
+	Logger.onServerEvent(leaveQueueRemote, TAG, function(player: Player)
 		MatchmakingService._dequeue(player)
 	end)
 
