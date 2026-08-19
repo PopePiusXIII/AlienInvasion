@@ -54,7 +54,6 @@ type ZombieEntry = {
 	zombie: Model,
 	humanoid: Humanoid,
 	target: Player,
-	isInLiftZone: boolean,
 }
 local _activeZombies: { ZombieEntry } = {}
 local _zombieLiftZones: { BasePart } = {}
@@ -81,32 +80,13 @@ local function getZombieLiftZone(position: Vector3): BasePart?
 	return nil
 end
 
-local function setLiftZoneState(entry: ZombieEntry, root: BasePart, isInLiftZone: boolean)
-	if entry.isInLiftZone == isInLiftZone then
-		return
-	end
-
-	entry.isInLiftZone = isInLiftZone
-	if isInLiftZone then
-		root:SetNetworkOwner(nil)
-		return
-	end
-
-	if entry.target.Parent then
-		root:SetNetworkOwner(entry.target)
-	end
-end
-
 local function updateZombieLift(entry: ZombieEntry)
 	local root = getZombieRoot(entry.zombie)
 	if not root then
 		return
 	end
 
-	local liftZone = getZombieLiftZone(root.Position)
-	local isInLiftZone = liftZone ~= nil
-	setLiftZoneState(entry, root, isInLiftZone)
-	if not isInLiftZone then
+	if not getZombieLiftZone(root.Position) then
 		return
 	end
 
@@ -382,7 +362,6 @@ local function registerZombie(zombie: Model, humanoid: Humanoid, target: Player)
 		zombie = zombie,
 		humanoid = humanoid,
 		target = target,
-		isInLiftZone = false,
 	})
 end
 
