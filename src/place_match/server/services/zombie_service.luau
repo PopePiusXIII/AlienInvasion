@@ -201,7 +201,7 @@ local function configureHumanoid(humanoid: Humanoid, maxHealth: number, walkSpee
 end
 
 local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
-	local spread = math.random(0, 60)
+	local spread = math.random(0, 10)
 	zombie:PivotTo(CFrame.new(spawnPos + Vector3.new(
 		0.0,
 		Config.ZOMBIE_SPAWN_HEIGHT,

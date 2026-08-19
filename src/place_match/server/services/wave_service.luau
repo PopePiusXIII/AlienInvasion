@@ -27,6 +27,8 @@ local _waveAnnounceRemote:       RemoteEvent
 local _waveClearRemote:          RemoteEvent
 local _waveTimerUpdatedRemote:   RemoteEvent
 local _battleKillsUpdatedRemote: RemoteEvent
+local _zombieSpawnPoints:        { BasePart } = {}
+local _spawnRandom = Random.new()
 
 type BattleTimer = {
 	expired: boolean,
@@ -38,28 +40,65 @@ type BattleState = {
 	timer: BattleTimer,
 }
 
+local function isZombieSpawnPointName(name: string): boolean
+	return name == "Spawn_Mob" or string.match(name, "^Spawn_Mob_[1-9]%d*$") ~= nil
+end
+
+local function getZombieSpawnPointOrder(spawnPoint: BasePart): number
+	if spawnPoint.Name == "Spawn_Mob" then
+		return 0
+	end
+
+	local suffix = string.match(spawnPoint.Name, "^Spawn_Mob_([1-9]%d*)$")
+	assert(suffix, "[WaveService] Invalid zombie spawn point name: " .. spawnPoint:GetFullName())
+	return tonumber(suffix) :: number
+end
+
+local function compareZombieSpawnPoints(left: BasePart, right: BasePart): boolean
+	return getZombieSpawnPointOrder(left) < getZombieSpawnPointOrder(right)
+end
+
+local function cacheZombieSpawnPoints()
+	for _, descendant in ipairs(workspace:GetDescendants()) do
+		if isZombieSpawnPointName(descendant.Name) then
+			assert(descendant:IsA("BasePart"),
+				"[WaveService] Zombie spawn point must be a BasePart: " .. descendant:GetFullName())
+			table.insert(_zombieSpawnPoints, descendant)
+		end
+	end
+
+	assert(#_zombieSpawnPoints > 0,
+		"[WaveService] No zombie spawn points found. Add a Workspace BasePart named Spawn_Mob or Spawn_Mob_<number>.")
+	table.sort(_zombieSpawnPoints, compareZombieSpawnPoints)
+
+	for _, spawnPoint in ipairs(_zombieSpawnPoints) do
+		Logger.info(TAG, "Zombie spawn point cached: %s", spawnPoint:GetFullName())
+	end
+end
+
+local function initializeWaveService()
+	_waveAnnounceRemote = Framework.CreateRemote("WaveStarted")
+	_waveClearRemote = Framework.CreateRemote("WaveCleared")
+	_waveTimerUpdatedRemote = Framework.CreateRemote("WaveTimerUpdated")
+	_battleKillsUpdatedRemote = Framework.CreateRemote("BattleKillsUpdated")
+	cacheZombieSpawnPoints()
+end
+
+local function startWaveService() end
+
 local WaveService = Framework.CreateService({
 	Name = TAG,
-	Init = function()
-		_waveAnnounceRemote = Framework.CreateRemote("WaveStarted")
-		_waveClearRemote = Framework.CreateRemote("WaveCleared")
-		_waveTimerUpdatedRemote = Framework.CreateRemote("WaveTimerUpdated")
-		_battleKillsUpdatedRemote = Framework.CreateRemote("BattleKillsUpdated")
-	end,
-	Start = function() end,
+	Init = initializeWaveService,
+	Start = startWaveService,
 })
 
 -- ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 -- ── Private helpers ───────────────────────────────────────────────────────────
 
-local function findZombieSpawnPosition(): Vector3
-	local spawnPart = workspace:FindFirstChild("Spawn_Mob", true)
-	if spawnPart and spawnPart:IsA("BasePart") then
-		return (spawnPart :: BasePart).Position
-	end
-	Logger.warn(TAG, "Spawn_Mob not found in Workspace — falling back to origin.")
-	return Vector3.new(0, 0, 0)
+local function selectZombieSpawnPosition(): Vector3
+	local index = _spawnRandom:NextInteger(1, #_zombieSpawnPoints)
+	return _zombieSpawnPoints[index].Position
 end
 
 
@@ -106,7 +145,7 @@ local function runBattleTimer(player: Player, timer: BattleTimer)
 end
 
 -- Runs one full wave: spawns all zombies, waits for all to die (or player death).
-local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, humanoid: Humanoid, battle: BattleState)
+local function runWave(player: Player, waveNumber: number, humanoid: Humanoid, battle: BattleState)
 	Logger.info(TAG, "Wave %d — %s (%d zombies).", waveNumber, player.Name, waveNumber)
 	player:SetAttribute("CurrentWave", waveNumber)
 
@@ -127,7 +166,8 @@ local function runWave(player: Player, waveNumber: number, spawnPos: Vector3, hu
 	local totalZombies = 10 * waveNumber
 	for i = 1, totalZombies do
 		if not player.Parent or humanoid.Health <= 0 or battle.timer.expired then break end
-		ZombieService.spawn(player, onZombieDied, spawnPos, pickZombieType(waveNumber))
+		local spawnPosition = selectZombieSpawnPosition()
+		ZombieService.spawn(player, onZombieDied, spawnPosition, pickZombieType(waveNumber))
 		if i < totalZombies then
 			task.wait(WaveConfig.WAVE_SPAWN_INTERVAL)
 		end
@@ -151,7 +191,6 @@ function WaveService.startBattle(player: Player): number
 	local humanoid = CharacterService.waitFor(player).humanoid
 	Logger.info(TAG, "startBattle: character ready, starting waves (%s).", player.Name)
 
-	local spawnPos   = findZombieSpawnPosition()
 	local waveNumber = WaveConfig.STARTING_WAVE
 	local battle: BattleState = {
 		kills = 0,
@@ -167,7 +206,7 @@ function WaveService.startBattle(player: Player): number
 	-- The humanoid reference is captured once. Even if the character respawns,
 	-- this humanoid's Health drops to 0 on death, so the loop detects it correctly.
 	while player.Parent and humanoid.Health > 0 and not battle.timer.expired do
-		runWave(player, waveNumber, spawnPos, humanoid, battle)
+		runWave(player, waveNumber, humanoid, battle)
 
 		if humanoid.Health <= 0 then
 			Logger.info(TAG, "%s died on wave %d.", player.Name, waveNumber)
