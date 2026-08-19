@@ -34,4 +34,5 @@ return {
 	ZOMBIE_SPAWN_HEIGHT        = 3,
 	ZOMBIE_REPULSION_DISTANCE  = 8,   -- studs; zombies within this range push apart
 	ZOMBIE_REPULSION_FORCE     = 14,  -- max offset (studs) applied to MoveTo target
+	ZOMBIE_LIFT_SPEED          = 18,  -- studs per second while inside a ZombieLiftZone
 }
