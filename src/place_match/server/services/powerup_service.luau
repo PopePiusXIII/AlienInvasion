@@ -19,6 +19,7 @@ type PowerupType = "Food" | "DoubleXp" | "MaxAmmo"
 type PickupRecord = {
 	owner: Player,
 	pickup: PVInstance,
+	trigger: BasePart,
 	parts: { BasePart },
 	powerupType: PowerupType,
 	claimed: boolean,
@@ -65,6 +66,9 @@ local function destroyPickup(record: PickupRecord)
 	end
 	if record.pickup.Parent then
 		record.pickup:Destroy()
+	end
+	if record.trigger.Parent then
+		record.trigger:Destroy()
 	end
 end
 
@@ -114,6 +118,20 @@ local function playPowerupSound(rootPart: BasePart, powerupType: PowerupType)
 	sound.Parent = rootPart
 	sound:Play()
 	debris:AddItem(sound, 10)
+end
+
+local function createPickupTrigger(position: Vector3): BasePart
+	local trigger = Instance.new("Part")
+	trigger.Name = "PickupTrigger"
+	trigger.Anchored = true
+	trigger.CanCollide = false
+	trigger.CanQuery = false
+	trigger.CanTouch = true
+	trigger.Transparency = 1
+	trigger.Size = Vector3.one * (PowerupConfig.PICKUP_RADIUS * 2)
+	trigger.CFrame = CFrame.new(position)
+	trigger.Parent = workspace
+	return trigger
 end
 
 local function getPickupTouchedPart(hit: BasePart): BasePart?
@@ -181,10 +199,13 @@ local function spawnPickup(player: Player, position: Vector3, powerupType: Power
 		end
 	end
 	assert(#parts > 0, string.format("PowerUp model '%s' requires a BasePart", template.Name))
+	local trigger = createPickupTrigger(pickup:GetPivot().Position)
+	table.insert(parts, trigger)
 
 	local record: PickupRecord = {
 		owner = player,
 		pickup = pickup,
+		trigger = trigger,
 		parts = parts,
 		powerupType = powerupType,
 		claimed = false,
