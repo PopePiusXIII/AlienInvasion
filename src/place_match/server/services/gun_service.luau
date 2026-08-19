@@ -33,6 +33,7 @@ export type GunServiceApi = {
 local _ammoByPlayer: { [number]: { [string]: AmmoState } } = {}
 local _ammoStateUpdatedRemote: RemoteEvent
 local _requestGunReloadRemote: RemoteEvent
+local _cancelGunReloadRemote: RemoteEvent
 
 local function getGunStats(player: Player, gunId: string)
 	local level = InventoryService.getGunLevel(player, gunId)
@@ -152,6 +153,26 @@ local function requestReload(player: Player): boolean
 	return true
 end
 
+local function cancelReload(player: Player, reloadId: string): boolean
+	local states = _ammoByPlayer[player.UserId]
+	if not states then
+		return false
+	end
+
+	for gunId, state in states do
+		if state.reloading and state.reloadId == reloadId then
+			state.reloading = false
+			state.reloadId = nil
+			state.reloadEndsAt = nil
+			publishAmmoState(player, gunId, state)
+			Logger.info(TAG, "Reload cancelled for %s: gun=%s", player.Name, gunId)
+			return true
+		end
+	end
+
+	return false
+end
+
 local function replenishEquippedAmmo(player: Player)
 	local gunId = InventoryService.getEquippedGunId(player)
 	if not gunId then
@@ -172,13 +193,19 @@ local function onReloadRequested(player: Player)
 	requestReload(player)
 end
 
+local function onReloadCancelled(player: Player, reloadId: string)
+	cancelReload(player, reloadId)
+end
+
 local function initGunService(_self: GunServiceApi)
 	_ammoStateUpdatedRemote = Framework.CreateRemote("AmmoStateUpdated")
 	_requestGunReloadRemote = Framework.CreateRemote("RequestGunReload")
+	_cancelGunReloadRemote = Framework.CreateRemote("CancelGunReload")
 end
 
 local function startGunService(_self: GunServiceApi)
 	Logger.onServerEvent(_requestGunReloadRemote, TAG, onReloadRequested)
+	Logger.onServerEvent(_cancelGunReloadRemote, TAG, onReloadCancelled)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
 end
 
