@@ -1,7 +1,7 @@
 --!strict
 --------------------------------------------------------------------------------
 -- WaveService.luau  (src/server/services)
--- Owns each player's timed zombie flux lifecycle and spawn cue.
+-- Owns the match-level zombie flux lifecycle and shared spawn cue.
 --------------------------------------------------------------------------------
 
 local replicated_storage = game:GetService("ReplicatedStorage")
@@ -38,7 +38,7 @@ type FluxTier = {
 	randomCue: { WeightedCueEntry },
 }
 
-type BattleTimer = {
+type MatchTimer = {
 	expired: boolean,
 	stopped: boolean,
 }
@@ -49,22 +49,25 @@ type SpawnJob = {
 	spawnPointName: string,
 }
 
-type BattleState = {
+type MatchState = {
+	participants: { Player },
+	participantHumanoids: { [Player]: Humanoid },
 	kills: number,
 	aliveCount: number,
 	activeTierIndex: number,
 	highestTierReached: number,
 	nextJobId: number,
+	nextOwnerIndex: number,
 	lastSpawnTime: number,
 	queue: { SpawnJob },
 	running: boolean,
-	timer: BattleTimer,
+	timer: MatchTimer,
 }
 
 local _waveTimerUpdatedRemote: RemoteEvent
 local _battleKillsUpdatedRemote: RemoteEvent
 local _spawnPointsByName: { [string]: BasePart? } = {}
-local _battlesByPlayer: { [Player]: BattleState } = {}
+local _matchState: MatchState? = nil
 local _random = Random.new()
 local _tiers: { FluxTier } = FluxConfig.TIERS
 
@@ -156,16 +159,16 @@ local WaveService = Framework.CreateService({
 	Start = startWaveService,
 })
 
-local function enqueueEntry(battle: BattleState, cueEntry: CueEntry | WeightedCueEntry): { number }
+local function enqueueEntry(match: MatchState, cueEntry: CueEntry | WeightedCueEntry): { number }
 	validateCueEntry(cueEntry, "Cue entry")
 	assert(_spawnPointsByName[cueEntry.spawnPointName] ~= nil,
 		"[WaveService] Cue entry references unconfigured spawn location '" .. cueEntry.spawnPointName .. "'.")
 
 	local jobIds: { number } = table.create(cueEntry.amount)
 	for _ = 1, cueEntry.amount do
-		battle.nextJobId += 1
-		local jobId = battle.nextJobId
-		table.insert(battle.queue, {
+		match.nextJobId += 1
+		local jobId = match.nextJobId
+		table.insert(match.queue, {
 			id = jobId,
 			zombieType = cueEntry.zombieType,
 			spawnPointName = cueEntry.spawnPointName,
@@ -175,9 +178,9 @@ local function enqueueEntry(battle: BattleState, cueEntry: CueEntry | WeightedCu
 	return jobIds
 end
 
-local function enqueueTierEntryCue(battle: BattleState, tier: FluxTier)
+local function enqueueTierEntryCue(match: MatchState, tier: FluxTier)
 	for _, cueEntry in ipairs(tier.entryCue) do
-		enqueueEntry(battle, cueEntry)
+		enqueueEntry(match, cueEntry)
 	end
 end
 
@@ -210,14 +213,59 @@ local function getTierIndex(elapsedSeconds: number): number
 	return activeTierIndex
 end
 
-local function runBattleTimer(player: Player, timer: BattleTimer)
+local function isParticipantAlive(match: MatchState, player: Player): boolean
+	local humanoid = match.participantHumanoids[player]
+	return player.Parent ~= nil and humanoid.Parent ~= nil and humanoid.Health > 0
+end
+
+local function hasLivingParticipant(match: MatchState): boolean
+	for _, player in ipairs(match.participants) do
+		if isParticipantAlive(match, player) then
+			return true
+		end
+	end
+	return false
+end
+
+local function getNextLivingParticipant(match: MatchState): Player
+	local participantCount = #match.participants
+	assert(participantCount > 0, "[WaveService] Match state has no participants.")
+
+	for _ = 1, participantCount do
+		local player = match.participants[match.nextOwnerIndex]
+		match.nextOwnerIndex = match.nextOwnerIndex % participantCount + 1
+		if isParticipantAlive(match, player) then
+			return player
+		end
+	end
+
+	error("[WaveService] Cannot select a spawn owner without a living participant.")
+end
+
+local function setFluxTierForParticipants(match: MatchState, tierIndex: number)
+	for _, player in ipairs(match.participants) do
+		if player.Parent then
+			player:SetAttribute("CurrentFluxTier", tierIndex)
+		end
+	end
+end
+
+local function clearFluxTierForParticipants(match: MatchState)
+	for _, player in ipairs(match.participants) do
+		if player.Parent then
+			player:SetAttribute("CurrentFluxTier", nil)
+		end
+	end
+end
+
+local function runMatchTimer(timer: MatchTimer)
 	local deadline = os.clock() + FluxConfig.BATTLE_DURATION
 	local lastRemaining = -1
 
-	while player.Parent and not timer.stopped do
+	while not timer.stopped do
 		local remaining = math.max(0, math.ceil(deadline - os.clock()))
 		if remaining ~= lastRemaining then
-			Logger.fireClient(_waveTimerUpdatedRemote, player, remaining)
+			Logger.fireAllClients(_waveTimerUpdatedRemote, remaining)
 			lastRemaining = remaining
 		end
 		if remaining == 0 then
@@ -228,97 +276,120 @@ local function runBattleTimer(player: Player, timer: BattleTimer)
 	end
 end
 
-local function spawnQueuedZombie(player: Player, battle: BattleState)
-	local job = table.remove(battle.queue, 1)
+local function spawnQueuedZombie(match: MatchState)
+	local job = table.remove(match.queue, 1)
 	assert(job ~= nil, "[WaveService] Cannot dispatch a zombie from an empty cue.")
 	local spawnPoint = _spawnPointsByName[job.spawnPointName]
 	assert(spawnPoint ~= nil, "[WaveService] Spawn job references an unresolved spawn location.")
+	local owner = getNextLivingParticipant(match)
 
-	battle.aliveCount += 1
+	match.aliveCount += 1
 	local didHandleDeath = false
 	local function onZombieDied(deathPosition: Vector3?)
-		if didHandleDeath or not battle.running then
+		if didHandleDeath or not match.running then
 			return
 		end
 		didHandleDeath = true
-		assert(battle.aliveCount > 0, "[WaveService] Zombie death received with no alive zombies tracked.")
-		battle.aliveCount -= 1
+		assert(match.aliveCount > 0, "[WaveService] Zombie death received with no alive zombies tracked.")
+		match.aliveCount -= 1
 		if not deathPosition then
 			return
 		end
-		battle.kills += 1
-		Logger.fireClient(_battleKillsUpdatedRemote, player, battle.kills)
-		PowerupService.onZombieKilled(player, deathPosition)
+		match.kills += 1
+		Logger.fireAllClients(_battleKillsUpdatedRemote, match.kills)
+		if isParticipantAlive(match, owner) then
+			PowerupService.onZombieKilled(owner, deathPosition)
+		end
 	end
 
-	ZombieService.spawn(player, onZombieDied, spawnPoint.Position, job.zombieType)
+	ZombieService.spawn(owner, onZombieDied, spawnPoint.Position, job.zombieType)
 end
 
-local function runFluxScheduler(player: Player, humanoid: Humanoid, battle: BattleState)
+local function runFluxScheduler(match: MatchState)
 	local startedAt = os.clock()
-	battle.activeTierIndex = getTierIndex(0)
-	battle.highestTierReached = battle.activeTierIndex
-	enqueueTierEntryCue(battle, _tiers[battle.activeTierIndex])
-	player:SetAttribute("CurrentFluxTier", battle.activeTierIndex)
+	match.activeTierIndex = getTierIndex(0)
+	match.highestTierReached = match.activeTierIndex
+	enqueueTierEntryCue(match, _tiers[match.activeTierIndex])
+	setFluxTierForParticipants(match, match.activeTierIndex)
 
-	while battle.running and player.Parent and humanoid.Health > 0 and not battle.timer.expired do
+	while match.running and not match.timer.expired and hasLivingParticipant(match) do
 		local elapsedSeconds = os.clock() - startedAt
 		local tierIndex = getTierIndex(elapsedSeconds)
-		if tierIndex ~= battle.activeTierIndex then
-			battle.activeTierIndex = tierIndex
-			battle.highestTierReached = tierIndex
-			player:SetAttribute("CurrentFluxTier", tierIndex)
-			enqueueTierEntryCue(battle, _tiers[tierIndex])
-			Logger.info(TAG, "%s entered flux tier %d.", player.Name, tierIndex)
+		if tierIndex ~= match.activeTierIndex then
+			match.activeTierIndex = tierIndex
+			match.highestTierReached = tierIndex
+			setFluxTierForParticipants(match, tierIndex)
+			enqueueTierEntryCue(match, _tiers[tierIndex])
+			Logger.info(TAG, "Match entered flux tier %d.", tierIndex)
 		end
 
-		local tier = _tiers[battle.activeTierIndex]
-		if battle.aliveCount < tier.maxAlive and os.clock() - battle.lastSpawnTime >= FluxConfig.SPAWN_INTERVAL then
-			if #battle.queue == 0 then
-				enqueueEntry(battle, chooseRandomCueEntry(tier))
+		local tier = _tiers[match.activeTierIndex]
+		if match.aliveCount < tier.maxAlive and os.clock() - match.lastSpawnTime >= FluxConfig.SPAWN_INTERVAL then
+			if #match.queue == 0 then
+				enqueueEntry(match, chooseRandomCueEntry(tier))
 			end
-			spawnQueuedZombie(player, battle)
-			battle.lastSpawnTime = os.clock()
+			spawnQueuedZombie(match)
+			match.lastSpawnTime = os.clock()
 		end
 
 		task.wait(FluxConfig.SCHEDULER_INTERVAL)
 	end
 end
 
-function WaveService.addZombieToCue(player: Player, cueEntry: CueEntry): { number }
-	local battle = _battlesByPlayer[player]
-	assert(battle ~= nil and battle.running,
-		"[WaveService] Cannot add a zombie to the cue without an active battle for " .. player.Name .. ".")
-	return enqueueEntry(battle, cueEntry)
+local function beginParticipantRuns(match: MatchState)
+	for _, player in ipairs(match.participants) do
+		EconomyService.beginRun(player)
+		PowerupService.beginBattle(player)
+		Logger.fireClient(_battleKillsUpdatedRemote, player, match.kills)
+	end
 end
 
-function WaveService.removeZombieFromCue(player: Player, jobId: number): boolean
-	local battle = _battlesByPlayer[player]
-	assert(battle ~= nil and battle.running,
-		"[WaveService] Cannot remove a zombie from the cue without an active battle for " .. player.Name .. ".")
+local function endParticipantRuns(match: MatchState)
+	for _, player in ipairs(match.participants) do
+		ZombieService.cleanupForPlayer(player.Name)
+		PowerupService.endBattle(player)
+	end
+end
+
+function WaveService.addZombieToCue(cueEntry: CueEntry): { number }
+	local match = _matchState
+	assert(match ~= nil and match.running, "[WaveService] Cannot add a zombie to the cue without an active match.")
+	return enqueueEntry(match, cueEntry)
+end
+
+function WaveService.removeZombieFromCue(jobId: number): boolean
+	local match = _matchState
+	assert(match ~= nil and match.running, "[WaveService] Cannot remove a zombie from the cue without an active match.")
 	validatePositiveInteger(jobId, "Cue job id")
 
-	for queueIndex, job in ipairs(battle.queue) do
+	for queueIndex, job in ipairs(match.queue) do
 		if job.id == jobId then
-			table.remove(battle.queue, queueIndex)
+			table.remove(match.queue, queueIndex)
 			return true
 		end
 	end
 	return false
 end
 
-function WaveService.startBattle(player: Player): number
-	assert(_battlesByPlayer[player] == nil, "[WaveService] Battle already active for " .. player.Name .. ".")
-	Logger.info(TAG, "startBattle: beginning flux run for %s.", player.Name)
-	EconomyService.beginRun(player)
+function WaveService.startMatch(participants: { Player }): number
+	assert(_matchState == nil, "[WaveService] A flux match is already active.")
+	assert(#participants > 0, "[WaveService] Cannot start a flux match without participants.")
 
-	local humanoid = CharacterService.waitFor(player).humanoid
-	local battle: BattleState = {
+	local participantHumanoids: { [Player]: Humanoid } = {}
+	for _, player in ipairs(participants) do
+		assert(player.Parent ~= nil, "[WaveService] Cannot start a flux match for a disconnected player: " .. player.Name)
+		participantHumanoids[player] = CharacterService.waitFor(player).humanoid
+	end
+
+	local match: MatchState = {
+		participants = participants,
+		participantHumanoids = participantHumanoids,
 		kills = 0,
 		aliveCount = 0,
 		activeTierIndex = 0,
 		highestTierReached = 0,
 		nextJobId = 0,
+		nextOwnerIndex = 1,
 		lastSpawnTime = -math.huge,
 		queue = {},
 		running = true,
@@ -327,21 +398,20 @@ function WaveService.startBattle(player: Player): number
 			stopped = false,
 		},
 	}
-	_battlesByPlayer[player] = battle
-	PowerupService.beginBattle(player)
-	Logger.fireClient(_battleKillsUpdatedRemote, player, battle.kills)
-	task.spawn(runBattleTimer, player, battle.timer)
+	_matchState = match
+	Logger.info(TAG, "Starting shared flux match for %d participants.", #participants)
+	beginParticipantRuns(match)
+	task.spawn(runMatchTimer, match.timer)
 
-	runFluxScheduler(player, humanoid, battle)
+	runFluxScheduler(match)
 
-	battle.running = false
-	battle.timer.stopped = true
-	ZombieService.cleanupForPlayer(player.Name)
-	PowerupService.endBattle(player)
-	_battlesByPlayer[player] = nil
-	player:SetAttribute("CurrentFluxTier", nil)
-	Logger.info(TAG, "Final flux tier: %d for %s.", battle.highestTierReached, player.Name)
-	return battle.highestTierReached
+	match.running = false
+	match.timer.stopped = true
+	endParticipantRuns(match)
+	clearFluxTierForParticipants(match)
+	_matchState = nil
+	Logger.info(TAG, "Final shared flux tier: %d.", match.highestTierReached)
+	return match.highestTierReached
 end
 
 return WaveService

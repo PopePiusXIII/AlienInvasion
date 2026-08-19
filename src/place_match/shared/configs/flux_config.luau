@@ -37,9 +37,9 @@ return {
 		},
 		{
 			startTimeSeconds = 30,
-			maxAlive = 15,
+			maxAlive = 25,
 			entryCue = {
-				{ zombieType = "Normal_Run", spawnPointName = "Spawn_Mob_2", amount = 10 },
+				{ zombieType = "Normal_Run", spawnPointName = "Spawn_Mob_2", amount = 25 },
 			},
 			randomCue = {
 				{ zombieType = "Normal", spawnPointName = "Spawn_Mob", amount = 1, weight = 2 },
