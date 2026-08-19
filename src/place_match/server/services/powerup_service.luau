@@ -1,6 +1,7 @@
 --!strict
 
 local Players = game:GetService("Players")
+local debris = game:GetService("Debris")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
@@ -38,6 +39,12 @@ local POWERUP_MODEL_NAMES: { [PowerupType]: string } = {
 	Food = "TurkeyLeg",
 	DoubleXp = "2x",
 	MaxAmmo = "MaxAmmo",
+}
+
+local POWERUP_SOUND_IDS: { [PowerupType]: string } = {
+	Food = "rbxassetid://137102366884896",
+	DoubleXp = "rbxassetid://113159623717183",
+	MaxAmmo = "rbxassetid://76008907639113",
 }
 
 local function getBattleState(player: Player): BattleState?
@@ -101,6 +108,14 @@ local function applyPowerup(player: Player, powerupType: PowerupType)
 	GunService.replenishEquippedAmmo(player)
 end
 
+local function playPowerupSound(rootPart: BasePart, powerupType: PowerupType)
+	local sound = Instance.new("Sound")
+	sound.SoundId = POWERUP_SOUND_IDS[powerupType]
+	sound.Parent = rootPart
+	sound:Play()
+	debris:AddItem(sound, 10)
+end
+
 local function getPickupTouchedPart(hit: BasePart): BasePart?
 	for _, touchingPart in ipairs(hit:GetTouchingParts()) do
 		if _pickupRecordByPart[touchingPart] then
@@ -141,6 +156,7 @@ local function onPickupTouched(hit: BasePart)
 
 	record.claimed = true
 	destroyPickup(record)
+	playPowerupSound(rootPart, record.powerupType)
 	applyPowerup(player, record.powerupType)
 	Logger.info(TAG, "%s collected %s.", player.Name, record.powerupType)
 end
