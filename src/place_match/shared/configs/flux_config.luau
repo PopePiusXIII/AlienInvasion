@@ -30,13 +30,16 @@ return {
 			},
 			randomCue = {
 				{ zombieType = "Normal", spawnPointName = "Spawn_Mob", amount = 1, weight = 1 },
+                { zombieType = "Normal", spawnPointName = "Spawn_Mob_2", amount = 1, weight = 1 },
+                { zombieType = "Normal", spawnPointName = "Spawn_Mob_3", amount = 1, weight = 1 },
+                { zombieType = "Normal", spawnPointName = "Spawn_Mob_4", amount = 1, weight = 1 },
 			},
 		},
 		{
-			startTimeSeconds = 120,
+			startTimeSeconds = 30,
 			maxAlive = 15,
 			entryCue = {
-				{ zombieType = "Normal_Run", spawnPointName = "Spawn_Mob", amount = 3 },
+				{ zombieType = "Normal_Run", spawnPointName = "Spawn_Mob_2", amount = 10 },
 			},
 			randomCue = {
 				{ zombieType = "Normal", spawnPointName = "Spawn_Mob", amount = 1, weight = 2 },
@@ -44,7 +47,7 @@ return {
 			},
 		},
 		{
-			startTimeSeconds = 240,
+			startTimeSeconds = 60,
 			maxAlive = 20,
 			entryCue = {
 				{ zombieType = "Tank", spawnPointName = "Spawn_Mob", amount = 2 },
