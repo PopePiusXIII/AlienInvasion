@@ -71,13 +71,13 @@ function GameService.startMatch()
 
 	for _, player in ipairs(players) do
 		task.spawn(function()
-			local waveReached = WaveService.startBattle(player)
+			local fluxTierReached = WaveService.startBattle(player)
 			local economySummary = EconomyService.finalizeRun(player)
-			ProfileService.saveStats(player, waveReached, economySummary)
+			ProfileService.saveStats(player, fluxTierReached, economySummary)
 
 			remaining -= 1
-			Logger.info(TAG, "%s done on wave %d. %d player(s) remaining.",
-				player.Name, waveReached, remaining)
+			Logger.info(TAG, "%s done at flux tier %d. %d player(s) remaining.",
+				player.Name, fluxTierReached, remaining)
 
 			if remaining <= 0 and (_matchState :: string) == "ACTIVE" then
 				_matchState = "ENDED"

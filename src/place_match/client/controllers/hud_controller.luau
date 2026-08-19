@@ -16,11 +16,8 @@ local StarterGui        = game:GetService("StarterGui")
 
 local Framework             = require(replicated_storage.common.shared.framework)
 local Logger                = require(replicated_storage.common.shared.logger)
-local WaveConfig            = require(replicated_storage.match.shared.configs.wave_config)
-local CharacterController   = require(replicated_storage.match.client.controllers.character_controller)
 local InventoryController   = require(replicated_storage.match.client.controllers.inventory_controller)
 local MatchHUD              = require(replicated_storage.match.ui.match_hud)
-local HudUpgradeEchoModule  = require(replicated_storage.match.client.controllers.modules.hud.hud_upgrade_echo_module)
 local ZombieDamageHud       = require(replicated_storage.match.ui.match_hud_components.zombie_damage_hud)
 
 local TAG = "HudController"
@@ -106,31 +103,12 @@ local function onBattleKillsUpdated(kills: number)
 end
 
 function HudController:Start()
-	local waveClearRemote = Framework.GetRemote("WaveCleared")
 	local waveTimerUpdatedRemote = Framework.GetRemote("WaveTimerUpdated")
 	local battleKillsUpdatedRemote = Framework.GetRemote("BattleKillsUpdated")
 	local healthUpdatedRemote = Framework.GetRemote("PlayerHealthUpdated")
 	local experienceUpdatedRemote = Framework.GetRemote("ExperienceUpdated")
 	local damageDealtRemote = Framework.GetRemote("ZombieDamageApplied")
 	local runCurrencyRemote = Framework.GetRemote("RunCurrencyUpdated")
-
-	Logger.onClientEvent(waveClearRemote, TAG, function()
-		-- Delegate state mutation to CharacterController — HudController never
-		-- touches humanoid properties directly (clean separation of concerns).
-		CharacterController.boostStat("walkSpeed",   WaveConfig.WAVE_CLEAR_SPEED_BOOST)
-		CharacterController.boostStat("sprintSpeed", WaveConfig.WAVE_CLEAR_SPEED_BOOST)
-		CharacterController.boostStat("scale",       WaveConfig.WAVE_CLEAR_SCALE_BOOST)
-
-		local stats = CharacterController.getStats()
-		Logger.info(TAG, "Stats upgraded — Walk: %.0f  Sprint: %.0f  Scale: %.2f",
-			stats.walkSpeed, stats.sprintSpeed, stats.scale)
-
-		HudUpgradeEchoModule.show(
-			_screenGui,
-			WaveConfig.WAVE_CLEAR_SPEED_BOOST,
-			WaveConfig.WAVE_CLEAR_SCALE_BOOST
-		)
-	end)
 
 	Logger.onClientEvent(waveTimerUpdatedRemote, TAG, onWaveTimerUpdated)
 	Logger.onClientEvent(battleKillsUpdatedRemote, TAG, onBattleKillsUpdated)
