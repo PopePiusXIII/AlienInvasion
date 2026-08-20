@@ -1,15 +1,11 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
-local vide  = require(replicated_storage.Packages.vide)
-local theme = require(replicated_storage.common.shared.vide.vide_theme)
+local vide = require(replicated_storage.Packages.vide)
 
 local create = vide.create
-local source = vide.source
-local derive = vide.derive
-local switch = vide.switch
-local root   = vide.root
 
-create "ScreenGui" {
+local function Merge(): ScreenGui
+    return create "ScreenGui" {
     Name = "Merge",
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 
@@ -425,4 +421,7 @@ create "ScreenGui" {
             },
         },
     },
-}
+    }
+end
+
+return Merge

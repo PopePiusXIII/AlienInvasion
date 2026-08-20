@@ -17,7 +17,8 @@ local controllers = script.controllers
 
 require(controllers.LobbyHudController)
 require(controllers.MatchmakingController)
+require(controllers.MergeShopkeeperController)
 
-Logger.info("LobbyClientRuntime", "Booting — 2 controllers registered.")
+Logger.info("LobbyClientRuntime", "Booting — 3 controllers registered.")
 Framework.Start()
 Logger.info("LobbyClientRuntime", "Framework started.")
