@@ -20,7 +20,7 @@ export type Tier = {
 return {
 	BATTLE_DURATION = 300,
 	SCHEDULER_INTERVAL = 0.1,
-	SPAWN_INTERVAL = 0.2,
+	ZOMBIE_SPAWN_INTERVAL = 0.2,
 	TIERS = {
 		{
 			startTimeSeconds = 0,

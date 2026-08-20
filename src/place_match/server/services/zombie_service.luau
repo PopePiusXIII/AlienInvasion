@@ -23,6 +23,7 @@ local CombatConfig = require(replicated_storage.common.shared.configs.combat_con
 local CharacterService = require(server_script_service.match.services.character_service)
 local HealthService = require(server_script_service.match.services.health_service)
 local ZombiePathfinderActor = require(server_script_service.match.modules.zombie.zombie_pathfinder_actor)
+local ZombieLiftModule = require(server_script_service.match.modules.zombie.zombie_lift_module)
 
 local TAG = "ZombieService"
 local ZombieService = {}
@@ -31,7 +32,6 @@ ZombieService.Name = TAG
 local ZOMBIE_COLLISION_GROUP = "Zombies"
 local DEAD_ZOMBIE_COLLISION_GROUP = "DeadZombie"
 local PLAYER_COLLISION_GROUP = "Player"
-local ZOMBIE_LIFT_ZONE_ATTRIBUTE = "ZombieLiftZone"
 export type OnDied = (deathPosition: Vector3?) -> ()
 
 type ZombieSnapshot = {
@@ -56,56 +56,10 @@ type ZombieEntry = {
 	target: Player,
 }
 local _activeZombies: { ZombieEntry } = {}
-local _zombieLiftZones: { BasePart } = {}
 local _rngTemplateWarned = false
 
 local function getZombieRoot(zombie: Model): BasePart?
 	return zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
-end
-
-local function isPositionInsideLiftZone(position: Vector3, liftZone: BasePart): boolean
-	local localPosition = liftZone.CFrame:PointToObjectSpace(position)
-	local halfSize = liftZone.Size * 0.5
-	return math.abs(localPosition.X) <= halfSize.X
-		and math.abs(localPosition.Y) <= halfSize.Y
-		and math.abs(localPosition.Z) <= halfSize.Z
-end
-
-local function getZombieLiftZone(position: Vector3): BasePart?
-	for _, liftZone in ipairs(_zombieLiftZones) do
-		if isPositionInsideLiftZone(position, liftZone) then
-			return liftZone
-		end
-	end
-	return nil
-end
-
-local function updateZombieLift(entry: ZombieEntry)
-	local root = getZombieRoot(entry.zombie)
-	if not root then
-		return
-	end
-
-	if not getZombieLiftZone(root.Position) then
-		return
-	end
-
-	local velocity = root.AssemblyLinearVelocity
-	root.AssemblyLinearVelocity = Vector3.new(velocity.X, Config.ZOMBIE_LIFT_SPEED, velocity.Z)
-end
-
-local function cacheZombieLiftZones()
-	for _, descendant in ipairs(workspace:GetDescendants()) do
-		if descendant:GetAttribute(ZOMBIE_LIFT_ZONE_ATTRIBUTE) == true then
-			assert(descendant:IsA("BasePart"),
-				"[ZombieService] ZombieLiftZone must be a BasePart: " .. descendant:GetFullName())
-			table.insert(_zombieLiftZones, descendant)
-			Logger.info(TAG, "Zombie lift zone cached: %s", descendant:GetFullName())
-		end
-	end
-
-	assert(#_zombieLiftZones > 0,
-		"[ZombieService] No ZombieLiftZone BasePart found in Workspace.")
 end
 
 -- ── Snapshot feeder (main thread) ────────────────────────────────────────────
@@ -127,8 +81,10 @@ local function snapshotFeederLoop()
 		-- Snapshot zombie root positions and feed to the desynchronized actor.
 		local snapshots: { ZombieSnapshot } = {}
 		for _, entry in ipairs(_activeZombies) do
-			updateZombieLift(entry)
 			local root = getZombieRoot(entry.zombie)
+			if root then
+				ZombieLiftModule.update(root)
+			end
 			table.insert(snapshots, {
 				rootPosition = root and root.Position or nil,
 				humanoid = entry.humanoid,
@@ -193,7 +149,7 @@ function ZombieService:Init()
 	PhysicsService:CollisionGroupSetCollidable(ZOMBIE_COLLISION_GROUP, ZOMBIE_COLLISION_GROUP, false)
 	PhysicsService:CollisionGroupSetCollidable(ZOMBIE_COLLISION_GROUP, PLAYER_COLLISION_GROUP, false)
 	PhysicsService:CollisionGroupSetCollidable(DEAD_ZOMBIE_COLLISION_GROUP, PLAYER_COLLISION_GROUP, false)
-	cacheZombieLiftZones()
+	ZombieLiftModule.initialize()
 
 	-- Cache every zombie template by type name at startup.
 	for rawTypeName, rawData in Config.ZOMBIE_TYPES do

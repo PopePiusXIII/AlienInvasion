@@ -65,8 +65,6 @@ local function runActiveMatch(players: { Player })
 	end
 end
 
---- Launch one shared flux battle for all connected players.
---- Saves each player's stats and teleports everyone back to the Lobby when it ends.
 function GameService.startMatch()
 	if _matchState ~= "WAITING" then
 		Logger.warn(TAG, "startMatch ignored — state is already '%s'.", _matchState)
