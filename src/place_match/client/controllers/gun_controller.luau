@@ -35,6 +35,7 @@ local _mouse        = _localPlayer:GetMouse()
 local _reportZombieHitRemote: RemoteEvent
 local _zombieHitConfirmedRemote: RemoteEvent
 local _requestGunReloadRemote: RemoteEvent
+local _cancelGunReloadRemote: RemoteEvent
 
 -- Gun state — all mutable locals are module-private.
 local _isReloading:      boolean              = false
@@ -49,6 +50,7 @@ local _cameraModeConn:   RBXScriptConnection? = nil
 local _cameraCFrameConn: RBXScriptConnection? = nil
 local _ammoByGun:        { [string]: number } = {}
 local _activeReloadId: string? = nil
+local _pendingReloadCancel: boolean = false
 local _baseGunGrip:      CFrame?              = nil
 local _cachedMuzzle:     BasePart?            = nil
 local _cachedHrp:        BasePart?            = nil
@@ -132,9 +134,28 @@ local function reload()
 	local gunName = _equippedGun.Name
 	local stats = getGunStats(gunName)
 	if _isReloading or getCurrentAmmo(gunName) == stats.magSize or getReserveAmmo(gunName) <= 0 then return end
+	_pendingReloadCancel = false
 	_isReloading = true
 	refreshAmmoDisplay()
 	Logger.fireServer(_requestGunReloadRemote)
+end
+
+local function cancelReload()
+	if not _isReloading then
+		return
+	end
+
+	GunFxModule.stopReloadAnimation()
+	_isReloading = false
+	refreshAmmoDisplay()
+
+	if not _activeReloadId then
+		_pendingReloadCancel = true
+		return
+	end
+
+	Logger.fireServer(_cancelGunReloadRemote, _activeReloadId)
+	_activeReloadId = nil
 end
 
 local function castShot(origin: Vector3, gunName: string)
@@ -144,7 +165,11 @@ end
 
 local function fire(): boolean
 	local character = _localPlayer.Character
-	if _isOnFireCooldown or _isReloading or not _equippedGun or not character then return false end
+	if _isReloading then
+		cancelReload()
+		return false
+	end
+	if _isOnFireCooldown or not _equippedGun or not character then return false end
 
 	local hrp = _cachedHrp
 	if not hrp then return false end
@@ -362,6 +387,7 @@ local function onGunUnequipped()
 	stopAimPitchTracking()
 	stopViewModeTracking()
 	_cachedMuzzle = nil
+	cancelReload()
 	GunFxModule.stopReloadAnimation()
 	GunViewModelModule.onGunUnequipped()
 	GunFxModule.onGunUnequipped()
@@ -459,6 +485,11 @@ local function onAmmoStateUpdated(weaponName: string, magazine: number, reserve:
 		if reloading then
 			assert(type(reloadId) == "string", "Reload state requires an event ID")
 			assert(type(reloadEndsAt) == "number", "Reload state requires an end time")
+			if _pendingReloadCancel then
+				_pendingReloadCancel = false
+				Logger.fireServer(_cancelGunReloadRemote, reloadId)
+				return
+			end
 			if _activeReloadId == reloadId then
 				return
 			end
@@ -469,7 +500,9 @@ local function onAmmoStateUpdated(weaponName: string, magazine: number, reserve:
 			task.spawn(playReloadAnimation, remainingDuration)
 			task.delay(remainingDuration, completePredictedReload, weaponName, reloadId)
 		else
+			GunFxModule.stopReloadAnimation()
 			_activeReloadId = nil
+			_pendingReloadCancel = false
 		end
 		_isReloading = reloading
 		refreshAmmoDisplay()
@@ -485,6 +518,7 @@ function GunController:Start()
 	-- GetRemote yields until the server's WaveService:Init() has created the remote.
 	_reportZombieHitRemote = Framework.GetRemote("ReportZombieHit")
 	_requestGunReloadRemote = Framework.GetRemote("RequestGunReload")
+	_cancelGunReloadRemote = Framework.GetRemote("CancelGunReload")
 
 	local ammoStateUpdatedRemote: RemoteEvent = Framework.GetRemote("AmmoStateUpdated")
 	ammoStateUpdatedRemote.OnClientEvent:Connect(onAmmoStateUpdated)

@@ -1,6 +1,7 @@
 --!strict
 
 local Players = game:GetService("Players")
+local debris = game:GetService("Debris")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local server_script_service = game:GetService("ServerScriptService")
 
@@ -18,6 +19,7 @@ type PowerupType = "Food" | "DoubleXp" | "MaxAmmo"
 type PickupRecord = {
 	owner: Player,
 	pickup: PVInstance,
+	trigger: BasePart,
 	parts: { BasePart },
 	powerupType: PowerupType,
 	claimed: boolean,
@@ -40,6 +42,12 @@ local POWERUP_MODEL_NAMES: { [PowerupType]: string } = {
 	MaxAmmo = "MaxAmmo",
 }
 
+local POWERUP_SOUND_IDS: { [PowerupType]: string } = {
+	Food = "rbxassetid://137102366884896",
+	DoubleXp = "rbxassetid://113159623717183",
+	MaxAmmo = "rbxassetid://76008907639113",
+}
+
 local function getBattleState(player: Player): BattleState?
 	local battle = _battleStateByPlayer[player]
 	if not battle or not battle.active then
@@ -58,6 +66,9 @@ local function destroyPickup(record: PickupRecord)
 	end
 	if record.pickup.Parent then
 		record.pickup:Destroy()
+	end
+	if record.trigger.Parent then
+		record.trigger:Destroy()
 	end
 end
 
@@ -101,6 +112,28 @@ local function applyPowerup(player: Player, powerupType: PowerupType)
 	GunService.replenishEquippedAmmo(player)
 end
 
+local function playPowerupSound(rootPart: BasePart, powerupType: PowerupType)
+	local sound = Instance.new("Sound")
+	sound.SoundId = POWERUP_SOUND_IDS[powerupType]
+	sound.Parent = rootPart
+	sound:Play()
+	debris:AddItem(sound, 10)
+end
+
+local function createPickupTrigger(position: Vector3): BasePart
+	local trigger = Instance.new("Part")
+	trigger.Name = "PickupTrigger"
+	trigger.Anchored = true
+	trigger.CanCollide = false
+	trigger.CanQuery = false
+	trigger.CanTouch = true
+	trigger.Transparency = 1
+	trigger.Size = Vector3.one * (PowerupConfig.PICKUP_RADIUS * 2)
+	trigger.CFrame = CFrame.new(position)
+	trigger.Parent = workspace
+	return trigger
+end
+
 local function getPickupTouchedPart(hit: BasePart): BasePart?
 	for _, touchingPart in ipairs(hit:GetTouchingParts()) do
 		if _pickupRecordByPart[touchingPart] then
@@ -141,6 +174,7 @@ local function onPickupTouched(hit: BasePart)
 
 	record.claimed = true
 	destroyPickup(record)
+	playPowerupSound(rootPart, record.powerupType)
 	applyPowerup(player, record.powerupType)
 	Logger.info(TAG, "%s collected %s.", player.Name, record.powerupType)
 end
@@ -165,10 +199,13 @@ local function spawnPickup(player: Player, position: Vector3, powerupType: Power
 		end
 	end
 	assert(#parts > 0, string.format("PowerUp model '%s' requires a BasePart", template.Name))
+	local trigger = createPickupTrigger(pickup:GetPivot().Position)
+	table.insert(parts, trigger)
 
 	local record: PickupRecord = {
 		owner = player,
 		pickup = pickup,
+		trigger = trigger,
 		parts = parts,
 		powerupType = powerupType,
 		claimed = false,
