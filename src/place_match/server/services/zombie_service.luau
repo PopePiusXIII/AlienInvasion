@@ -23,6 +23,7 @@ local CombatConfig = require(replicated_storage.common.shared.configs.combat_con
 local CharacterService = require(server_script_service.match.services.character_service)
 local HealthService = require(server_script_service.match.services.health_service)
 local ZombiePathfinderActor = require(server_script_service.match.modules.zombie.zombie_pathfinder_actor)
+local ZombieLiftModule = require(server_script_service.match.modules.zombie.zombie_lift_module)
 
 local TAG = "ZombieService"
 local ZombieService = {}
@@ -49,9 +50,17 @@ type ZombieTypeConfig = {
 
 local _zombieTemplates: { [string]: Model } = {}
 
-type ZombieEntry = { zombie: Model, humanoid: Humanoid, target: Player }
+type ZombieEntry = {
+	zombie: Model,
+	humanoid: Humanoid,
+	target: Player,
+}
 local _activeZombies: { ZombieEntry } = {}
 local _rngTemplateWarned = false
+
+local function getZombieRoot(zombie: Model): BasePart?
+	return zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
+end
 
 -- ── Snapshot feeder (main thread) ────────────────────────────────────────────
 -- Purges dead zombies and feeds fresh position snapshots to the desynchronized
@@ -72,7 +81,10 @@ local function snapshotFeederLoop()
 		-- Snapshot zombie root positions and feed to the desynchronized actor.
 		local snapshots: { ZombieSnapshot } = {}
 		for _, entry in ipairs(_activeZombies) do
-			local root = entry.zombie:FindFirstChild("HumanoidRootPart") :: BasePart?
+			local root = getZombieRoot(entry.zombie)
+			if root then
+				ZombieLiftModule.update(root)
+			end
 			table.insert(snapshots, {
 				rootPosition = root and root.Position or nil,
 				humanoid = entry.humanoid,
@@ -137,6 +149,7 @@ function ZombieService:Init()
 	PhysicsService:CollisionGroupSetCollidable(ZOMBIE_COLLISION_GROUP, ZOMBIE_COLLISION_GROUP, false)
 	PhysicsService:CollisionGroupSetCollidable(ZOMBIE_COLLISION_GROUP, PLAYER_COLLISION_GROUP, false)
 	PhysicsService:CollisionGroupSetCollidable(DEAD_ZOMBIE_COLLISION_GROUP, PLAYER_COLLISION_GROUP, false)
+	ZombieLiftModule.initialize()
 
 	-- Cache every zombie template by type name at startup.
 	for rawTypeName, rawData in Config.ZOMBIE_TYPES do
@@ -201,7 +214,7 @@ local function configureHumanoid(humanoid: Humanoid, maxHealth: number, walkSpee
 end
 
 local function placeAtSpawnPosition(zombie: Model, spawnPos: Vector3)
-	local spread = math.random(0, 60)
+	local spread = math.random(0, 10)
 	zombie:PivotTo(CFrame.new(spawnPos + Vector3.new(
 		0.0,
 		Config.ZOMBIE_SPAWN_HEIGHT,
@@ -301,7 +314,11 @@ local function connectDeathCleanup(zombie: Model, humanoid: Humanoid, onDied: On
 end
 
 local function registerZombie(zombie: Model, humanoid: Humanoid, target: Player)
-	table.insert(_activeZombies, { zombie = zombie, humanoid = humanoid, target = target })
+	table.insert(_activeZombies, {
+		zombie = zombie,
+		humanoid = humanoid,
+		target = target,
+	})
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────────

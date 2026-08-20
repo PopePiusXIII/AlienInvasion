@@ -49,8 +49,22 @@ function GameService._returnAllToLobby()
 	end)
 end
 
---- Launch one concurrent battle per connected player.
---- Saves stats and teleports everyone back to the Lobby once all battles finish.
+local function runActiveMatch(players: { Player })
+	local fluxTierReached = WaveService.startMatch(players)
+
+	for _, player in ipairs(players) do
+		local economySummary = EconomyService.finalizeRun(player)
+		ProfileService.saveStats(player, fluxTierReached, economySummary)
+		Logger.info(TAG, "%s done at shared flux tier %d.", player.Name, fluxTierReached)
+	end
+
+	if (_matchState :: string) == "ACTIVE" then
+		_matchState = "ENDED"
+		Logger.info(TAG, "Match ENDED. Returning to lobby in 5s.")
+		task.delay(5, GameService._returnAllToLobby)
+	end
+end
+
 function GameService.startMatch()
 	if _matchState ~= "WAITING" then
 		Logger.warn(TAG, "startMatch ignored — state is already '%s'.", _matchState)
@@ -64,28 +78,8 @@ function GameService.startMatch()
 		return
 	end
 
-	-- Cooperative scheduling in Luau means the decrement below is safe; there
-	-- is no true parallelism between task.spawn threads on the same server.
-	local remaining = #players
-	Logger.info(TAG, "Match ACTIVE with %d players.", remaining)
-
-	for _, player in ipairs(players) do
-		task.spawn(function()
-			local waveReached = WaveService.startBattle(player)
-			local economySummary = EconomyService.finalizeRun(player)
-			ProfileService.saveStats(player, waveReached, economySummary)
-
-			remaining -= 1
-			Logger.info(TAG, "%s done on wave %d. %d player(s) remaining.",
-				player.Name, waveReached, remaining)
-
-			if remaining <= 0 and (_matchState :: string) == "ACTIVE" then
-				_matchState = "ENDED"
-				Logger.info(TAG, "Match ENDED. Returning to lobby in 5s.")
-				task.delay(5, GameService._returnAllToLobby)
-			end
-		end)
-	end
+	Logger.info(TAG, "Match ACTIVE with %d players.", #players)
+	task.spawn(runActiveMatch, players)
 end
 
 function GameService.getState(): MatchState
