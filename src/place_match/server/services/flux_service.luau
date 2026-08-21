@@ -208,6 +208,11 @@ local function spawnQueuedZombie(match: MatchState)
 	local job = table.remove(match.queue, 1)
 	assert(job ~= nil, "[FluxService] Cannot dispatch a zombie from an empty cue.")
 	local spawnPoint = _spawnPointsByName[job.spawnPointName]
+	if spawnPoint == nil or spawnPoint.Parent == nil then
+		_spawnPointsByName[job.spawnPointName] = nil
+		cacheSpawnPoint(job.spawnPointName, "Spawn job")
+		spawnPoint = _spawnPointsByName[job.spawnPointName]
+	end
 	assert(spawnPoint ~= nil, "[FluxService] Spawn job references an unresolved spawn location.")
 	local owner = getNextLivingParticipant(match)
 

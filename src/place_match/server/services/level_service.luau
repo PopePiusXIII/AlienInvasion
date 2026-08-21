@@ -22,6 +22,20 @@ local _levelContinuePromptClosedRemote: RemoteEvent
 local _levelContinueVoteRemote: RemoteEvent
 local _matchState: MatchState? = nil
 
+local function getSelectedLevelIndex(): number
+	local selectedLevel = FluxConfig.SELECTED_LEVEL
+	assert(type(selectedLevel) == "table", "[LevelService] SELECTED_LEVEL must reference a configured level.")
+	for levelIndex, levelId in ipairs(FluxConfig.LEVEL_ORDER) do
+		local level = FluxConfig.LEVELS[levelId]
+		assert(level ~= nil, "[LevelService] LEVEL_ORDER references an unknown level: " .. levelId)
+		if level == selectedLevel then
+			return levelIndex
+		end
+	end
+
+	error("[LevelService] SELECTED_LEVEL must reference one of the configured levels.")
+end
+
 local function isParticipantAlive(match: MatchState, player: Player): boolean
 	local humanoid = match.participantHumanoids[player]
 	return player.Parent ~= nil and humanoid.Parent ~= nil and humanoid.Health > 0
@@ -131,7 +145,7 @@ function LevelService.startMatch(participants: { Player }): number
 		participantHumanoids = participantHumanoids,
 		kills = 0,
 		aliveCount = 0,
-		activeLevelIndex = 1,
+		activeLevelIndex = getSelectedLevelIndex(),
 		activeTierIndex = 0,
 		highestTierReached = 0,
 		nextOwnerIndex = 1,

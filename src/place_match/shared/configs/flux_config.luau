@@ -232,15 +232,31 @@ local MountainPass_5: Level = {
 				{ zombieType = "Tank", spawnPointName = "Spawn_Mob", amount = 1, weight = 1 },
 			},
 		},
+		{
+			startTimeSeconds = 20,
+			maxAlive = 10,
+			entryCue = {
+				{ zombieType = "ChainBallBoss", spawnPointName = "Spawn_Mob", amount = 1 },
+			},
+			randomCue = {
+				{ zombieType = "Normal", spawnPointName = "Spawn_Mob", amount = 1, weight = 2 },
+				{ zombieType = "Normal_Run", spawnPointName = "Spawn_Mob", amount = 1, weight = 2 },
+				{ zombieType = "Tank", spawnPointName = "Spawn_Mob", amount = 1, weight = 1 },
+			},
+		},
 	}
 }
 
+-- only used for studio otherwise lobby gives
+local StartLevel: Level = MountainPass_5
+
 return {
-	BATTLE_DURATION = 20,
+	BATTLE_DURATION = 60,
 	SCHEDULER_INTERVAL = 0.1,
 	ZOMBIE_SPAWN_INTERVAL = 0.2,
 	LEVEL_CONTINUE_VOTE_TIMEOUT = 20,
-	TIERS = MountainPass_1.tiers,
+	SELECTED_LEVEL = StartLevel,
+	TIERS = StartLevel.tiers,
 	LEVEL_ORDER = {
 		"MountainPass_1",
 		"MountainPass_2",
