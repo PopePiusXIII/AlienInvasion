@@ -38,12 +38,16 @@ export type MatchState = {
 	participantHumanoids: { [Player]: Humanoid },
 	kills: number,
 	aliveCount: number,
+	activeLevelIndex: number,
 	activeTierIndex: number,
 	highestTierReached: number,
 	nextOwnerIndex: number,
 	lastSpawnTime: number,
 	queue: { SpawnJob },
 	running: boolean,
+	voteOpen: boolean,
+	eligibleVoters: { [Player]: boolean },
+	votesByPlayer: { [Player]: boolean? },
 	timer: MatchTimer,
 }
 

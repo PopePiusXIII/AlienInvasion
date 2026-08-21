@@ -26,6 +26,13 @@ return {
 			Template = "Tank_Zombie",
 			Animations = {},
 		},
+		ChainBallBoss = {
+			MaxHealth = 1000,
+			WalkSpeed = 8,
+			TouchDamage = 40,
+			Template = "ChainBallBoss_Zombie",
+			Animations = {},
+		},
 	},
 	ZOMBIE_DEFAULT_TYPE    = "Normal",
 	ZOMBIE_DAMAGE_COOLDOWN     = 1,

@@ -21,7 +21,7 @@ local Framework    = require(replicated_storage.common.shared.framework)
 local Logger       = require(replicated_storage.common.shared.logger)
 local GameConfig       = require(replicated_storage.match.shared.configs.game_config)
 local ProfileService = require(server_script_service.common.services.profile_db)
-local WaveService  = require(server_script_service.match.services.wave_service)
+local LevelService = require(server_script_service.match.services.level_service)
 local EconomyService = require(server_script_service.match.services.economy_service)
 local RNGService = require(server_script_service.match.services.rng_service)
 local MatchAutoStartModule = require(server_script_service.match.modules.game.match_auto_start_module)
@@ -50,7 +50,7 @@ function GameService._returnAllToLobby()
 end
 
 local function runActiveMatch(players: { Player })
-	local fluxTierReached = WaveService.startMatch(players)
+	local fluxTierReached = LevelService.startMatch(players)
 
 	for _, player in ipairs(players) do
 		local economySummary = EconomyService.finalizeRun(player)
