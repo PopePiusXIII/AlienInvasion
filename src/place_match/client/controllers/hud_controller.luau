@@ -18,6 +18,7 @@ local Framework             = require(replicated_storage.common.shared.framework
 local Logger                = require(replicated_storage.common.shared.logger)
 local InventoryController   = require(replicated_storage.match.client.controllers.inventory_controller)
 local MatchHUD              = require(replicated_storage.match.ui.match_hud)
+local TempEndGameGUI         = require(replicated_storage.match.ui.tempEndGameGUI)
 local ZombieDamageHud       = require(replicated_storage.match.ui.match_hud_components.zombie_damage_hud)
 
 local TAG = "HudController"
@@ -36,6 +37,7 @@ function HudController:Init()
 	_screenGui = MatchHUD.gui
 	_sources = MatchHUD.sources
 	_screenGui.Parent = _localPlayer.PlayerGui
+	TempEndGameGUI.temporary(_screenGui)
 
 	Logger.info(TAG, "Match HUD parented to PlayerGui.")
 end

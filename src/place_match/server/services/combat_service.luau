@@ -20,7 +20,7 @@ local framework      = require(replicated_storage.common.shared.framework)
 local logger         = require(replicated_storage.common.shared.logger)
 local zombie_service = require(server_script_service.match.services.zombie_service)
 local economy_service = require(server_script_service.match.services.economy_service)
-local wave_service = require(server_script_service.match.services.wave_service)
+local flux_service = require(server_script_service.match.services.flux_service)
 local inventory_service = require(server_script_service.match.services.inventory_service)
 local gun_service = require(server_script_service.match.services.gun_service)
 local gun_core       = require(replicated_storage.common.shared.gun_core)
@@ -68,7 +68,7 @@ local function onShotReported(player: Player, zombie_model: Instance?, is_headsh
 	end
 
 	if killed then
-		local fluxTier = wave_service.getActiveFluxTier()
+		local fluxTier = flux_service.getActiveFluxTier()
 		economy_service.grantKillRewards(player, zombie_type, fluxTier, death_position)
 	end
 end

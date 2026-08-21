@@ -236,10 +236,18 @@ local MountainPass_5: Level = {
 }
 
 return {
-	BATTLE_DURATION = 300,
+	BATTLE_DURATION = 20,
 	SCHEDULER_INTERVAL = 0.1,
 	ZOMBIE_SPAWN_INTERVAL = 0.2,
+	LEVEL_CONTINUE_VOTE_TIMEOUT = 20,
 	TIERS = MountainPass_1.tiers,
+	LEVEL_ORDER = {
+		"MountainPass_1",
+		"MountainPass_2",
+		"MountainPass_3",
+		"MountainPass_4",
+		"MountainPass_5",
+	},
 	LEVELS = {
 		MountainPass_1 = MountainPass_1,
 		MountainPass_2 = MountainPass_2,
