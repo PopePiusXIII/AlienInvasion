@@ -211,7 +211,7 @@ local MountainPass_5: Level = {
 		},
 		{
 			startTimeSeconds = 30,
-			maxAlive = 25,
+			maxAlive = 10,
 			entryCue = {
 				{ zombieType = "Normal_Run", spawnPointName = "Spawn_Mob_2", amount = 25 },
 			},
@@ -248,7 +248,7 @@ local MountainPass_5: Level = {
 }
 
 -- only used for studio otherwise lobby gives
-local StartLevel: Level = MountainPass_5
+local StartLevel: Level = MountainPass_1
 
 return {
 	BATTLE_DURATION = 60,
