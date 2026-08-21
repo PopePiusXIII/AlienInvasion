@@ -1,11 +1,33 @@
 local replicated_storage = game:GetService("ReplicatedStorage")
 
 local vide = require(replicated_storage.Packages.vide)
+local ui = require(replicated_storage.common.shared.vide.ui_config)
+local DepressedButton = require(replicated_storage.common.shared.vide.depressed_button)
 
 local create = vide.create
+local effect = vide.effect
+local root = vide.root
+local source = vide.source
+
+export type InventoryItem = {
+    id: string,
+    name: string,
+    rarity: string,
+    image: string,
+}
+
+local visible = source(false)
+local status = source("Select 3 matching guns")
+local inventory = source({} :: { InventoryItem })
+local selectedIds = source({} :: { string })
+
+local function doNothing() end
+local onGunSelected: (string) -> () = doNothing
+local onMergeRequested: () -> () = doNothing
+local onCloseRequested: () -> () = doNothing
 
 local function Merge(): ScreenGui
-    return create "ScreenGui" {
+    local gui = create "ScreenGui" {
     Name = "Merge",
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 
@@ -422,6 +444,151 @@ local function Merge(): ScreenGui
         },
     },
     }
+
+    local parentFrame = gui:FindFirstChild("Parent_Frame", true)
+    assert(parentFrame and parentFrame:IsA("Frame"), "Merge UI requires Parent_Frame")
+    local statsFrame = gui:FindFirstChild("Stats_Frame", true)
+    assert(statsFrame and statsFrame:IsA("Frame"), "Merge UI requires Stats_Frame")
+    local inventoryFrame = gui:FindFirstChild("ScrollingFrame", true)
+    assert(inventoryFrame and inventoryFrame:IsA("ScrollingFrame"), "Merge UI requires ScrollingFrame")
+    local closeButton = gui:FindFirstChild("X_Button", true)
+    assert(closeButton and closeButton:IsA("ImageButton"), "Merge UI requires X_Button")
+    local mergeButton = gui:FindFirstChild("Merge", true)
+    assert(mergeButton and mergeButton:IsA("ImageButton"), "Merge UI requires Merge button")
+
+    local slots: { ImageButton } = {}
+    for _, child in ipairs(statsFrame:GetChildren()) do
+        if child:IsA("ImageButton") then
+            table.insert(slots, child)
+        end
+    end
+    assert(#slots == 2, "Merge UI requires two authored selected-gun slots")
+
+    local placeholderImage = slots[1].Image
+    local thirdSlot = create "ImageButton" {
+        Name = "SelectedGunSlot3",
+        Parent = statsFrame,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        Image = placeholderImage,
+        Position = UDim2.fromScale(0.5, 0.8),
+        Size = UDim2.fromScale(0.3, 0.26),
+
+        create "UIAspectRatioConstraint" {
+            AspectRatio = 0.9767,
+        },
+
+        create "UICorner" {
+            BottomLeftRadius = UDim.new(0.13245, 0),
+            BottomRightRadius = UDim.new(0.13245, 0),
+            TopLeftRadius = UDim.new(0.13245, 0),
+            TopRightRadius = UDim.new(0.13245, 0),
+        },
+
+        create "UIStroke" {
+            StrokeSizingMode = Enum.StrokeSizingMode.ScaledSize,
+            Thickness = 0.0198676,
+        },
+    }
+    table.insert(slots, thirdSlot)
+
+    for index, slot in ipairs(slots) do
+        slot.Position = UDim2.fromScale(0.5, 0.2 + ((index - 1) * 0.3))
+        slot.Size = UDim2.fromScale(0.3, 0.26)
+    end
+
+    local statusLabel = create "TextLabel" {
+        Name = "MergeStatus",
+        Parent = parentFrame,
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        Position = UDim2.fromScale(0.3, 0.78),
+        Size = UDim2.fromScale(0.68, 0.07),
+        TextColor3 = Color3.new(1, 1, 1),
+        TextScaled = true,
+    }
+
+    create "UIGridLayout" {
+        Parent = inventoryFrame,
+        CellPadding = UDim2.fromOffset(8, 8),
+        CellSize = UDim2.fromOffset(110, 110),
+    }
+    create "Sound" {
+        Name = "ShopClick",
+        Parent = inventoryFrame,
+        SoundId = ui.sounds.Click,
+        Volume = ui.button.clickVolume,
+    }
+    inventoryFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+    local function isSelected(gunId: string): boolean
+        return table.find(selectedIds(), gunId) ~= nil
+    end
+
+    local function findSelectedGun(index: number): InventoryItem?
+        local gunId = selectedIds()[index]
+        if not gunId then return nil end
+        for _, gun in ipairs(inventory()) do
+            if gun.id == gunId then return gun end
+        end
+        error("Selected merge gun is missing from inventory: " .. gunId)
+    end
+
+    local function createGunTile(gun: InventoryItem)
+        local function selectGun()
+            onGunSelected(gun.id)
+        end
+
+        local button = DepressedButton({
+            parent = inventoryFrame,
+            position = UDim2.fromScale(0.5, 0.5),
+            image = gun.image,
+            size = UDim2.fromScale(1, 1),
+            hoverSoundId = ui.sounds.HoverSoundId,
+            onActivated = selectGun,
+        })
+        button.Name = "Gun_" .. gun.id
+        local stroke = button:FindFirstChildWhichIsA("UIStroke")
+        assert(stroke, "DepressedButton requires a UIStroke")
+        stroke.Color = if isSelected(gun.id) then Color3.fromRGB(255, 205, 45) else Color3.new(0, 0, 0)
+
+    end
+
+    local function render()
+        gui.Enabled = visible()
+        statusLabel.Text = status()
+        for index, slot in ipairs(slots) do
+            local gun = findSelectedGun(index)
+            slot.Image = if gun then gun.image else placeholderImage
+        end
+        for _, child in ipairs(inventoryFrame:GetChildren()) do
+            if child:IsA("ImageButton") then child:Destroy() end
+        end
+        for _, gun in ipairs(inventory()) do createGunTile(gun) end
+    end
+
+    local function close()
+        onCloseRequested()
+    end
+    local function requestMerge()
+        onMergeRequested()
+    end
+    closeButton.Activated:Connect(close)
+    mergeButton.Activated:Connect(requestMerge)
+    effect(render)
+    return gui
 end
 
-return Merge
+local _destroyRoot, gui = root(Merge)
+
+local function setGunSelectedCallback(callback: (string) -> ()) onGunSelected = callback end
+local function setMergeRequestedCallback(callback: () -> ()) onMergeRequested = callback end
+local function setCloseRequestedCallback(callback: () -> ()) onCloseRequested = callback end
+
+return {
+    gui = gui,
+    sources = { visible = visible, status = status, inventory = inventory, selectedIds = selectedIds },
+    setGunSelectedCallback = setGunSelectedCallback,
+    setMergeRequestedCallback = setMergeRequestedCallback,
+    setCloseRequestedCallback = setCloseRequestedCallback,
+}

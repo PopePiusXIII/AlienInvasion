@@ -54,7 +54,15 @@ local profiles: { [string]: ProfileDbType.PlayerProfile } = {
 			MG42 = { common = true },
 		},
 		inventory = {
-			["DEV-COMMON-MG42"] = {
+			["DEV-COMMON-MG42-1"] = {
+				name = "MG42",
+				rarity = "common",
+			},
+			["DEV-COMMON-MG42-2"] = {
+				name = "MG42",
+				rarity = "common",
+			},
+			["DEV-COMMON-MG42-3"] = {
 				name = "MG42",
 				rarity = "common",
 			},
